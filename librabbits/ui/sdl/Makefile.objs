@@ -1,0 +1,6 @@
+ui-obj-y = ui.o ui_fb.o
+
+ui.o-cflags = $(SDL_CFLAGS)
+ui.o-libs = $(SDL_LIBS)
+ui_fb.o-cflags = $(SDL_CFLAGS)
+ui_fb.o-libs = $(SDL_LIBS)

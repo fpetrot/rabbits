@@ -1,0 +1,3 @@
+ui-obj-y += ui.o
+ui-obj-y += dummy/
+ui-obj-$(CONFIG_SDL_UI) += sdl/
