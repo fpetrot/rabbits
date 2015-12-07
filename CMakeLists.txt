@@ -2,6 +2,7 @@ cmake_minimum_required (VERSION 2.6)
 project (Rabbits)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+set(RABBITS_FACTORY_SCRIPT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen-factory.rb")
 include(rabbits_add_files)
 include(rabbits_components)
 
@@ -104,3 +105,12 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/RabbitsConfig.cmake
 	${CMAKE_CURRENT_SOURCE_DIR}/cmake/rabbits_components.cmake
 	${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindSystemC.cmake
 	DESTINATION ${LIB_INSTALL_DIR}/rabbits/cmake )
+
+
+# for sub-projects build without rabbits install
+configure_file(
+	"${CMAKE_CURRENT_SOURCE_DIR}/RabbitsConfig_installless.cmake.in"
+	"${CMAKE_CURRENT_BINARY_DIR}/installless/RabbitsConfig.cmake"
+	@ONLY
+)
+set(Rabbits_DIR "${CMAKE_CURRENT_BINARY_DIR}/installless" CACHE INTERNAL "RabbitsConfig.cmake directory" FORCE)

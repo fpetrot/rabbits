@@ -1,9 +1,5 @@
 function(rabbits_generate_objects)
-    if(${Rabbits_FOUND})
-        set(_gen_script "${Rabbits_LIB_DIR}/rabbits/gen-factory.rb")
-    else()
-        set(_gen_script "${PROJECT_SOURCE_DIR}/scripts/gen-factory.rb")
-    endif()
+    set(_gen_script ${RABBITS_FACTORY_SCRIPT_PATH})
     set(_gen_exe ${RUBY_EXECUTABLE} "${_gen_script}")
 
     get_property(COMPS_DESCR GLOBAL PROPERTY RABBITS_COMPONENTS_LIST)

@@ -10,6 +10,8 @@ find_package(SystemC REQUIRED)
 
 find_package(Ruby 2.0 REQUIRED)
 
+set(RABBITS_FACTORY_SCRIPT_PATH "${Rabbits_LIB_DIR}/rabbits/gen-factory.rb")
+
 include("${CMAKE_CURRENT_LIST_DIR}/rabbits_add_files.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/rabbits_components.cmake")
 
