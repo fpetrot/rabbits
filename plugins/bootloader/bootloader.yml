@@ -1,4 +1,0 @@
-plugin:
-  name: bootloader
-  include: plugins/bootloader/bootloader.h
-  class: BootloaderPlugin
