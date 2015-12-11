@@ -1,5 +1,3 @@
-rabbits_clear_files_collections()
-
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(component)
@@ -19,10 +17,12 @@ rabbits_add_sources(
 
 rabbits_generate_objects()
 
-get_property(RABBITS_SRCS GLOBAL PROPERTY RABBITS_SRCS_LIST)
-get_property(RABBITS_LIBS GLOBAL PROPERTY RABBITS_LIBS_LIST)
-add_library(librabbits ${RABBITS_SRCS})
-target_link_libraries(librabbits ${EXTRA_LIBS} ${RABBITS_LIBS})
+get_property(srcs GLOBAL PROPERTY RABBITS_SRCS_LIST)
+get_property(libs GLOBAL PROPERTY RABBITS_LIBS_LIST)
+add_library(librabbits ${srcs})
+target_link_libraries(librabbits ${EXTRA_LIBS} ${libs})
 set_property(TARGET librabbits PROPERTY OUTPUT_NAME rabbits)
 
 install(TARGETS librabbits DESTINATION lib)
+
+rabbits_clear_files_collections()

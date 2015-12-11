@@ -56,6 +56,14 @@ function(rabbits_add_plugins)
         ${ARGN})
 endfunction(rabbits_add_plugins)
 
+function(rabbits_add_platforms)
+    rabbits_add_files_to_collection(
+        RABBITS_PLATFORMS_LIST
+        "List of platforms"
+        "List of platform description files"
+        ${ARGN})
+endfunction(rabbits_add_platforms)
+
 function(rabbits_add_executable n)
     set(RABBITS_DYNAMIC_PLUGIN OFF)
     rabbits_generate_objects()
@@ -63,8 +71,9 @@ function(rabbits_add_executable n)
     get_property(__libs GLOBAL PROPERTY RABBITS_LIBS_LIST)
     add_executable(${n} ${__srcs})
     target_link_libraries(${n} ${__libs})
+    rabbits_generate_descr_symlinks()
     rabbits_clear_files_collections()
-    install(TARGETS ${n} DESTINATION ${Rabbits_BIN_DIR})
+    install(TARGETS ${n} DESTINATION ${RABBITS_BIN_DIR})
 endfunction(rabbits_add_executable)
 
 function(rabbits_add_dynlib n)
@@ -75,8 +84,9 @@ function(rabbits_add_dynlib n)
     add_library(${n} SHARED ${__srcs})
     target_link_libraries(${n} ${__libs})
     set_property(TARGET ${n} PROPERTY PREFIX "")
+    rabbits_generate_descr_symlinks()
     rabbits_clear_files_collections()
-    install(TARGETS ${n} DESTINATION ${Rabbits_LIB_DIR}/rabbits)
+    install(TARGETS ${n} DESTINATION ${RABBITS_LIB_DIR}/rabbits)
 endfunction(rabbits_add_dynlib)
 
 function(rabbits_clear_files_collection)
@@ -86,7 +96,12 @@ function(rabbits_clear_files_collection)
 endfunction(rabbits_clear_files_collection)
 
 function(rabbits_clear_files_collections)
-    rabbits_clear_files_collection(RABBITS_SRCS_LIST RABBITS_LIBS_LIST RABBITS_COMPONENTS_LIST RABBITS_PLUGINS_LIST)
+    rabbits_clear_files_collection(
+        RABBITS_SRCS_LIST
+        RABBITS_LIBS_LIST
+        RABBITS_COMPONENTS_LIST
+        RABBITS_PLUGINS_LIST
+        RABBITS_PLATFORMS_LIST)
 endfunction(rabbits_clear_files_collections)
 
 # vim: ts=4 sts=4 sw=4 expandtab

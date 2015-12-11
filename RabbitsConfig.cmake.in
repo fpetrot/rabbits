@@ -1,21 +1,36 @@
 @PACKAGE_INIT@
 
-set_and_check(Rabbits_INCLUDE_DIR "@PACKAGE_INCLUDE_INSTALL_DIR@")
-set_and_check(Rabbits_LIB_DIR "@PACKAGE_LIB_INSTALL_DIR@")
+set_and_check(RABBITS_INCLUDE_DIR "@PACKAGE_RABBITS_INCLUDE_DIR@")
+set_and_check(RABBITS_LIB_DIR "@PACKAGE_RABBITS_LIB_DIR@")
+set_and_check(RABBITS_BIN_DIR "@PACKAGE_RABBITS_BIN_DIR@")
+set_and_check(RABBITS_DESCRIPTION_DIR "@PACKAGE_RABBITS_DESCRIPTION_DIR@")
 
-check_required_components(Rabbits)
+check_required_components(RABBITS)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR})
 find_package(SystemC REQUIRED)
 
 find_package(Ruby 2.0 REQUIRED)
 
-set(RABBITS_FACTORY_SCRIPT_PATH "${Rabbits_LIB_DIR}/rabbits/gen-factory.rb")
+set(RABBITS_FACTORY_SCRIPT_PATH "${RABBITS_LIB_DIR}/rabbits/gen-factory.rb")
+set(RABBITS_EXECUTABLE "@PACKAGE_RABBITS_EXECUTABLE@")
+
+if(UNIX)
+    option(RABBITS_CREATE_DESCR_SYMLINK
+        "Create one symlink per platform description pointing on rabbits executable"
+        ON)
+    if(NOT RABBITS_DESCR_SYMLINK_PREFIX)
+        set(RABBITS_DESCR_SYMLINK_PREFIX "rabbits-")
+    endif()
+endif()
+
 
 include("${CMAKE_CURRENT_LIST_DIR}/rabbits_add_files.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/rabbits_components.cmake")
 
 include_directories(
-	"${SYSTEMC_INCLUDE_DIR}"
-	"${Rabbits_INCLUDE_DIR}"
+    "${SYSTEMC_INCLUDE_DIR}"
+    "${RABBITS_INCLUDE_DIR}"
 )
+
+# vim: ts=4 sts=4 sw=4 expandtab

@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 2.6)
-project (Rabbits)
+project (RABBITS)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(RABBITS_FACTORY_SCRIPT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen-factory.rb")
@@ -39,6 +39,12 @@ endif()
 
 if(UNIX)
 	set(RABBITS_CONFIG_POSIX 1)
+	option(RABBITS_CREATE_DESCR_SYMLINK
+		"Create one symlink per platform description pointing on rabbits executable"
+		ON)
+	if(NOT RABBITS_DESCR_SYMLINK_PREFIX)
+		set(RABBITS_DESCR_SYMLINK_PREFIX "rabbits-")
+	endif()
 elseif(WIN32)
 	set(RABBITS_CONFIG_WIN32 1)
 else()
@@ -60,12 +66,15 @@ set(EXTRA_LIBS ${EXTRA_LIBS}
 )
 
 set(RABBITS_DYNLIB_SEARCH_PATH "${CMAKE_INSTALL_PREFIX}/lib/rabbits")
-set(RABBITS_APP_NAME "rabbits")
+set(RABBITS_APP_NAME rabbits)
 
 # XXX
 set(RABBITS_VERSION 0.0.1)
-set(LIB_INSTALL_DIR lib)
-set(INCLUDE_INSTALL_DIR include)
+set(RABBITS_BIN_DIR bin)
+set(RABBITS_LIB_DIR lib)
+set(RABBITS_INCLUDE_DIR include)
+set(RABBITS_DESCRIPTION_DIR share/rabbits/platforms)
+set(RABBITS_EXECUTABLE ${RABBITS_BIN_DIR}/${RABBITS_APP_NAME})
 
 include(compiler_options)
 
@@ -76,16 +85,21 @@ configure_file(
 )
 include_directories("${CMAKE_CURRENT_BINARY_DIR}/include")
 
-# ConfigRabbits.cmake generation
+# RabbitsConfig[Version].cmake generation
 include(CMakePackageConfigHelpers)
 configure_package_config_file(RabbitsConfig.cmake.in
 	${CMAKE_CURRENT_BINARY_DIR}/RabbitsConfig.cmake
-	INSTALL_DESTINATION ${LIB_INSTALL_DIR}/rabbits/cmake
-	PATH_VARS INCLUDE_INSTALL_DIR LIB_INSTALL_DIR)
+	INSTALL_DESTINATION ${RABBITS_LIB_DIR}/rabbits/cmake
+	PATH_VARS RABBITS_INCLUDE_DIR
+		  RABBITS_LIB_DIR
+		  RABBITS_BIN_DIR
+		  RABBITS_DESCRIPTION_DIR
+		  RABBITS_EXECUTABLE)
+
 write_basic_package_version_file(
 	${CMAKE_CURRENT_BINARY_DIR}/RabbitsConfigVersion.cmake
 	VERSION ${RABBITS_VERSION}
-	COMPATIBILITY SameMajorVersion )
+	COMPATIBILITY SameMajorVersion)
 
 
 add_subdirectory(librabbits)
@@ -93,10 +107,10 @@ add_subdirectory(rabbits)
 
 
 # header files and scripts installation
-install(DIRECTORY include/ DESTINATION ${INCLUDE_INSTALL_DIR} FILES_MATCHING PATTERN "*.h")
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/rabbits/config.h" DESTINATION ${INCLUDE_INSTALL_DIR}/rabbits)
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen-factory.rb" DESTINATION ${LIB_INSTALL_DIR}/rabbits)
-
+install(DIRECTORY include/ DESTINATION ${RABBITS_INCLUDE_DIR} FILES_MATCHING PATTERN "*.h")
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/rabbits/config.h" DESTINATION ${RABBITS_INCLUDE_DIR}/rabbits)
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen-factory.rb" DESTINATION ${RABBITS_LIB_DIR}/rabbits)
+install(DIRECTORY DESTINATION ${RABBITS_DESCRIPTION_DIR})
 
 # cmake files installation
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/RabbitsConfig.cmake
@@ -104,7 +118,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/RabbitsConfig.cmake
 	${CMAKE_CURRENT_SOURCE_DIR}/cmake/rabbits_add_files.cmake
 	${CMAKE_CURRENT_SOURCE_DIR}/cmake/rabbits_components.cmake
 	${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindSystemC.cmake
-	DESTINATION ${LIB_INSTALL_DIR}/rabbits/cmake )
+	DESTINATION ${RABBITS_LIB_DIR}/rabbits/cmake)
 
 
 # for sub-projects build without rabbits install
@@ -114,3 +128,5 @@ configure_file(
 	@ONLY
 )
 set(Rabbits_DIR "${CMAKE_CURRENT_BINARY_DIR}/installless" CACHE INTERNAL "RabbitsConfig.cmake directory" FORCE)
+
+# vim: ts=4 sts=4 sw=4 expandtab

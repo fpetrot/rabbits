@@ -1,6 +1,8 @@
 # Used when building subprojects without installing rabbits
-set(Rabbits_INCLUDE_DIR "@CMAKE_CURRENT_SOURCE_DIR@/include" "@CMAKE_CURRENT_BINARY_DIR@/include")
-set(Rabbits_LIB_DIR "@CMAKE_CURRENT_BINARY_DIR@/librabbits")
+set(RABBITS_INCLUDE_DIR "@CMAKE_CURRENT_SOURCE_DIR@/include" "@CMAKE_CURRENT_BINARY_DIR@/include")
+set(RABBITS_LIB_DIR "@CMAKE_CURRENT_BINARY_DIR@/librabbits")
+set(RABBITS_BIN_DIR "@CMAKE_CURRENT_BINARY_DIR@/rabbits")
+set(RABBITS_DESCRIPTION_DIR "@CMAKE_CURRENT_BINARY_DIR@")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "@CMAKE_CURRENT_SOURCE_DIR@/cmake")
 find_package(SystemC REQUIRED)
@@ -8,11 +10,12 @@ find_package(SystemC REQUIRED)
 find_package(Ruby 2.0 REQUIRED)
 
 set(RABBITS_FACTORY_SCRIPT_PATH "@CMAKE_CURRENT_SOURCE_DIR@/scripts/gen-factory.rb")
+set(RABBITS_EXECUTABLE "@CMAKE_CURRENT_BINARY_DIR/rabbits/rabbits@")
 
 include("@CMAKE_CURRENT_SOURCE_DIR@/cmake/rabbits_add_files.cmake")
 include("@CMAKE_CURRENT_SOURCE_DIR@/cmake/rabbits_components.cmake")
 
 include_directories(
-	"${Rabbits_INCLUDE_DIR}"
+	"${RABBITS_INCLUDE_DIR}"
 	"${SYSTEMC_INCLUDE_DIR}"
 )
