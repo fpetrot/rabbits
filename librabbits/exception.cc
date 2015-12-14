@@ -85,7 +85,7 @@ std::string RabbitsException::make_backtrace() {
             return "<backtrace error>";
         }
         
-        bt << std::endl << "backtrace:" << std::endl;
+        bt << "\nbacktrace:\n";
 
         for (int i = 0; i < nptrs; i++) {
             int status;
@@ -104,7 +104,7 @@ std::string RabbitsException::make_backtrace() {
             fill = bt.fill();
             bt << '#' << std::setw(2) << std::left << i 
                << " 0x" << std::hex << std::setw(16) << std::setfill('0') << std::right << address 
-               << " in " << symbol << " from " << obj << std::endl;
+               << " in " << symbol << " from " << obj << "\n";
             bt.fill(fill);
             bt.flags(flags);
         }

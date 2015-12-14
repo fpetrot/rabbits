@@ -41,7 +41,7 @@ static string get_yml_config(PlatformDescription &p, const char *arg0)
         return p["config"].as<string>();
     }
 
-    DBG_STREAM("No -config option provided, trying with basename" << std::endl);
+    DBG_STREAM("No -config option provided, trying with basename\n");
 
     const string basename = path(arg0).filename().string();
 
@@ -52,7 +52,7 @@ static string get_yml_config(PlatformDescription &p, const char *arg0)
         if (is_regular_file(final_path)) {
             return final_path;
         } else {
-            DBG_STREAM(final_path << " not found." << std::endl);
+            DBG_STREAM(final_path << " not found.\n");
         }
     }
 
@@ -77,7 +77,7 @@ int sc_main(int argc, char *argv[])
     yml_path = get_yml_config(p, argv[0]);
     if (yml_path != "") {
         PlatformDescription p_yml;
-        DBG_STREAM("Loading config file " << yml_path << std::endl);
+        DBG_STREAM("Loading config file " << yml_path << "\n");
         p_yml.load_file_yaml(yml_path);
         p = p.merge(p_yml);
     }

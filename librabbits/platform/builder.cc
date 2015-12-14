@@ -80,7 +80,7 @@ void PlatformBuilder::create_components(PlatformDescription &descr, CreationStag
     ComponentManager &cm = ComponentManager::get();
 
     if ((!descr.exists("components")) || (descr["components"].type() != PlatformDescription::MAP)) {
-        WRN_STREAM("No component found in description" << std::endl);
+        WRN_STREAM("No component found in description\n");
         return;
     }
 
@@ -90,7 +90,7 @@ void PlatformBuilder::create_components(PlatformDescription &descr, CreationStag
         PlatformDescription &comp = it->second;
 
         if (!comp.exists("type")) {
-            WRN_STREAM("Missing `type` attribute for component `" << name << "`" << std::endl);
+            WRN_STREAM("Missing `type` attribute for component `" << name << "`\n");
             continue;
         }
 
@@ -104,12 +104,12 @@ void PlatformBuilder::create_components(PlatformDescription &descr, CreationStag
                 cf->discover(name, comp);
                 break;
             case CreationStage::CREATE:
-                DBG_STREAM("Creating component " << name << " of type " << type << std::endl);
+                DBG_STREAM("Creating component " << name << " of type " << type << "\n");
                 m_components[name] = cf->create(name, comp);
                 break;
             }
         } else {
-            WRN_STREAM("No component type can provide `" << type << "`" << std::endl);
+            WRN_STREAM("No component type can provide `" << type << "`\n");
         }
     }
 }
@@ -119,7 +119,7 @@ void PlatformBuilder::connect_master(MasterIface *m, Bus *b)
     if (m_connected.find(&(m->get_component())) == m_connected.end()) {
         DBG_STREAM("Bus mapping: " 
                    << m->get_component().name() 
-                   << " -> " << b->name() << std::endl);
+                   << " -> " << b->name() << "\n");
 
         b->connect_master(*m);
         m_masters.push_back(m);
@@ -132,7 +132,7 @@ void PlatformBuilder::connect_slave(SlaveIface *s, Bus *b, const AddressRange& r
     if (m_connected.find(&(s->get_component())) == m_connected.end()) {
         DBG_STREAM("Bus mapping: " 
                    << s->get_component().name() 
-                   << " -> " << b->name() << r << std::endl);
+                   << " -> " << b->name() << r << "\n");
         b->connect_slave(*s, r);
         m_mappings.push_back(r);
         m_connected.insert(&(s->get_component()));
@@ -151,7 +151,7 @@ Bus* PlatformBuilder::get_bus_parent(PlatformDescription &descr)
     string n = descr["bus-parent"].as<string>();
 
     if (m_components.find(n) == m_components.end()) {
-        WRN_STREAM("Bus component `" << n << "` not found" << std::endl;);
+        WRN_STREAM("Bus component `" << n << "` not found\n";);
         return NULL;
     }
 
@@ -160,7 +160,7 @@ Bus* PlatformBuilder::get_bus_parent(PlatformDescription &descr)
     bus = dynamic_cast<Bus*>(c_bus);
 
     if (bus == NULL) {
-        WRN_STREAM("Component `" << n << "` is not a bus" << std::endl);
+        WRN_STREAM("Component `" << n << "` is not a bus\n");
         return NULL;
     }
 
@@ -197,7 +197,7 @@ void PlatformBuilder::do_child_bus_connections(ComponentBase *c, Bus *b, Platfor
 
     if (!descr.is_map()) {
         WRN_STREAM("Invalid child-bus-mapping attribute for component `"
-                   << c->name() << "`" << std::endl);
+                   << c->name() << "`\n");
         return;
     }
 
@@ -208,13 +208,13 @@ void PlatformBuilder::do_child_bus_connections(ComponentBase *c, Bus *b, Platfor
 
         if (!c->child_slave_exists(name)) {
             WRN_STREAM("Slave child `" << name << "` not found for component `"
-                       << c->name() << "`" << std::endl);
+                       << c->name() << "`\n");
             continue;
         }
 
         if (!d.is_map()) {
             WRN_STREAM("Invalid mapping description for slave child `"
-                       << name << "` of component `" << c->name() << "`" << std::endl);
+                       << name << "` of component `" << c->name() << "`\n");
             continue;
         }
 
@@ -253,7 +253,7 @@ void PlatformBuilder::do_bus_connections(PlatformDescription &descr)
 
                 if(!get_bus_mapping(comp_descr, mapping)) {
                     WRN_STREAM("Missing or invalid attribute `bus-mapping` for component `"
-                               << name << "`" << std::endl);
+                               << name << "`\n");
                     continue;
                 }
 
@@ -267,7 +267,7 @@ void PlatformBuilder::do_bus_connections(PlatformDescription &descr)
             m_bus = bus;
 
         } else {
-            WRN_STREAM("Component `" << name << "` has no or invalid `bus-parent` attribute" << std::endl);
+            WRN_STREAM("Component `" << name << "` has no or invalid `bus-parent` attribute\n");
             continue;
         }
 
@@ -286,7 +286,7 @@ ComponentBase* PlatformBuilder::get_irq_parent(PlatformDescription &descr)
     string n = descr["irq-parent"].as<string>();
 
     if (m_components.find(n) == m_components.end()) {
-        WRN_STREAM("IRQ parent component `" << n << "` not found" << std::endl;);
+        WRN_STREAM("IRQ parent component `" << n << "` not found\n";);
         return NULL;
     }
 
@@ -332,7 +332,7 @@ ComponentBase* PlatformBuilder::get_irq_parent_from_mapping(const string &mappin
     string cname = mapping.substr(0, dot);
 
     if (m_components.find(cname) == m_components.end()) {
-        WRN_STREAM("IRQ parent component `" << cname << "` not found" << std::endl;);
+        WRN_STREAM("IRQ parent component `" << cname << "` not found\n";);
         return NULL;
     }
 
@@ -359,12 +359,12 @@ void PlatformBuilder::get_irq_mapping(PlatformDescription &descr,
 
             if (irq_out == NULL) {
                 WRN_STREAM("No irq out named `" << src_irq
-                           << "` for component `" << src.name() << "`" << std::endl);
+                           << "` for component `" << src.name() << "`\n");
                 continue;
             }
 
             if (it->second.type() != PlatformDescription::SCALAR) {
-                WRN_STREAM("Invalid IRQ mapping. Ignoring" << std::endl);
+                WRN_STREAM("Invalid IRQ mapping. Ignoring\n");
                 continue;
             }
 
@@ -387,7 +387,7 @@ void PlatformBuilder::get_irq_mapping(PlatformDescription &descr,
 
             if (irq_in == NULL) {
                 WRN_STREAM("No irq in named `" << final_irq
-                           << "` for component `" << d->name() << "`" << std::endl);
+                           << "` for component `" << d->name() << "`\n");
                 continue;
             }
 
@@ -402,7 +402,7 @@ void PlatformBuilder::get_irq_mapping(PlatformDescription &descr,
 
         if (irq_out == NULL) {
             WRN_STREAM("No irq out found for component `"
-                       << src.name() << "`" << std::endl);
+                       << src.name() << "`\n");
             break;
         }
 
@@ -412,7 +412,7 @@ void PlatformBuilder::get_irq_mapping(PlatformDescription &descr,
 
             if (irq_in == NULL) {
                 WRN_STREAM("No irq in named `" << dst_irq
-                           << "` for component `" << dst->name() << "`" << std::endl);
+                           << "` for component `" << dst->name() << "`\n");
                 break;
             }
         }
@@ -449,7 +449,7 @@ void PlatformBuilder::get_irq_mapping(PlatformDescription &descr,
         irq_out = it->second;
         DBG_STREAM("IRQ mapping: " 
                    << src.name() << ":" << irq_out->name() << " -> " 
-                   << (dst ? dst->name(): "?") << ":" << irq_in->name() << std::endl);
+                   << (dst ? dst->name(): "?") << ":" << irq_in->name() << "\n");
     }
 }
 

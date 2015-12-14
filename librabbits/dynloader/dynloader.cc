@@ -72,7 +72,7 @@ DynamicLoader::~DynamicLoader()
     rabbits_dynamic_unload_fn lib_unload;
 
     for (it = m_libs.begin(); it != m_libs.end(); it++) {
-        DBG_STREAM("Unloading library " << it->first << std::endl);
+        DBG_STREAM("Unloading library " << it->first << "\n");
         lib_unload = (rabbits_dynamic_unload_fn)
             it->second->get_symbol(RABBITS_DYN_UNLOAD_SYM);
         lib_unload();
@@ -134,12 +134,12 @@ void DynamicLoader::search_libs_and_visit(DynamicLoaderVisitor &v)
             path p(*it);
 
             if (!exists(p)) {
-                DBG_STREAM("Directory " << *it << " not found." << std::endl);
+                DBG_STREAM("Directory " << *it << " not found.\n");
                 continue;
             }
 
             if (!is_directory(p)) {
-                DBG_STREAM(*it << " is not a directory." << std::endl);
+                DBG_STREAM(*it << " is not a directory.\n");
                 continue;
             }
 
@@ -153,15 +153,15 @@ void DynamicLoader::search_libs_and_visit(DynamicLoaderVisitor &v)
                 }
 
                 if (entry.path().extension().string() == "." + DynLib::get_lib_extension()) {
-                    DBG_STREAM("Found " << entry << std::endl);
+                    DBG_STREAM("Found " << entry << "\n");
                     if(!v.visit(*this, entry.path())) {
                         return;
                     }
                 }
             }
         } catch(const filesystem_error &e) {
-            DBG_STREAM(e.what() << std::endl);
-            DBG_STREAM("Skipping " << *it << std::endl);
+            DBG_STREAM(e.what() << "\n");
+            DBG_STREAM("Skipping " << *it << "\n");
         }
     }
 }
@@ -196,15 +196,15 @@ bool DynamicLoader::load_rabbits_dynlib(const string &filename)
     rabbits_dynamic_load_fn lib_load = NULL;
 
     if (m_libs.find(filename) != m_libs.end()) {
-        DBG_STREAM(filename << " already loaded. Skipping" << std::endl);
+        DBG_STREAM(filename << " already loaded. Skipping\n");
         return true;
     }
 
     try {
         l = DynLib::open(filename);
     } catch (DynLib::CannotOpenDynLibException e) {
-        DBG_STREAM(e.what() << std::endl);
-        DBG_STREAM("skipping dynamic library " << filename << std::endl);
+        DBG_STREAM(e.what() << "\n");
+        DBG_STREAM("skipping dynamic library " << filename << "\n");
         return false;
     }
 
@@ -212,7 +212,7 @@ bool DynamicLoader::load_rabbits_dynlib(const string &filename)
     if ((!l->check_symbol(RABBITS_DYN_API_VER_SYM))
         || (!l->check_symbol(RABBITS_DYN_LOAD_SYM))
         || (!l->check_symbol(RABBITS_DYN_UNLOAD_SYM))) {
-        DBG_STREAM("skipping dynamic library " << filename << ": doesn't seem to be Rabbits compatible" << std::endl);
+        DBG_STREAM("skipping dynamic library " << filename << ": doesn't seem to be Rabbits compatible\n");
         DynLib::close(l);
         return false;
     }
@@ -220,8 +220,8 @@ bool DynamicLoader::load_rabbits_dynlib(const string &filename)
     lib_api_version = (rabbits_dynamic_api_version_fn) l->get_symbol(RABBITS_DYN_API_VER_SYM);
 
     if (lib_api_version() != RABBITS_API_VERSION) {
-        WRN_STREAM("Unable to load dynamic library " << filename << ": API version mismatch" << std::endl);
-        WRN_STREAM("Need: " << RABBITS_API_VERSION << ", got: " << lib_api_version() << std::endl);
+        WRN_STREAM("Unable to load dynamic library " << filename << ": API version mismatch\n");
+        WRN_STREAM("Need: " << RABBITS_API_VERSION << ", got: " << lib_api_version() << "\n");
         DynLib::close(l);
         return false;
     }
@@ -231,7 +231,7 @@ bool DynamicLoader::load_rabbits_dynlib(const string &filename)
     lib_load = (rabbits_dynamic_load_fn) l->get_symbol(RABBITS_DYN_LOAD_SYM);
     lib_load();
 
-    DBG_STREAM("Loaded dynamic library " << filename << std::endl);
+    DBG_STREAM("Loaded dynamic library " << filename << "\n");
 
     return true;
 }
