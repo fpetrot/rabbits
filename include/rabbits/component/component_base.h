@@ -107,5 +107,7 @@ public:
         : sc_core::sc_module(sc_core::sc_module_name(name.c_str())), m_params(params) {}
     ComponentBase(std::string name) : sc_core::sc_module(sc_core::sc_module_name(name.c_str())) {}
     virtual ~ComponentBase() {}
+
+    const ComponentParameters & get_params() { return m_params; }
 };
 #endif

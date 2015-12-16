@@ -53,6 +53,8 @@ public:
     template <typename T> T as();
     virtual void set(const PlatformDescription &) = 0;
     virtual ParameterBase* clone() const = 0;
+
+    const std::string & get_description() { return m_description; }
 };
 
 template <typename T>

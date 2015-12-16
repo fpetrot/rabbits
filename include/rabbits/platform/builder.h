@@ -36,6 +36,9 @@ class AddressRange;
 class Master;
 
 class PlatformBuilder : public sc_core::sc_module {
+public:
+    typedef std::map<std::string, ComponentBase*>::iterator comp_iterator;
+    typedef std::map<std::string, ComponentBase*>::const_iterator const_comp_iterator;
 protected:
     struct CreationStage {
         enum value { DISCOVER, CREATE };
@@ -83,6 +86,11 @@ public:
     virtual ~PlatformBuilder();
 
     DebugInitiator& get_dbg_init() { return m_dbg; }
+
+    comp_iterator comp_begin() { return m_components.begin(); }
+    comp_iterator comp_end() { return m_components.end(); }
+    const_comp_iterator comp_begin() const { return m_components.begin(); }
+    const_comp_iterator comp_end() const { return m_components.end(); }
 };
 
 #endif

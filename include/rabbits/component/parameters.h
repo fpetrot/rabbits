@@ -62,9 +62,11 @@ public:
 
     void fill_from_description(const PlatformDescription &);
 
-    bool exists(const std::string & name) {
+    bool exists(const std::string & name) const {
         return m_pool.find(name) != m_pool.end();
     }
+
+    bool empty() const { return m_pool.size() == 0; }
 
     ParameterBase& at(const std::string & name) {
         if (!exists(name)) {
@@ -78,6 +80,11 @@ public:
     }
 
     PlatformDescription& get_base_description() { return m_descr; }
+
+    iterator begin() { return m_pool.begin(); }
+    iterator end() { return m_pool.end(); }
+    const_iterator begin() const { return m_pool.begin(); }
+    const_iterator end() const { return m_pool.end(); }
 
     static ComponentParameters EMPTY;
 };

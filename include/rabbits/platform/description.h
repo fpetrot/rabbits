@@ -26,6 +26,7 @@
 #include <list>
 #include <sstream>
 #include <limits>
+#include <set>
 
 #include "rabbits/rabbits_exception.h"
 #include "rabbits/datatypes/address_range.h"
@@ -258,7 +259,7 @@ public:
     void load_yaml(const std::string & yaml);
     void load_file_yaml(const std::string & file);
 
-    void parse_cmdline(int argc, const char * const argv[]);
+    void parse_cmdline(int argc, const char * const argv[], const std::set<std::string> & unaries);
 
     NodeType type() const { return m_node->type(); }
 

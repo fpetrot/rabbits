@@ -22,7 +22,6 @@
 
 #include <yaml-cpp/yaml.h>
 #include <sstream>
-#include <set>
 
 using std::string;
 using std::list;
@@ -158,7 +157,8 @@ PlatformDescription::parse_arg_req(list<string>& toks)
     return NULL;
 }
 
-void PlatformDescription::parse_cmdline(int argc, const char * const argv[])
+void PlatformDescription::parse_cmdline(int argc, const char * const argv[],
+                                        const set<string> &unaries)
 {
     enum { ARG, VAL } state = ARG;
     list<string> toks;
@@ -169,19 +169,29 @@ void PlatformDescription::parse_cmdline(int argc, const char * const argv[])
 
         switch (state) {
         case ARG:
-            if (arg[0] != '-') {
-                throw InvalidCmdLineException(arg);
+            {
+                if (arg[0] != '-') {
+                    throw InvalidCmdLineException(arg);
+                }
+
+                const string sarg = arg.substr(1);
+
+                tokenize_arg(sarg, toks);
+
+                try {
+                    n = parse_arg_req(toks);
+                } catch (InvalidCmdLineException) {
+                    throw InvalidCmdLineException(arg);
+                }
+
+                if (unaries.find(sarg) != unaries.end()) {
+                    /* Unary argument, no value. Set it to true and carry on */
+                    n->set_raw_data("true");
+                    state = ARG;
+                } else {
+                    state = VAL;
+                }
             }
-
-            tokenize_arg(arg.substr(1), toks);
-
-            try {
-                n = parse_arg_req(toks);
-            } catch (InvalidCmdLineException) {
-                throw InvalidCmdLineException(arg);
-            }
-
-            state = VAL;
             break;
 
         case VAL:

@@ -246,7 +246,7 @@ class Parameter
     @name = name
     @type = converter.cc_type
     @default = converter.convert(descr['default'])
-    @description = descr['description']
+    @description = descr['description'].gsub("\n", '\n')
   end
 
   def get_print_args
@@ -270,7 +270,7 @@ class Component
     @fn = fn
     @name = descr['name']
     @type = descr['type']
-    @description = descr['description']
+    @description = descr['description'].gsub("\n", '\n')
     @class = descr['class']
     @include = descr['include']
     @discover = descr['discover']

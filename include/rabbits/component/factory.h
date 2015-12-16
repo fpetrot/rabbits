@@ -50,7 +50,6 @@ protected:
         m_params.add(name, p);
     }
 
-    ComponentParameters get_params() { return m_params; }
 
 public:
     static void register_components() {
@@ -74,6 +73,7 @@ public:
     virtual void discover(const std::string &name, const PlatformDescription &params) {}
     virtual ComponentBase* create(const std::string &name, const PlatformDescription &params) = 0;
 
+    ComponentParameters get_params() { return m_params; }
 };
 
 #endif

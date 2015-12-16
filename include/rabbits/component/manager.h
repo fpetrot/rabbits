@@ -27,6 +27,10 @@
 class ComponentFactory;
 
 class ComponentManager {
+public:
+    typedef std::map<std::string, ComponentFactory*>::iterator iterator;
+    typedef std::map<std::string, ComponentFactory*>::const_iterator const_iterator;
+
 private:
     static ComponentManager *m_inst;
     ComponentManager();
@@ -49,6 +53,11 @@ public:
 
     ComponentFactory* find_by_name(const std::string & name);
     ComponentFactory* find_by_type(const std::string & type);
+
+    iterator begin() { return m_by_name.begin(); }
+    iterator end() {  return m_by_name.end(); } 
+    const_iterator begin() const { return m_by_name.begin(); }
+    const_iterator end() const { return m_by_name.end(); }
 };
 
 #endif
