@@ -242,7 +242,8 @@ int sc_main(int argc, char *argv[])
         return 0;
     }
 
-    Logger::get().set_log_level(Logger::INFO);
+    Logger::get().set_log_level(LogLevel::INFO);
+
     simu_manager().start();
 
     return 0;

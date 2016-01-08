@@ -17,30 +17,23 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "rabbits/component/parameters.h"
+#ifndef _RABBITS_LOGGER_HAS_LOGGER_IFACE_H
+#define _RABBITS_LOGGER_HAS_LOGGER_IFACE_H
 
-ComponentParameters ComponentParameters::EMPTY;
+#include <cstdarg>
 
-ComponentParameters::ComponentParameters(const ComponentParameters &p)
-{
-    const_iterator it;
-    
-    m_descr = p.m_descr;
+class LogLevel {
+public:
+    enum value {
+        ERROR = 0, WARNING, INFO, DEBUG,
+        LASTLOGLVL
+    };
+};
 
-    for(it = p.m_pool.begin(); it != p.m_pool.end(); it++) {
-        add(it->first, *(it->second));
-    }
-}
+class HasLoggerIface {
+    virtual std::ostream & log_stream(LogLevel::value lvl) const = 0;
+    virtual int log_vprintf(LogLevel::value lvl, const std::string fmt, va_list ap) const = 0;
+    virtual int log_printf(LogLevel::value lvl, const std::string fmt, ...) const = 0;
+};
 
-void ComponentParameters::fill_from_description(const PlatformDescription &p)
-{
-    PlatformDescription::const_iterator it;
-    m_descr = p;
-
-    for (it = p.begin(); it != p.end(); it++) {
-        if(exists(it->first)) {
-            at(it->first).set(it->second);
-        }
-    }
-}
-
+#endif

@@ -27,6 +27,8 @@
 #include "parameters.h"
 #include "rabbits/rabbits_exception.h"
 #include "rabbits/datatypes/address_range.h"
+#include "rabbits/logger/has_logger_iface.h"
+#include "rabbits/logger.h"
 
 class ComponentBase;
 class SlaveIface;
@@ -98,16 +100,86 @@ class ComponentBase
     : public sc_core::sc_module
     , public HasIrqInIface
     , public HasIrqOutIface
-    , public HasChildCompIface {
+    , public HasChildCompIface
+    , public HasLoggerIface {
+private:
+    bool m_loglvl_override;
+    LogLevel::value m_loglvl;
+
 protected:
     ComponentParameters m_params;
     
 public:
     ComponentBase(std::string name, const ComponentParameters &params)
-        : sc_core::sc_module(sc_core::sc_module_name(name.c_str())), m_params(params) {}
-    ComponentBase(std::string name) : sc_core::sc_module(sc_core::sc_module_name(name.c_str())) {}
+        : sc_core::sc_module(sc_core::sc_module_name(name.c_str()))
+        , m_loglvl_override(false)
+        , m_params(params) 
+    {
+        PlatformDescription &d = m_params.get_base_description();
+
+        if (d["debug"].is_scalar()) {
+            m_loglvl_override = true;
+            m_loglvl = LogLevel::DEBUG;
+        }
+    }
+
+    ComponentBase(std::string name) 
+        : sc_core::sc_module(sc_core::sc_module_name(name.c_str()))
+        , m_loglvl_override(false)
+    {}
+
     virtual ~ComponentBase() {}
 
     const ComponentParameters & get_params() { return m_params; }
+
+    std::ostream & log_stream(LogLevel::value lvl) const
+    {
+        LogLevel::value eff = lvl, save;
+
+        if (m_loglvl_override) {
+            save = Logger::get().get_log_level();
+            eff = m_loglvl;
+            Logger::get().set_log_level(eff);
+        }
+
+        std::ostream & ret = ::log_stream(eff);
+
+        if (m_loglvl_override) {
+            Logger::get().set_log_level(save);
+        }
+
+        return ret;
+    }
+
+    int log_vprintf(LogLevel::value lvl, const std::string fmt, va_list ap) const
+    {
+        LogLevel::value eff = lvl, save;
+
+        if (m_loglvl_override) {
+            save = Logger::get().get_log_level();
+            eff = m_loglvl;
+            Logger::get().set_log_level(eff);
+        }
+
+        int ret = ::log_vprintf(eff, fmt, ap);
+
+        if (m_loglvl_override) {
+            Logger::get().set_log_level(save);
+        }
+
+        return ret;
+    }
+
+    int log_printf(LogLevel::value lvl, const std::string fmt, ...) const
+    {
+        va_list ap;
+        int written;
+
+        va_start(ap, fmt);
+        written = log_vprintf(lvl, fmt, ap);
+        va_end(ap);
+
+        return written;
+    }
 };
 #endif
