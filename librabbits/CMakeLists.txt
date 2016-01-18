@@ -1,5 +1,6 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+add_subdirectory(channel)
 add_subdirectory(component)
 add_subdirectory(loader)
 add_subdirectory(platform)
