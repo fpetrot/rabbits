@@ -91,6 +91,15 @@ public:
     comp_iterator comp_end() { return m_components.end(); }
     const_comp_iterator comp_begin() const { return m_components.begin(); }
     const_comp_iterator comp_end() const { return m_components.end(); }
+
+    bool comp_exists(const std::string &name) const { return m_components.find(name) != m_components.end(); }
+    ComponentBase & get_comp(const std::string &name) {
+        if (!comp_exists(name)) {
+            throw ComponentNotFoundException(name);
+        }
+
+        return *m_components[name];
+    }
 };
 
 #endif
