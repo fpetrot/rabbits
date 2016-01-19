@@ -76,7 +76,6 @@ set(RABBITS_INCLUDE_DIR include)
 set(RABBITS_DESCRIPTION_DIR share/rabbits/platforms)
 set(RABBITS_EXECUTABLE ${RABBITS_BIN_DIR}/${RABBITS_APP_NAME})
 
-include(compiler_options)
 
 # config.h generation
 configure_file(
