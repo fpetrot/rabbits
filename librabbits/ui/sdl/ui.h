@@ -32,7 +32,7 @@ private:
     static const int DEFAULT_W = 800;
     static const int DEFAULT_H = 600;
 
-    static bool sdl_inited;
+    bool m_sdl_inited;
 
     SDL_Surface * m_screen;
 
@@ -40,6 +40,9 @@ private:
 
 protected:
     sdl_ui();
+
+    void sdl_init();
+    void sdl_cleanup();
 
 public:
     friend class ui;
@@ -49,7 +52,6 @@ public:
 
     void update();
 
-    static void sdl_cleanup();
 };
 
 #endif

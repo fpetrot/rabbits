@@ -25,17 +25,25 @@
 #include "rabbits-common.h"
 #include "rabbits/logger.h"
 
-bool sdl_ui::sdl_inited = false;
-
 void sdl_ui::sdl_cleanup()
 {
     SDL_Quit();
-    sdl_inited = false;
+    m_sdl_inited = false;
+    m_screen = NULL;
 }
 
 sdl_ui::sdl_ui()
 {
-    assert(!sdl_ui::sdl_inited);
+    m_active_fb = NULL;
+    m_sdl_inited = false;
+    m_screen = NULL;
+}
+
+void sdl_ui::sdl_init()
+{
+    if (m_sdl_inited) {
+        return;
+    }
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_NOPARACHUTE) == -1) {
         ERR_PRINTF("SDL_Init failed\n");
@@ -49,20 +57,26 @@ sdl_ui::sdl_ui()
         goto sdl_screen_err;
     }
 
-    atexit(sdl_cleanup);
-    sdl_inited = true;
+    m_sdl_inited = true;
 
-    m_active_fb = NULL;
-
-    sdl_screen_err: sdl_init_err: return;
+sdl_screen_err:
+sdl_init_err:
+    return;
 }
 
 sdl_ui::~sdl_ui()
 {
+    if (m_sdl_inited) {
+        sdl_cleanup();
+    }
 }
 
 ui_fb* sdl_ui::new_fb(std::string name, const ui_fb_info &info)
 {
+    if (!m_sdl_inited) {
+        sdl_init();
+    }
+
     sdl_ui_fb *fb = new sdl_ui_fb(info);
 
     m_fbs.push_back(fb);
