@@ -118,9 +118,9 @@ protected:
     }
 
 public:
-    Component(std::string name, const ComponentParameters &params)
+    Component(sc_core::sc_module_name name, const ComponentParameters &params)
         : ComponentBase(name, params) {}
-    Component(std::string name) : ComponentBase(name) {}
+    Component(sc_core::sc_module_name name) : ComponentBase(name) {}
     virtual ~Component() {}
 
     /* HasIrqInIface */

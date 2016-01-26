@@ -37,9 +37,9 @@ protected:
     std::map<MasterIface*, BusMasterIface<BUSWIDTH>* > m_init_socks;
 
 public:
-    BusInterconnect(std::string name, ComponentParameters &params)
+    BusInterconnect(sc_core::sc_module_name name, ComponentParameters &params)
         : Bus(name, params)
-        , m_interco(sc_core::sc_module_name((name+"_interco").c_str())) {}
+        , m_interco("interco") {}
 
     virtual ~BusInterconnect() {
         typename std::map<SlaveIface*, tlm::tlm_target_socket<BUSWIDTH>* >::iterator it_s;

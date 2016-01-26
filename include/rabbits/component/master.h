@@ -44,11 +44,10 @@ protected:
                              sc_core::sc_time read_latency, sc_core::sc_time write_latency) {}
 
 public:
-    Master(sc_core::sc_module_name module_name)
-        : Component(std::string(module_name), ComponentParameters()), m_bus_iface(NULL) {}
-    Master(std::string name)
-        : Component(name, ComponentParameters()), m_bus_iface(NULL) {}
-    Master(std::string name, ComponentParameters &params)
+    Master(sc_core::sc_module_name name)
+        : Component(name, ComponentParameters())
+	, m_bus_iface(NULL) {}
+    Master(sc_core::sc_module_name name, ComponentParameters &params)
         : Component(name, params), m_bus_iface(NULL) {}
     virtual ~Master();
 

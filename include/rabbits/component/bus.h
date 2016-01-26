@@ -28,7 +28,7 @@
 
 class Bus : public Component, public BusIface {
 public:
-    Bus(std::string& name, ComponentParameters& params) :
+    Bus(sc_core::sc_module_name name, ComponentParameters& params) :
         Component(name, params) {}
     virtual ~Bus() {}
 };

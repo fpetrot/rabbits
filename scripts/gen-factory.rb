@@ -67,7 +67,7 @@ public:
         ComponentParameters cp = get_params();
         cp.fill_from_description(params);
         
-        return new %{class}(name, cp);
+        return new %{class}(name.c_str(), cp);
     }
 
     virtual std::string name() { return "%{name}"; }

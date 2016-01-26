@@ -22,14 +22,14 @@
 
 #include "rabbits/logger.h"
 
-Slave::Slave(std::string name, const ComponentParameters &params)
+Slave::Slave(sc_core::sc_module_name name, const ComponentParameters &params)
     : Component(name, params)
 {
 	m_node_id = -1;
 }
 
 Slave::Slave(sc_module_name name)
-    : Component(std::string(name), ComponentParameters())
+    : Component(name, ComponentParameters())
 {
 	m_node_id = -1;
 }

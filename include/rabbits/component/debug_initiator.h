@@ -28,8 +28,8 @@
 
 class DebugInitiator : public Master {
 public:
-    DebugInitiator(std::string name);
-    DebugInitiator(std::string name, ComponentParameters &cp);
+    DebugInitiator(sc_core::sc_module_name name);
+    DebugInitiator(sc_core::sc_module_name name, ComponentParameters &cp);
     virtual ~DebugInitiator();
 
     uint64_t debug_read(uint64_t addr, void *buf, uint64_t size);

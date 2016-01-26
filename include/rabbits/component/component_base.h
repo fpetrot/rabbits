@@ -110,8 +110,8 @@ protected:
     ComponentParameters m_params;
     
 public:
-    ComponentBase(std::string name, const ComponentParameters &params)
-        : sc_core::sc_module(sc_core::sc_module_name(name.c_str()))
+    ComponentBase(sc_core::sc_module_name name, const ComponentParameters &params)
+        : sc_core::sc_module(name)
         , m_loglvl_override(false)
         , m_params(params) 
     {
@@ -123,8 +123,8 @@ public:
         }
     }
 
-    ComponentBase(std::string name) 
-        : sc_core::sc_module(sc_core::sc_module_name(name.c_str()))
+    ComponentBase(sc_core::sc_module_name name) 
+        : sc_core::sc_module(name)
         , m_loglvl_override(false)
     {}
 

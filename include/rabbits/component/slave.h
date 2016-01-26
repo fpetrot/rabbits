@@ -34,7 +34,7 @@ private:
     uint32_t m_node_id;
 
 public:
-    Slave(std::string name, const ComponentParameters &params);
+    Slave(sc_core::sc_module_name name, const ComponentParameters &params);
     Slave(sc_core::sc_module_name name);
     virtual ~Slave();
 
