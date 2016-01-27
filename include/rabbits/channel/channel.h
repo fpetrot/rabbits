@@ -61,7 +61,7 @@ class ClockedByteChannel : public sc_core::sc_module, public Channel<uint8_t>
         sc_core::sc_in<bool> rclk;
 
         SC_HAS_PROCESS(ClockedByteChannel);
-        ClockedByteChannel() : sc_core::sc_module(sc_core::sc_gen_unique_name("ClockedByteChannel")) {
+        ClockedByteChannel() : sc_core::sc_module(sc_core::sc_module_name(sc_core::sc_gen_unique_name("ClockedByteChannel"))) {
             SC_METHOD(r_thread); 
             sensitive << rclk;
         }
