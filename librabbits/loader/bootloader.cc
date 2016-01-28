@@ -124,6 +124,12 @@ int ArmBootloader::boot()
     if (!m_kernel_path.empty()) {
         DBG_PRINTF("Loading kernel %s\n", m_kernel_path.c_str());
 
+        struct stat buf;
+        if(stat(m_kernel_path.c_str(), &buf) != 0) {
+            ERR_PRINTF("kernel image file not found : %s\n", m_kernel_path.c_str());
+            exit(1);
+        }
+
         /* Try to load it as an ELF first 
          * In this case, the load address is contained in the image */
         uint64_t kernel_entry64;
