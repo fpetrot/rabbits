@@ -29,9 +29,8 @@
 
 class Slave: public Component, public SlaveIface
 {
-
-private:
-    uint32_t m_node_id;
+protected:
+    BusSlaveIfaceBase *m_bus_iface;
 
 public:
     Slave(sc_core::sc_module_name name, const ComponentParameters &params);
@@ -113,11 +112,15 @@ public:
         return tlm::TLM_COMPLETED; 
     }
 
-    void b_transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& delay);
-    unsigned int transport_dbg(tlm::tlm_generic_payload& trans);
+    virtual void b_transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& delay);
+    virtual unsigned int transport_dbg(tlm::tlm_generic_payload& trans);
 
     /* SlaveIface */
     virtual ComponentBase& get_component() { return *this; }
+    virtual void set_bus_iface(BusSlaveIfaceBase *iface) { m_bus_iface = iface; }
+    virtual bool bus_iface_is_set() { return m_bus_iface != NULL; }
+    virtual BusSlaveIfaceBase & get_bus_iface() { return *m_bus_iface; }
+
 };
 
 

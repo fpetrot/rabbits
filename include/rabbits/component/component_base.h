@@ -33,6 +33,7 @@
 class ComponentBase;
 class SlaveIface;
 class MasterIface;
+class BusSlaveIfaceBase;
 class BusMasterIfaceBase;
 
 class ComponentNotFoundException : public RabbitsException {
@@ -46,6 +47,10 @@ public:
 class SlaveIface : public tlm::tlm_fw_transport_if<> {
 public:
     virtual ComponentBase& get_component() = 0;
+
+    virtual void set_bus_iface(BusSlaveIfaceBase *iface) = 0;
+    virtual bool bus_iface_is_set() = 0;
+    virtual BusSlaveIfaceBase & get_bus_iface() = 0;
 };
 
 class MasterIface : public tlm::tlm_bw_transport_if<> {

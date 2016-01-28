@@ -33,7 +33,7 @@ class BusInterconnect : public Bus
 {
 protected:
     Interconnect<BUSWIDTH> m_interco;
-    std::map<SlaveIface*, tlm::tlm_target_socket<BUSWIDTH>* > m_target_socks;
+    std::map<SlaveIface*, BusSlaveIface<BUSWIDTH>* > m_target_socks;
     std::map<MasterIface*, BusMasterIface<BUSWIDTH>* > m_init_socks;
 
 public:
@@ -42,7 +42,7 @@ public:
         , m_interco("interco") {}
 
     virtual ~BusInterconnect() {
-        typename std::map<SlaveIface*, tlm::tlm_target_socket<BUSWIDTH>* >::iterator it_s;
+        typename std::map<SlaveIface*, BusSlaveIface<BUSWIDTH>* >::iterator it_s;
         typename std::map<MasterIface*, BusMasterIface<BUSWIDTH>* >::iterator it_m;
 
         for (it_s = m_target_socks.begin(); it_s != m_target_socks.end(); it_s++) {
@@ -54,11 +54,15 @@ public:
     }
 
     virtual void connect_slave(SlaveIface &slave, AddressRange range) {
-        tlm::tlm_target_socket<BUSWIDTH> *s = new tlm::tlm_target_socket<BUSWIDTH>;
-        m_target_socks[&slave] = s;
+        if (!slave.bus_iface_is_set()) {
+            BusSlaveIface<BUSWIDTH> *s = new BusSlaveIface<BUSWIDTH>(slave);
+            m_target_socks[&slave] = s;
+            slave.set_bus_iface(s);
+        }
 
-        s->bind(slave);
-        m_interco.connect_target(*s, range.begin(), range.size());
+        BusSlaveIfaceBase &s = slave.get_bus_iface();
+
+        m_interco.connect_target(s.get_socket<BUSWIDTH>(), range.begin(), range.size());
     }
 
     virtual void connect_master(MasterIface &master) {
