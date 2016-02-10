@@ -33,7 +33,7 @@ protected:
 private:
     static Logger m_logger;
 
-    Logger() : m_level(LogLevel::value(RABBITS_LOGLEVEL))  {
+    Logger() : m_level(LogLevel::value(RABBITS_LOGLEVEL)), m_banner_enabled(true)  {
         for (int i = 0; i < LogLevel::LASTLOGLVL; i++) {
             m_streams[i] = &std::cerr;
         }
@@ -46,6 +46,8 @@ private:
 
 protected:
     LogLevel::value m_level;
+    bool m_banner_enabled;
+
     std::ostream * m_streams[LogLevel::LASTLOGLVL];
     mutable std::ofstream m_null_stream;
 
@@ -67,5 +69,11 @@ public:
 
     void save_flags();
     void restore_flags();
+
+    bool enable_banner(bool enabled) {
+        bool save = m_banner_enabled;
+        m_banner_enabled = enabled;
+        return save;
+    }
 };
 #endif

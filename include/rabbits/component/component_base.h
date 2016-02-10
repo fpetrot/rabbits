@@ -153,7 +153,7 @@ public:
             Logger::get().set_log_level(save);
         }
 
-        return ret;
+        return ret << "[" << name() << "] ";
     }
 
     int log_vprintf(LogLevel::value lvl, const std::string fmt, va_list ap) const
@@ -166,7 +166,10 @@ public:
             Logger::get().set_log_level(eff);
         }
 
+        ::log_printf(eff, "[%s] ", name());
+        bool banner = Logger::get().enable_banner(false);
         int ret = ::log_vprintf(eff, fmt, ap);
+        Logger::get().enable_banner(banner);
 
         if (m_loglvl_override) {
             Logger::get().set_log_level(save);

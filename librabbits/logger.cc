@@ -76,7 +76,11 @@ std::ostream & Logger::log_stream(LogLevel::value lvl) const
         return m_null_stream;
     }
 
-    return (*m_streams[lvl]) << PREFIXES[lvl];
+    if (m_banner_enabled) {
+        (*m_streams[lvl]) << PREFIXES[lvl];
+    }
+
+    return (*m_streams[lvl]);
 }
 
 void Logger::save_flags()
