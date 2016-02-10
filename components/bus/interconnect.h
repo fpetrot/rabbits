@@ -156,7 +156,7 @@ public:
         if (!target) {
             ERR_PRINTF("Cannot find slave at address %" PRIx64 "\n",
                     static_cast<uint64_t>(trans.get_address()));
-            exit(1);
+            trans.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
         }
 
         trans.set_address(trans.get_address() - offset);

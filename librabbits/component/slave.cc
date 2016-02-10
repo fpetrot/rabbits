@@ -74,6 +74,6 @@ unsigned int Slave::transport_dbg(tlm::tlm_generic_payload& trans)
 		return debug_write(addr, buf, size);
 	default:
 		ERR_PRINTF("Unsupported transport debug command type\n");
-		exit(1);
+        abort();
 	}
 }

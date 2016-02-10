@@ -52,7 +52,9 @@ void Master::bus_access(tlm::tlm_command cmd, uint64_t addr, uint8_t *data,
     m_bus_iface->b_transport(trans, delay);
 
     if (trans.is_response_error()) {
-        SC_REPORT_ERROR("Master", "response error from b_transport");
+        ERR_PRINTF("Bus %s error at address 0x%.8" PRIx64 ", lenght access: %u byte(s)\n", 
+                   (cmd == tlm::TLM_READ_COMMAND) ? "read" : "write",
+                   addr, len);
     }
 }
 
