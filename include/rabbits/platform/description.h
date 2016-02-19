@@ -379,6 +379,25 @@ NUMERICAL_CONVERTER(int64_t, )
 #undef NUMERICAL_CONVERTER
 
 template <>
+struct converter<bool> {
+    static bool decode(const PlatformDescription::Node &n, bool &res) {
+        if (n.type() != PlatformDescription::SCALAR) {
+            return false;
+        }
+
+        std::stringstream ss(n.raw_data());
+        if (!(ss >> res)) {
+            return false;
+        }
+        if (!ss.eof()) {
+            return false;
+        }
+
+        return true;
+    }
+};
+
+template <>
 struct converter<AddressRange> {
     static bool decode(const PlatformDescription::Node &n, AddressRange &res) {
         PlatformDescription::const_iterator it;
@@ -392,7 +411,7 @@ struct converter<AddressRange> {
 
         for (it = n.begin(); it != n.end(); it++) {
             uint64_t begin, size;
-            
+
             if(!converter<uint64_t>::decode(PlatformDescription::NodeScalar(it->first), begin)) {
                return false;
             }

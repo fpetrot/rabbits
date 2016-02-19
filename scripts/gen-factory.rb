@@ -208,6 +208,26 @@ class DescrTypeInt < DescrType
   end
 end
 
+class DescrTypeBoolean < DescrType
+  def initialize(type_name)
+    super(type_name)
+    @cc_type = 'bool'
+  end
+
+  def convert(str)
+    return str if (str == false || str == true)
+
+    case str.to_s.downcase
+    when 'true', '1'
+      return true
+    when 'false', '0'
+      return false
+    end
+
+    raise StandardError.new("Cannot convert `#{str}' to boolean")
+  end
+end
+
 class DescrTypeTime < DescrType
   def initialize(type_name)
     super(type_name)
@@ -229,6 +249,7 @@ DescrTypeInt.new('int8')
 DescrTypeInt.new('int16')
 DescrTypeInt.new('int32')
 DescrTypeInt.new('int64')
+DescrTypeBoolean.new('boolean')
 DescrTypeTime.new('time')
 
 class Parameter
