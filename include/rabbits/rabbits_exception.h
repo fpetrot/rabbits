@@ -25,11 +25,16 @@
 
 class RabbitsException : public std::runtime_error {
 protected:
+    std::string m_what;
     std::string make_backtrace();
 
 public:
-    explicit RabbitsException(const std::string & what) : std::runtime_error(what + make_backtrace()) {}
+    explicit RabbitsException(const std::string & what)
+        : std::runtime_error(what + make_backtrace())
+        , m_what(what) {}
     virtual ~RabbitsException() throw() {}
+
+    const std::string & what_without_bt() { return m_what; }
 };
 
 #endif
