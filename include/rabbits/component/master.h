@@ -31,6 +31,7 @@ class Master: public Component, public MasterIface
 {
 protected:
     BusMasterIfaceBase *m_bus_iface;
+    bool m_last_bus_access_error;
 
     void bus_access(tlm::tlm_command cmd, uint64_t addr, uint8_t *data,
                     unsigned int len);
@@ -46,10 +47,14 @@ protected:
 public:
     Master(sc_core::sc_module_name name)
         : Component(name, ComponentParameters())
-	, m_bus_iface(NULL) {}
+	    , m_bus_iface(NULL)
+        , m_last_bus_access_error(false) {}
     Master(sc_core::sc_module_name name, ComponentParameters &params)
-        : Component(name, params), m_bus_iface(NULL) {}
-    virtual ~Master();
+        : Component(name, params)
+        , m_bus_iface(NULL)
+        , m_last_bus_access_error(false) {}
+
+    virtual ~Master() {}
 
     virtual void bus_read(uint64_t addr, uint8_t *data, unsigned int len);
     virtual void bus_write(uint64_t addr, uint8_t *data, unsigned int len);

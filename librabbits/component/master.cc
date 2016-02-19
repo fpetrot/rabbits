@@ -23,10 +23,6 @@
 
 using namespace sc_core;
 
-Master::~Master(void)
-{
-}
-
 void Master::bus_access(tlm::tlm_command cmd, uint64_t addr, uint8_t *data,
                                unsigned int len)
 {
@@ -56,6 +52,8 @@ void Master::bus_access(tlm::tlm_command cmd, uint64_t addr, uint8_t *data,
                    (cmd == tlm::TLM_READ_COMMAND) ? "read" : "write",
                    addr, len);
     }
+
+    m_last_bus_access_error = trans.is_response_error();
 }
 
 
