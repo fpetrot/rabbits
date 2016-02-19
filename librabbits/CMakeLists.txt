@@ -27,3 +27,14 @@ set_property(TARGET librabbits PROPERTY OUTPUT_NAME rabbits)
 install(TARGETS librabbits DESTINATION lib)
 
 rabbits_clear_files_collections()
+
+
+add_subdirectory(test)
+
+get_property(srcs GLOBAL PROPERTY RABBITS_SRCS_LIST)
+get_property(libs GLOBAL PROPERTY RABBITS_LIBS_LIST)
+add_library(librabbits-test ${srcs})
+target_link_libraries(librabbits-test -Wl,--whole-archive librabbits -Wl,--no-whole-archive)
+set_property(TARGET librabbits-test PROPERTY OUTPUT_NAME rabbits-test)
+
+rabbits_clear_files_collections()

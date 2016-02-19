@@ -58,4 +58,15 @@ function(rabbits_generate_descr_symlinks)
     endforeach()
 endfunction(rabbits_generate_descr_symlinks)
 
+function(rabbits_generate_tests n)
+    get_property(_tests GLOBAL PROPERTY RABBITS_TESTS_LIST)
+    string(CONCAT _test_name ${n} "_test")
+
+    if(_tests)
+        add_executable(${_test_name} ${_tests})
+        target_link_libraries(${_test_name} librabbits-test)
+        add_test(NAME ${_test_name} COMMAND ${_test_name})
+    endif()
+endfunction(rabbits_generate_tests)
+
 # vim: ts=4 sts=4 sw=4 expandtab
