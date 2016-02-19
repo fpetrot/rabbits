@@ -112,6 +112,12 @@ void PlatformDescription::load_file_yaml(const string &file)
     *this = PlatformDescription(load_yaml_req(y_root));
 }
 
+void PlatformDescription::load_yaml(const string &yaml)
+{
+    YAML::Node y_root = YAML::Load(yaml);
+    *this = PlatformDescription(load_yaml_req(y_root));
+}
+
 void PlatformDescription::tokenize_arg(const string arg, list<string>& toks)
 {
     std::istringstream ss(arg);
