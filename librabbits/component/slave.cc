@@ -38,42 +38,43 @@ Slave::~Slave()
 
 void Slave::b_transport(tlm::tlm_generic_payload& trans, sc_time& delay)
 {
-	bool bErr = false;
+    bool bErr = false;
 
-	uint64_t addr = trans.get_address();
-	uint8_t *buf = reinterpret_cast<uint8_t *>(trans.get_data_ptr());
-	uint64_t size = trans.get_data_length();
+    uint64_t addr = trans.get_address();
+    uint8_t *buf = reinterpret_cast<uint8_t *>(trans.get_data_ptr());
+    uint64_t size = trans.get_data_length();
 
-	switch (trans.get_command()) {
-	case tlm::TLM_WRITE_COMMAND:
-		bus_cb_write(addr, buf, size, bErr);
-		break;
-	case tlm::TLM_READ_COMMAND:
-		bus_cb_read(addr, buf, size, bErr);
-		break;
-	default:
-		ERR_PRINTF("Unknown command\n");
-        abort();
-	}
+    switch (trans.get_command()) {
+    case tlm::TLM_WRITE_COMMAND:
+        bus_cb_write(addr, buf, size, bErr);
+        break;
+    case tlm::TLM_READ_COMMAND:
+        bus_cb_read(addr, buf, size, bErr);
+        break;
+    default:
+        ERR_PRINTF("Unknown bus access command\n");
+        trans.set_response_status(tlm::TLM_COMMAND_ERROR_RESPONSE);
+        return;
+    }
 
-	// returning synchronous response
-	trans.set_response_status(
-			bErr ? tlm::TLM_GENERIC_ERROR_RESPONSE : tlm::TLM_OK_RESPONSE);
+    // returning synchronous response
+    trans.set_response_status(
+                              bErr ? tlm::TLM_GENERIC_ERROR_RESPONSE : tlm::TLM_OK_RESPONSE);
 }
 
 unsigned int Slave::transport_dbg(tlm::tlm_generic_payload& trans)
 {
-	uint64_t addr = trans.get_address();
-	uint8_t *buf = reinterpret_cast<uint8_t *>(trans.get_data_ptr());
-	uint64_t size = trans.get_data_length();
+    uint64_t addr = trans.get_address();
+    uint8_t *buf = reinterpret_cast<uint8_t *>(trans.get_data_ptr());
+    uint64_t size = trans.get_data_length();
 
-	switch (trans.get_command()) {
-	case tlm::TLM_READ_COMMAND:
-		return debug_read(addr, buf, size);
-	case tlm::TLM_WRITE_COMMAND:
-		return debug_write(addr, buf, size);
-	default:
-		ERR_PRINTF("Unsupported transport debug command type\n");
-        abort();
-	}
+    switch (trans.get_command()) {
+    case tlm::TLM_READ_COMMAND:
+        return debug_read(addr, buf, size);
+    case tlm::TLM_WRITE_COMMAND:
+        return debug_write(addr, buf, size);
+    default:
+        ERR_PRINTF("Unsupported transport debug command\n");
+        return 0;
+    }
 }
