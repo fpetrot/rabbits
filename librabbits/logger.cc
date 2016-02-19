@@ -72,7 +72,7 @@ int Logger::log_printf(LogLevel::value lvl, const std::string fmt, ...) const
 
 std::ostream & Logger::log_stream(LogLevel::value lvl) const
 {
-    if (lvl > m_level) {
+    if ((lvl > m_level) || m_muted) {
         return m_null_stream;
     }
 
