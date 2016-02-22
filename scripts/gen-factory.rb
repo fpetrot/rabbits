@@ -96,6 +96,7 @@ DYNAMIC_LOADER_TPL='
 
 %{includes}
 
+namespace %{module_name}_autogen {
 class RabbitsDynLoader;
 
 static RabbitsDynLoader *inst = NULL;
@@ -125,6 +126,7 @@ public:
     virtual ~RabbitsDynLoader() { destroy_insts(); }
 
 };
+};
 
 extern "C" {
 int rabbits_dynamic_api_version(void)
@@ -134,15 +136,15 @@ int rabbits_dynamic_api_version(void)
 
 void rabbits_dynamic_load(void)
 {
-    if (inst == NULL) {
-        inst = new RabbitsDynLoader;
+    if (%{module_name}_autogen::inst == NULL) {
+        %{module_name}_autogen::inst = new %{module_name}_autogen::RabbitsDynLoader;
     }
 }
 
 void rabbits_dynamic_unload(void)
 {
-    delete inst;
-    inst = NULL;
+    delete %{module_name}_autogen::inst;
+    %{module_name}_autogen::inst = NULL;
 }
 }
 '
@@ -410,7 +412,7 @@ end
 
 def usage
   STDERR.puts "Usage: #{__FILE__} [--factory] [-o out] description.yml"
-  STDERR.puts "       #{__FILE__} --static-insts|--dyn-loader -s src_dir -b bin_dir [-o out] description.yml [...]"
+  STDERR.puts "       #{__FILE__} --static-insts|--dyn-loader -s src_dir -b bin_dir -m modname [-o out] description.yml [...]"
   exit 1
 end
 
@@ -460,6 +462,17 @@ def parse_args
 
     when :bin_dir_val
       $bin_dir = arg
+      state = :modname
+
+    when :modname
+      if arg != "-m" then
+        usage
+        exit 1
+      end
+      state = :modname_val
+
+    when :modname_val
+      $modname = arg
       state = :files_or_out
 
     when :files_or_out
@@ -533,7 +546,7 @@ begin
       includes += c.get_print_args[:self_include] + "\n"
     end
 
-    out.puts DYNAMIC_LOADER_TPL % { :includes => includes, :create_insts => insts }
+    out.puts DYNAMIC_LOADER_TPL % { :includes => includes, :create_insts => insts, :module_name => $modname }
   end
 
   out.close if out != STDOUT

@@ -1,4 +1,4 @@
-function(rabbits_generate_objects)
+function(rabbits_generate_objects n)
     set(_gen_script ${RABBITS_FACTORY_SCRIPT_PATH})
     set(_gen_exe ${RUBY_EXECUTABLE} "${_gen_script}")
 
@@ -33,7 +33,7 @@ function(rabbits_generate_objects)
 
         add_custom_command(
             OUTPUT "${_out}"
-            COMMAND ${_gen_exe} ${_gen_arg} -s "${PROJECT_SOURCE_DIR}" -b "${PROJECT_BINARY_DIR}" -o "${_out}" ${_objs}
+            COMMAND ${_gen_exe} ${_gen_arg} -s "${PROJECT_SOURCE_DIR}" -b "${PROJECT_BINARY_DIR}" -m "${n}" -o "${_out}" ${_objs}
             DEPENDS ${_objs} ${_gen_script})
 
         set_property(GLOBAL APPEND PROPERTY RABBITS_SRCS_LIST "${_out}")
@@ -64,7 +64,7 @@ function(rabbits_generate_tests n)
 
     if(_tests)
         add_executable(${_test_name} ${_tests})
-        target_link_libraries(${_test_name} librabbits-test)
+        target_link_libraries(${_test_name} librabbits-test ${n})
         add_test(NAME ${_test_name} COMMAND ${_test_name})
     endif()
 endfunction(rabbits_generate_tests)

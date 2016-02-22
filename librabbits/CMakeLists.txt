@@ -16,7 +16,7 @@ rabbits_add_sources(
 )
 
 
-rabbits_generate_objects()
+rabbits_generate_objects("librabbits")
 
 get_property(srcs GLOBAL PROPERTY RABBITS_SRCS_LIST)
 get_property(libs GLOBAL PROPERTY RABBITS_LIBS_LIST)
