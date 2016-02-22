@@ -37,6 +37,10 @@ void ComponentParameters::fill_from_description(const PlatformDescription &p)
     PlatformDescription::const_iterator it;
     m_descr = p;
 
+    if (!p.is_map()) {
+        return;
+    }
+
     for (it = p.begin(); it != p.end(); it++) {
         if(exists(it->first)) {
             at(it->first).set(it->second);
