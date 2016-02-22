@@ -98,6 +98,10 @@ PlatformDescription::load_yaml_req(YAML::Node root)
         n = new NodeScalar(root.as<string>());
         break;
 
+    case YAML::NodeType::Null:
+        n = new NodeNil;
+        break;
+
     default:
         assert(false);
         break;
