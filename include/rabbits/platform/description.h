@@ -27,6 +27,7 @@
 #include <sstream>
 #include <limits>
 #include <set>
+#include <algorithm>
 
 #include "rabbits/rabbits_exception.h"
 #include "rabbits/datatypes/address_range.h"
@@ -385,10 +386,24 @@ struct converter<bool> {
             return false;
         }
 
+        std::string lo = n.raw_data();
+        std::transform(lo.begin(), lo.end(), lo.begin(), ::tolower);
+
+        if (lo == "true") {
+            res = true;
+            return true;
+        }
+
+        if (lo == "false") {
+            res = false;
+            return true;
+        }
+
         std::stringstream ss(n.raw_data());
         if (!(ss >> res)) {
             return false;
         }
+
         if (!ss.eof()) {
             return false;
         }
