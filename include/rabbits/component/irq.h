@@ -54,6 +54,8 @@ public:
 
     virtual sc_core::sc_signal<bool>* connect(IrqIn &) = 0;
     virtual sc_core::sc_signal<bool>* connect(IrqOut &) = 0;
+
+    virtual void connect(sc_core::sc_signal<bool> &sig) = 0;
 };
 
 class IrqIn : public Irq {
@@ -77,6 +79,8 @@ public:
 
     virtual sc_core::sc_signal<bool>* connect(IrqIn &in);
     virtual sc_core::sc_signal<bool>* connect(IrqOut &out);
+
+    virtual void connect(sc_core::sc_signal<bool> &sig);
 };
 
 class IrqOut : public Irq {
@@ -100,6 +104,8 @@ public:
 
     virtual sc_core::sc_signal<bool>* connect(IrqIn &in);
     virtual sc_core::sc_signal<bool>* connect(IrqOut &out);
+
+    virtual void connect(sc_core::sc_signal<bool> &sig);
 };
 
 
@@ -123,6 +129,12 @@ inline sc_core::sc_signal<bool>* IrqIn::connect(IrqOut &out) {
     return sig;
 }
 
+inline void IrqIn::connect(sc_core::sc_signal<bool> &sig) {
+    sc_core::sc_in<bool> &p_in = this->get_port();
+    p_in(sig);
+    set_connected();
+}
+
 inline sc_core::sc_signal<bool>* IrqOut::connect(IrqIn &in) {
     sc_core::sc_signal<bool> *sig = new sc_core::sc_signal<bool>;
 
@@ -141,6 +153,12 @@ inline sc_core::sc_signal<bool>* IrqOut::connect(IrqIn &in) {
 inline sc_core::sc_signal<bool>* IrqOut::connect(IrqOut &out) {
     (*m_port)(*(out.m_port));
     return NULL;
+}
+
+inline void IrqOut::connect(sc_core::sc_signal<bool> &sig) {
+    sc_core::sc_out<bool> &p_out = this->get_port();
+    p_out(sig);
+    set_connected();
 }
 
 
