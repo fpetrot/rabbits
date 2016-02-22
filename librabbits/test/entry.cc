@@ -60,7 +60,11 @@ int sc_main(int argc, char *argv[])
     TestFactory::const_iterator it;
     int result = 0;
 
-    Logger::get().set_log_level(LogLevel::INFO);
+    if ((argc == 2) && (std::string(argv[1]) == "-d")) {
+        Logger::get().set_log_level(LogLevel::DEBUG);
+    } else {
+        Logger::get().set_log_level(LogLevel::INFO);
+    }
 
     env_dynlib_paths = std::getenv("RABBITS_DYNLIB_PATH");
     if (env_dynlib_paths != NULL) {
@@ -68,6 +72,8 @@ int sc_main(int argc, char *argv[])
     }
 
     dyn_loader.search_and_load_rabbits_dynlibs();
+    ComponentManager::get(); /* Force instantiation of ComponentManager
+                                and registration of components */
 
     for (it = TestFactory::begin(); it != TestFactory::end(); it++) {
         int pid = fork();
