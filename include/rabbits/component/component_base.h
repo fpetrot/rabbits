@@ -123,7 +123,9 @@ public:
         PlatformDescription &d = m_params.get_base_description();
 
         if (d["debug"].is_scalar()) {
-            m_loglvl_override = true;
+            bool ov = d["debug"].as<bool>();
+
+            m_loglvl_override = ov;
             m_loglvl = LogLevel::DEBUG;
         }
     }
