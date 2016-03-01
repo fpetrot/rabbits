@@ -7,10 +7,13 @@
 
 #include <cstring>
 
+#include <boost/filesystem.hpp>
+
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 
+using boost::filesystem::path;
 using std::string;
 
 std::vector<TestFactory*> * TestFactory::m_insts = NULL;
@@ -96,6 +99,11 @@ static int report_result(const string &name, int status)
     INF_STREAM(name << "\r\t\t\t\t\t\t" << res << "\n");
 
     return ret;
+}
+
+std::string Test::get_test_dir(const std::string &fn) const
+{
+    return path(fn).parent_path().string();
 }
 
 int sc_main(int argc, char *argv[])

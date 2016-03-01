@@ -102,6 +102,7 @@ protected:
     void set_current_line(int line) { m_current_line = line; }
     const std::string & get_current_file() { return m_current_filename; }
     int get_current_line() { return m_current_line; }
+    std::string get_test_dir(const std::string &fn) const;
 
     void failure(const std::string &what)
     {
@@ -223,5 +224,8 @@ public:
 
 #define RABBITS_TEST_END() \
     sc_core::sc_stop()
+
+#define RABBITS_GET_TEST_DIR() \
+    get_test_dir(__FILE__)
 
 #endif
