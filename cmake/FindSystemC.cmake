@@ -12,7 +12,7 @@ set(_SYSTEMC_PATHS PATHS
 find_path(SYSTEMC_INCLUDE_DIR systemc ${_SYSTEMC_PATHS} PATH_SUFFIXES include)
 
 if (NOT SYSTEMC_LIBRARIES)
-	find_library(SYSTEMC_LIBRARY_RELEASE NAMES systemc ${_SYSTEMC_PATHS} PATH_SUFFIXES lib-linux lib-linux64)
+	find_library(SYSTEMC_LIBRARY_RELEASE NAMES systemc ${_SYSTEMC_PATHS} PATH_SUFFIXES lib-linux lib-linux64 lib-mingw64)
 
 	include(SelectLibraryConfigurations)
 	SELECT_LIBRARY_CONFIGURATIONS(SYSTEMC)
