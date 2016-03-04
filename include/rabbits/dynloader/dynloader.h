@@ -59,7 +59,7 @@ public:
     virtual ~DynamicLoader();
 
     void add_search_path(const std::string &path);
-    void add_semicol_sep_search_paths(const std::string &paths);
+    void add_colon_sep_search_paths(const std::string &paths);
     void add_search_paths(const std::vector<std::string> &paths);
 
     int search_and_load_rabbits_dynlibs();

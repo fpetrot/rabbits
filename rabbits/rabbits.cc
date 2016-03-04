@@ -215,7 +215,7 @@ int sc_main(int argc, char *argv[])
 
     env_dynlib_paths = std::getenv("RABBITS_DYNLIB_PATH");
     if (env_dynlib_paths != NULL) {
-        dyn_loader.add_semicol_sep_search_paths(env_dynlib_paths);
+        dyn_loader.add_colon_sep_search_paths(env_dynlib_paths);
     }
 
     parse_cmdline(argc, argv, p, cmdline);

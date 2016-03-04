@@ -86,12 +86,12 @@ void DynamicLoader::add_search_path(const string &path)
     m_search_paths.push_back(path);
 }
 
-void DynamicLoader::add_semicol_sep_search_paths(const string &paths)
+void DynamicLoader::add_colon_sep_search_paths(const string &paths)
 {
     std::stringstream ss(paths);
     string p;
 
-    while (std::getline(ss, p, ';')) {
+    while (std::getline(ss, p, ':')) {
         add_search_path(p);
     }
 }
