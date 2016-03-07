@@ -45,10 +45,12 @@ using std::ostream;
 
 struct CmdlineInfo {
     bool print_usage;
+    bool print_version;
     bool enum_components;
 
     CmdlineInfo() 
         : print_usage(false)
+        , print_version(false)
         , enum_components(false)
     {}
 };
@@ -150,6 +152,13 @@ static void print_usage(const char* arg0, PlatformBuilder &p)
     }
 }
 
+static void print_version()
+{
+    cout << RABBITS_APP_NAME
+        << " version " << RABBITS_VERSION
+        << " api version " << RABBITS_API_VERSION << "\n";
+}
+
 static string get_yml_config(PlatformDescription &p, const char *arg0)
 {
     if (p["config"].is_scalar()) {
@@ -178,6 +187,8 @@ static void parse_arg(string arg, string val, CmdlineInfo &cmdline)
 {
     if (arg == "help") {
         cmdline.print_usage = true;
+    } else if (arg == "version") {
+        cmdline.print_version = true;
     } else if (arg == "list-components") {
         cmdline.enum_components = true;
     }
@@ -189,6 +200,7 @@ static void parse_cmdline(int argc, char *argv[],
     set<string> unaries;
 
     unaries.insert("help");
+    unaries.insert("version");
     unaries.insert("list-components");
 
     p.parse_cmdline(argc, argv, unaries);
@@ -219,6 +231,11 @@ int sc_main(int argc, char *argv[])
     }
 
     parse_cmdline(argc, argv, p, cmdline);
+
+    if (cmdline.print_version) {
+        print_version();
+        return 0;
+    }
 
     yml_path = get_yml_config(p, argv[0]);
     if (yml_path != "") {

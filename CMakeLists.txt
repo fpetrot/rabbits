@@ -68,8 +68,8 @@ set(EXTRA_LIBS ${EXTRA_LIBS}
 set(RABBITS_DYNLIB_SEARCH_PATH "${CMAKE_INSTALL_PREFIX}/lib/rabbits")
 set(RABBITS_APP_NAME rabbits)
 
-# XXX
-set(RABBITS_VERSION 0.0.1)
+rabbits_get_version(RABBITS_VERSION)
+
 set(RABBITS_BIN_DIR bin)
 set(RABBITS_LIB_DIR lib)
 set(RABBITS_INCLUDE_DIR include)
