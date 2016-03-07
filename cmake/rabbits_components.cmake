@@ -59,6 +59,7 @@ function(rabbits_generate_objects n)
 
         rabbits_get_version(v)
 
+        unset(_ver)
         if(EXISTS ${RABBITS_VERSION_FILE_OUT})
             set(_ver ${RABBITS_VERSION_FILE_OUT})
         endif()
