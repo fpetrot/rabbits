@@ -1,3 +1,29 @@
+function(rabbits_get_version_from_file v)
+    file(READ ${RABBITS_VERSION_FILE} _v)
+    string(STRIP ${_v} _v)
+    set(${v} ${_v} PARENT_SCOPE)
+endfunction(rabbits_get_version_from_file)
+
+function(rabbits_get_version v)
+    set(RABBITS_VERSION_FILE ${CMAKE_CURRENT_SOURCE_DIR}/VERSION PARENT_SCOPE)
+    set(RABBITS_VERSION_FILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/VERSION PARENT_SCOPE)
+    set(RABBITS_VERSION_FILE ${CMAKE_CURRENT_SOURCE_DIR}/VERSION)
+    set(RABBITS_VERSION_FILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/VERSION)
+
+    if(EXISTS ${RABBITS_VERSION_FILE})
+        configure_file(
+            ${RABBITS_VERSION_FILE}
+            ${RABBITS_VERSION_FILE_OUT}
+            COPYONLY)
+
+        rabbits_get_version_from_file(_v)
+    else()
+        set(_v "0.0.1")
+    endif()
+
+    set(${v} ${_v} PARENT_SCOPE)
+endfunction(rabbits_get_version)
+
 function(rabbits_generate_objects n)
     set(_gen_script ${RABBITS_FACTORY_SCRIPT_PATH})
     set(_gen_exe ${RUBY_EXECUTABLE} "${_gen_script}")
@@ -31,10 +57,16 @@ function(rabbits_generate_objects n)
             set(_gen_arg "--static-insts")
         endif()
 
+        rabbits_get_version(v)
+
+        if(EXISTS ${RABBITS_VERSION_FILE_OUT})
+            set(_ver ${RABBITS_VERSION_FILE_OUT})
+        endif()
+
         add_custom_command(
             OUTPUT "${_out}"
-            COMMAND ${_gen_exe} ${_gen_arg} -s "${PROJECT_SOURCE_DIR}" -b "${PROJECT_BINARY_DIR}" -m "${n}" -o "${_out}" ${_objs}
-            DEPENDS ${_objs} ${_gen_script})
+            COMMAND ${_gen_exe} ${_gen_arg} -s "${PROJECT_SOURCE_DIR}" -b "${PROJECT_BINARY_DIR}" -m "${n}" -v "${v}" -o "${_out}" ${_objs}
+            DEPENDS ${_objs} ${_gen_script} ${_ver})
 
         set_property(GLOBAL APPEND PROPERTY RABBITS_SRCS_LIST "${_out}")
     endif()

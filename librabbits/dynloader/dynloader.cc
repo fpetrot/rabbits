@@ -193,7 +193,9 @@ bool DynamicLoader::load_rabbits_dynlib(const string &filename)
 {
     DynLib *l = NULL;
     rabbits_dynamic_api_version_fn lib_api_version = NULL;
+    rabbits_dynamic_info_fn lib_info = NULL;
     rabbits_dynamic_load_fn lib_load = NULL;
+    const RabbitsDynamicInfo *info = NULL;
 
     if (m_libs.find(filename) != m_libs.end()) {
         DBG_STREAM(filename << " already loaded. Skipping\n");
@@ -210,6 +212,7 @@ bool DynamicLoader::load_rabbits_dynlib(const string &filename)
 
 
     if ((!l->check_symbol(RABBITS_DYN_API_VER_SYM))
+        || (!l->check_symbol(RABBITS_DYN_INFO_SYM))
         || (!l->check_symbol(RABBITS_DYN_LOAD_SYM))
         || (!l->check_symbol(RABBITS_DYN_UNLOAD_SYM))) {
         DBG_STREAM("skipping dynamic library " << filename << ": doesn't seem to be Rabbits compatible\n");
@@ -227,6 +230,13 @@ bool DynamicLoader::load_rabbits_dynlib(const string &filename)
     }
 
     m_libs[filename] = l;
+
+    lib_info = (rabbits_dynamic_info_fn) l->get_symbol(RABBITS_DYN_INFO_SYM);
+
+    info = lib_info();
+
+    DBG_STREAM("Loading dynamic library `" << info->name
+               << "' ver. " << info->version_str << "\n");
 
     lib_load = (rabbits_dynamic_load_fn) l->get_symbol(RABBITS_DYN_LOAD_SYM);
     lib_load();

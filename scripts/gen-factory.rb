@@ -93,6 +93,7 @@ DYNAMIC_LOADER_TPL='
 #include <rabbits/config.h>
 #include <rabbits/component/factory.h>
 #include <rabbits/plugin/factory.h>
+#include <rabbits/dynloader/dynloader.h>
 
 %{includes}
 
@@ -129,9 +130,19 @@ public:
 };
 
 extern "C" {
+static const RabbitsDynamicInfo %{module_name}_dyn_info = {
+  .name = "%{module_name}",
+  .version_str = "%{module_version}"
+};
+
 int rabbits_dynamic_api_version(void)
 {
     return RABBITS_API_VERSION;
+}
+
+const RabbitsDynamicInfo * rabbits_dynamic_info(void)
+{
+    return &%{module_name}_dyn_info;
 }
 
 void rabbits_dynamic_load(void)
@@ -412,7 +423,7 @@ end
 
 def usage
   STDERR.puts "Usage: #{__FILE__} [--factory] [-o out] description.yml"
-  STDERR.puts "       #{__FILE__} --static-insts|--dyn-loader -s src_dir -b bin_dir -m modname [-o out] description.yml [...]"
+  STDERR.puts "       #{__FILE__} --static-insts|--dyn-loader -s src_dir -b bin_dir -m modname -v modver [-o out] description.yml [...]"
   exit 1
 end
 
@@ -473,6 +484,17 @@ def parse_args
 
     when :modname_val
       $modname = arg
+      state = :version
+
+    when :version
+      if arg != "-v"
+        usage
+        exit 1
+      end
+      state = :version_val
+
+    when :version_val
+      $modver = arg
       state = :files_or_out
 
     when :files_or_out
@@ -546,7 +568,12 @@ begin
       includes += c.get_print_args[:self_include] + "\n"
     end
 
-    out.puts DYNAMIC_LOADER_TPL % { :includes => includes, :create_insts => insts, :module_name => $modname }
+    out.puts DYNAMIC_LOADER_TPL % { 
+      :includes => includes,
+      :create_insts => insts,
+      :module_name => $modname,
+      :module_version => $modver
+    }
   end
 
   out.close if out != STDOUT

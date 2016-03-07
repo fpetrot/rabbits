@@ -25,12 +25,20 @@
 #include <map>
 
 extern "C" {
+
+struct RabbitsDynamicInfo {
+    const char *name;
+    const char *version_str;
+};
+
 typedef int (*rabbits_dynamic_api_version_fn)(void);
+typedef const RabbitsDynamicInfo * (*rabbits_dynamic_info_fn)(void);
 typedef void (*rabbits_dynamic_load_fn)(void);
 typedef void (*rabbits_dynamic_unload_fn)(void);
 }
 
 #define RABBITS_DYN_API_VER_SYM "rabbits_dynamic_api_version"
+#define RABBITS_DYN_INFO_SYM "rabbits_dynamic_info"
 #define RABBITS_DYN_LOAD_SYM "rabbits_dynamic_load"
 #define RABBITS_DYN_UNLOAD_SYM "rabbits_dynamic_unload"
 
