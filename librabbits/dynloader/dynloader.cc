@@ -174,6 +174,11 @@ int DynamicLoader::search_and_load_rabbits_dynlibs()
     return v.get_num_loaded();
 }
 
+DynLib * DynamicLoader::load_library(const std::string &path)
+{
+    return DynLib::open(path);
+}
+
 DynLib * DynamicLoader::search_and_load_library(const std::string &filename)
 {
     DynLib *ret = NULL;

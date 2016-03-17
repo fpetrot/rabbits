@@ -75,7 +75,8 @@ set(RABBITS_LIB_DIR lib)
 set(RABBITS_INCLUDE_DIR include)
 set(RABBITS_DESCRIPTION_DIR share/rabbits/platforms)
 set(RABBITS_EXECUTABLE ${RABBITS_BIN_DIR}/${RABBITS_APP_NAME})
-
+set(RABBITS_LIBRARIES rabbits)
+set(RABBITS_TEST_LIBRARY rabbits-test)
 
 # config.h generation
 configure_file(
@@ -83,6 +84,10 @@ configure_file(
 	"${CMAKE_CURRENT_BINARY_DIR}/include/rabbits/config.h"
 )
 include_directories("${CMAKE_CURRENT_BINARY_DIR}/include")
+
+
+add_subdirectory(librabbits)
+add_subdirectory(rabbits)
 
 # RabbitsConfig[Version].cmake generation
 include(CMakePackageConfigHelpers)
@@ -93,17 +98,15 @@ configure_package_config_file(RabbitsConfig.cmake.in
 		  RABBITS_LIB_DIR
 		  RABBITS_BIN_DIR
 		  RABBITS_DESCRIPTION_DIR
-		  RABBITS_EXECUTABLE)
+		  RABBITS_EXECUTABLE
+    NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 
 write_basic_package_version_file(
 	${CMAKE_CURRENT_BINARY_DIR}/RabbitsConfigVersion.cmake
 	VERSION ${RABBITS_VERSION}
 	COMPATIBILITY SameMajorVersion)
 
-
-add_subdirectory(librabbits)
-add_subdirectory(rabbits)
-
+install(EXPORT rabbits-targets DESTINATION ${RABBITS_LIB_DIR}/rabbits/cmake)
 
 # header files and scripts installation
 install(DIRECTORY include/ DESTINATION ${RABBITS_INCLUDE_DIR} FILES_MATCHING PATTERN "*.h")

@@ -96,8 +96,16 @@ function(rabbits_generate_tests n)
     set(_test_name ${n}_test)
 
     if(_tests)
-        add_executable(${_test_name} ${_tests})
-        target_link_libraries(${_test_name} librabbits-test ${n})
+        set(_test_mod ${_test_name}_mod)
+        add_library(${_test_mod} MODULE ${_tests})
+
+        set(_test_payload ${CMAKE_CURRENT_BINARY_DIR}/${n}_test_payload.cc)
+        file(GENERATE 
+            OUTPUT ${_test_payload}
+            CONTENT "namespace test { const char * test_payload = \"$<TARGET_FILE:${_test_mod}>\"; };")
+
+        add_executable(${_test_name} ${_test_payload})
+        target_link_libraries(${_test_name} ${SYSTEMC_LIBRARIES} ${RABBITS_TEST_LIBRARY})
         add_test(NAME ${_test_name} COMMAND ${_test_name})
     endif()
 endfunction(rabbits_generate_tests)

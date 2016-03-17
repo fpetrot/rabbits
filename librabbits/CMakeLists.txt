@@ -20,11 +20,10 @@ rabbits_generate_objects("librabbits")
 
 get_property(srcs GLOBAL PROPERTY RABBITS_SRCS_LIST)
 get_property(libs GLOBAL PROPERTY RABBITS_LIBS_LIST)
-add_library(librabbits ${srcs})
-target_link_libraries(librabbits ${EXTRA_LIBS} ${libs})
-set_property(TARGET librabbits PROPERTY OUTPUT_NAME rabbits)
+add_library(${RABBITS_LIBRARIES} ${srcs})
+target_link_libraries(${RABBITS_LIBRARIES} ${EXTRA_LIBS} ${libs})
 
-install(TARGETS librabbits DESTINATION lib)
+install(TARGETS ${RABBITS_LIBRARIES} DESTINATION lib EXPORT rabbits-targets)
 
 rabbits_clear_files_collections()
 
@@ -33,8 +32,9 @@ add_subdirectory(test)
 
 get_property(srcs GLOBAL PROPERTY RABBITS_SRCS_LIST)
 get_property(libs GLOBAL PROPERTY RABBITS_LIBS_LIST)
-add_library(librabbits-test ${srcs})
-target_link_libraries(librabbits-test -Wl,--whole-archive librabbits -Wl,--no-whole-archive)
-set_property(TARGET librabbits-test PROPERTY OUTPUT_NAME rabbits-test)
+add_library(${RABBITS_TEST_LIBRARY} ${srcs})
+target_link_libraries(${RABBITS_TEST_LIBRARY} -Wl,--whole-archive ${RABBITS_LIBRARIES} -Wl,--no-whole-archive)
+
+install(TARGETS ${RABBITS_TEST_LIBRARY} DESTINATION lib EXPORT rabbits-targets)
 
 rabbits_clear_files_collections()

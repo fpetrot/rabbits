@@ -73,6 +73,7 @@ public:
     int search_and_load_rabbits_dynlibs();
     bool load_rabbits_dynlib(const std::string &filename);
 
+    DynLib * load_library(const std::string &path);
     DynLib * search_and_load_library(const std::string &filename);
 };
 

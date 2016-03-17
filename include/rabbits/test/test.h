@@ -20,7 +20,7 @@
 #ifndef _RABBITS_TEST_TEST_H
 #define _RABBITS_TEST_TEST_H
 
-#include <vector>
+#include <set>
 #include <cstring>
 #include <sstream>
 
@@ -58,30 +58,53 @@ public:
 
 class TestFactory {
 public:
-    typedef std::vector<TestFactory*>::const_iterator const_iterator;
+    typedef std::set<TestFactory*>::const_iterator const_iterator;
 
 private:
-    static std::vector<TestFactory*> *m_insts;
+    static std::set<TestFactory*> *m_insts;
 
     static void register_test(TestFactory* t) {
         if (m_insts == NULL) {
-            m_insts = new std::vector<TestFactory*>;
+            m_insts = new std::set<TestFactory*>;
         }
 
-        m_insts->push_back(t);
+        m_insts->insert(t);
+    }
+
+    static void unregister_test(TestFactory* t) {
+        if (m_insts == NULL) {
+            m_insts = new std::set<TestFactory*>;
+        }
+
+        m_insts->erase(t);
     }
 
 protected:
     std::string m_name;
 
 public:
-    static const_iterator begin() { return m_insts->begin(); }
-    static const_iterator end() { return m_insts->end(); }
+    static const_iterator begin() {
+        if (m_insts == NULL) {
+            m_insts = new std::set<TestFactory*>;
+        }
+        return m_insts->begin();
+    }
+
+    static const_iterator end() {
+        if (m_insts == NULL) {
+            m_insts = new std::set<TestFactory*>;
+        }
+        return m_insts->end();
+    }
 
     TestFactory(const std::string & test_name) 
         : m_name(test_name)
     {
         register_test(this);
+    }
+
+    ~TestFactory() {
+        unregister_test(this);
     }
 
     const std::string & get_name() { return m_name; }

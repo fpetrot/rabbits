@@ -16,7 +16,11 @@
 using boost::filesystem::path;
 using std::string;
 
-std::vector<TestFactory*> * TestFactory::m_insts = NULL;
+namespace test {
+    extern const char * test_payload;
+};
+
+std::set<TestFactory*> * TestFactory::m_insts = NULL;
 
 ComponentBase * Test::create_component_by_name(const string name,
                                                const string yml_params)
@@ -106,6 +110,15 @@ std::string Test::get_test_dir(const std::string &fn) const
     return path(fn).parent_path().string();
 }
 
+static void load_test_module()
+{
+    DynLib *tst = DynamicLoader::get().load_library(test::test_payload);
+
+    if (tst == NULL) {
+        ERR_STREAM("Unable to load test module\n");
+    }
+}
+
 int sc_main(int argc, char *argv[])
 {
     char *env_dynlib_paths;
@@ -127,6 +140,8 @@ int sc_main(int argc, char *argv[])
     dyn_loader.search_and_load_rabbits_dynlibs();
     ComponentManager::get(); /* Force instantiation of ComponentManager
                                 and registration of components before forking */
+
+    load_test_module();
 
     for (it = TestFactory::begin(); it != TestFactory::end(); it++) {
         int pid = fork();
