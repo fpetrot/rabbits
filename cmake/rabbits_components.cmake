@@ -84,9 +84,14 @@ function(rabbits_generate_descr_symlinks)
             get_filename_component(p_name "${p}" NAME_WE)
             get_filename_component(rabbits_app_name "${RABBITS_EXECUTABLE}" NAME)
 
-            set(__sym ${RABBITS_BIN_DIR}/${RABBITS_DESCR_SYMLINK_PREFIX}${p_name})
+            set(__sym ${CMAKE_CURRENT_BINARY_DIR}/${RABBITS_DESCR_SYMLINK_PREFIX}${p_name})
+            add_custom_target(
+                ${p_name}_symlink
+                ALL
+                COMMAND ln -sf "${rabbits_app_name}" "${__sym}"
+            )
 
-            install(CODE "EXECUTE_PROCESS(COMMAND ln -sf \"${rabbits_app_name}\" \"${__sym}\")")
+            install(FILES ${__sym} DESTINATION ${RABBITS_BIN_DIR})
         endif()
     endforeach()
 endfunction(rabbits_generate_descr_symlinks)
