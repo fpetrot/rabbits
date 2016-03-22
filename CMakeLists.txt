@@ -15,7 +15,7 @@ find_package(Boost REQUIRED COMPONENTS system filesystem)
 option(USE_SDL "Use SDL1.2 for framebuffer devices" ON)
 
 if(NOT RABBITS_DESCR_SEARCH_PATH)
-    set(RABBITS_DESCR_SEARCH_PATH "${CMAKE_INSTALL_PREFIX}/share/rabbits/descr")
+    set(RABBITS_DESCR_SEARCH_PATH "${CMAKE_INSTALL_PREFIX}/share/rabbits/platforms")
 endif()
 
 if(USE_SDL)
