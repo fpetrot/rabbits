@@ -178,7 +178,10 @@ static string get_yml_config(PlatformDescription &p, const char *arg0)
             return "";
         }
 
-        const string final_path = path(search_path).append(basename.substr(prefix.size()) + ".yml").string();
+        path fp(search_path);
+        fp /= path(basename.substr(prefix.size()) + ".yml");
+
+        const string final_path = fp.string();
 
         if (is_regular_file(final_path)) {
             return final_path;
