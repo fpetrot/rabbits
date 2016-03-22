@@ -13,9 +13,10 @@ find_package(Boost REQUIRED COMPONENTS system filesystem)
 
 # Options
 option(USE_SDL "Use SDL1.2 for framebuffer devices" ON)
-option(RABBITS_DESCR_SEARCH_PATH 
-	"Search path for description files" 
-	"${CMAKE_INSTALL_PREFIX}/share/rabbits/descr")
+
+if(NOT RABBITS_DESCR_SEARCH_PATH)
+    set(RABBITS_DESCR_SEARCH_PATH "${CMAKE_INSTALL_PREFIX}/share/rabbits/descr")
+endif()
 
 if(USE_SDL)
 	find_package(SDL)

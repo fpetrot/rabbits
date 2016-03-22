@@ -48,7 +48,7 @@ struct CmdlineInfo {
     bool print_version;
     bool enum_components;
 
-    CmdlineInfo() 
+    CmdlineInfo()
         : print_usage(false)
         , print_version(false)
         , enum_components(false)
@@ -58,7 +58,7 @@ struct CmdlineInfo {
 static string operator*(const string &s, int i)
 {
     string ret;
-    
+
     while(i--) {
         ret += s;
     }
@@ -76,10 +76,10 @@ static ostream & cout_indent(int istep = indent_step)
 static void describe_comp_params(const ComponentParameters &p)
 {
     ComponentParameters::const_iterator it;
-    
+
     for (it = p.begin(); it != p.end(); it++) {
-        cout_indent() 
-            << "- " << it->first 
+        cout_indent()
+            << "- " << it->first
             << ": " << it->second->get_description() << "\n";
     }
 }
@@ -171,7 +171,14 @@ static string get_yml_config(PlatformDescription &p, const char *arg0)
 
     if (basename != RABBITS_APP_NAME) {
         const string search_path(RABBITS_DESCR_SEARCH_PATH);
-        const string final_path = search_path + "/" + basename + ".yml";
+        const string prefix(RABBITS_DESCR_SYMLINK_PREFIX);
+
+        if (basename.find(prefix) != 0) {
+            DBG_STREAM("basename seems invalid. Giving up trying to deduce config file\n");
+            return "";
+        }
+
+        const string final_path = path(search_path).append(basename.substr(prefix.size()) + ".yml").string();
 
         if (is_regular_file(final_path)) {
             return final_path;
