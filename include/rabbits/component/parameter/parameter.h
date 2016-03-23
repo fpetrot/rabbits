@@ -21,6 +21,7 @@
 #define _UTILS_COMPONENT_PARAMETER_PARAMETER_H
 
 #include <string>
+#include <sstream>
 
 #include "param_data.h"
 
@@ -44,7 +45,7 @@ private:
 protected:
     ParameterBase(const std::string & descr, ParamDataBase *data, ParamDataBase *default_value)
         : m_description(descr), m_data(data), m_default(default_value) {}
-    ParameterBase(const ParameterBase &p, ParamDataBase *data, ParamDataBase *default_value) 
+    ParameterBase(const ParameterBase &p, ParamDataBase *data, ParamDataBase *default_value)
         : m_description(p.m_description), m_data(data), m_default(default_value) {}
 
 public:
@@ -53,6 +54,7 @@ public:
     template <typename T> T as();
     virtual void set(const PlatformDescription &) = 0;
     virtual ParameterBase* clone() const = 0;
+    virtual std::string to_str() const = 0;
 
     const std::string & get_description() { return m_description; }
 };
@@ -64,10 +66,10 @@ protected:
     ParamData<T> m_default_storage;
 
 public:
-    Parameter(const std::string & description, const T &default_value) 
+    Parameter(const std::string & description, const T &default_value)
         : ParameterBase(description, &m_data_storage, &m_default_storage)
         , m_default_storage(default_value) {}
-    Parameter(const Parameter &p) 
+    Parameter(const Parameter &p)
         : ParameterBase(p, &m_data_storage, &m_default_storage)
         , m_data_storage(p.m_data_storage)
         , m_default_storage(p.m_default_storage) {}
@@ -90,6 +92,12 @@ public:
     }
 
     virtual ParameterBase* clone() const { return new Parameter<T>(*this); }
+
+    virtual std::string to_str() const {
+        std::stringstream ss;
+        ss << get();
+        return ss.str();
+    }
 };
 
 template <typename T>
