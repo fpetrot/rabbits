@@ -35,6 +35,9 @@
 #include <set>
 #include <iostream>
 
+#include "usage.h"
+#include "cmdline.h"
+
 using boost::filesystem::path;
 using boost::filesystem::is_regular_file;
 using std::string;
@@ -43,139 +46,19 @@ using std::set;
 using std::cout;
 using std::ostream;
 
-struct CmdlineInfo {
-    bool print_usage;
-    bool print_version;
-    bool enum_components;
-
-    CmdlineInfo()
-        : print_usage(false)
-        , print_version(false)
-        , enum_components(false)
-    {}
-};
-
-static string operator*(const string &s, int i)
+static void get_yml_from_basename(const char *arg0, vector<string> & files)
 {
-    string ret;
-
-    while(i--) {
-        ret += s;
-    }
-
-    return ret;
-}
-
-const string INDENT = "   ";
-static int indent_step = 0;
-static ostream & cout_indent(int istep = indent_step)
-{
-    return cout << (INDENT*istep);
-}
-
-static void describe_comp_params(const ComponentParameters &p)
-{
-    ComponentParameters::const_iterator it;
-
-    for (it = p.begin(); it != p.end(); it++) {
-        cout_indent()
-            << "- " << it->first
-            << ": " << it->second->get_description() << "\n";
-    }
-}
-
-static void describe_component(ComponentFactory &c)
-{
-    const ComponentParameters & p = c.get_params();
-
-    cout_indent() << "type: " << c.type() << "\n";
-    cout_indent() << "description: " << c.description() << "\n";
-
-    if (p.empty()) {
-        return;
-    }
-
-    cout_indent() << "parameters:\n";
-    indent_step++;
-    describe_comp_params(p);
-    indent_step--;
-}
-
-static void enum_components()
-{
-    ComponentManager &cm = ComponentManager::get();
-    ComponentManager::iterator it;
-
-    cout_indent() << "\nAvailable components:\n\n";
-
-    for (it = cm.begin(); it != cm.end(); it++) {
-        cout_indent() << "* " << it->first << "\n";
-        indent_step++;
-        describe_component(*(it->second));
-        indent_step--;
-        cout_indent() << "\n";
-    }
-}
-
-static void print_option(const string &opt, const string& help)
-{
-    cout_indent(1) << "-" << opt << "\r\t\t\t\t\t" << help << "\n";
-}
-
-static void print_hardcoded_usage()
-{
-    print_option("help", "Print this message");
-    print_option("list-components", "List available components with their description");
-}
-
-static void print_comp_usage(const string &comp, const ComponentParameters &p)
-{
-    ComponentParameters::const_iterator it;
-
-    for (it = p.begin(); it != p.end(); it++) {
-        print_option("components." + comp + "." + it->first, it->second->get_description());
-    }
-}
-
-static void print_usage(const char* arg0, PlatformBuilder &p)
-{
-    PlatformBuilder::const_comp_iterator it;
-
-    cout << "Usage: " << arg0 << " [...]\n";
-
-    cout << "Arguments:\n";
-    print_hardcoded_usage();
-
-    cout << "\nPlatform arguments:\n";
-    for (it = p.comp_begin(); it != p.comp_end(); it++) {
-        print_comp_usage(it->first, it->second->get_params());
-    }
-}
-
-static void print_version()
-{
-    cout << RABBITS_APP_NAME
-        << " version " << RABBITS_VERSION
-        << " api version " << RABBITS_API_VERSION << "\n";
-}
-
-static string get_yml_config(PlatformDescription &p, const char *arg0)
-{
-    if (p["config"].is_scalar()) {
-        return p["config"].as<string>();
-    }
-
-    DBG_STREAM("No -config option provided, trying with basename\n");
 
     const string basename = path(arg0).filename().string();
 
     if (basename != RABBITS_APP_NAME) {
+        DBG_STREAM("Trying to deduce config from basename\n");
         const string search_path(RABBITS_DESCR_SEARCH_PATH);
         const string prefix(RABBITS_DESCR_SYMLINK_PREFIX);
 
         if (basename.find(prefix) != 0) {
-            DBG_STREAM("basename seems invalid. Giving up trying to deduce config file\n");
-            return "";
+            DBG_STREAM("basename seems invalid. Giving up.\n");
+            return;
         }
 
         path fp(search_path);
@@ -184,23 +67,56 @@ static string get_yml_config(PlatformDescription &p, const char *arg0)
         const string final_path = fp.string();
 
         if (is_regular_file(final_path)) {
-            return final_path;
+            files.push_back(final_path);
         } else {
             DBG_STREAM(final_path << " not found.\n");
         }
     }
-
-    return "";
 }
 
-static void parse_arg(string arg, string val, CmdlineInfo &cmdline)
+static void get_yml_from_config(PlatformDescription &p, vector<string> & files)
 {
-    if (arg == "help") {
-        cmdline.print_usage = true;
-    } else if (arg == "version") {
-        cmdline.print_version = true;
-    } else if (arg == "list-components") {
-        cmdline.enum_components = true;
+    if (p.is_scalar()) {
+        files.push_back(p.as<string>());
+    } else if (p.is_map()) {
+        PlatformDescription::iterator it;
+
+        for (it = p.begin(); it != p.end(); it++) {
+            get_yml_from_config(it->second, files);
+        }
+    }
+}
+
+static void get_yml_configs(PlatformDescription &p, const char *arg0, vector<string> & files)
+{
+    get_yml_from_basename(arg0, files);
+    get_yml_from_config(p["config"], files);
+
+    DBG_STREAM("Got " << files.size() << " config file(s) to load\n");
+}
+
+static void build_description(PlatformDescription& p, const char *arg0)
+{
+    vector<string> configs;
+    vector<string>::iterator it;
+
+    get_yml_configs(p, arg0, configs);
+
+    for (it = configs.begin(); it != configs.end(); it++) {
+        PlatformDescription p_yml;
+
+        DBG_STREAM("Loading " << *it << "\n");
+        p_yml.load_file_yaml(*it);
+        p = p.merge(p_yml);
+    }
+}
+
+static void map_to_set(const CmdlineInfo &in, set<string> &out)
+{
+    CmdlineInfo::const_iterator it;
+
+    for (it = in.begin(); it != in.end(); it++) {
+        out.insert(it->first);
     }
 }
 
@@ -209,21 +125,26 @@ static void parse_cmdline(int argc, char *argv[],
 {
     set<string> unaries;
 
-    unaries.insert("help");
-    unaries.insert("version");
-    unaries.insert("list-components");
+    map_to_set(cmdline, unaries);
 
     p.parse_cmdline(argc, argv, unaries);
 
     if (p.is_map()) {
-        PlatformDescription::iterator it;
+        CmdlineInfo::iterator it;
 
-        for (it = p.begin(); it != p.end(); it++) {
-            if (it->second.is_scalar()) {
-                parse_arg(it->first, it->second.as<string>(), cmdline);
+        for (it = cmdline.begin(); it != cmdline.end(); it++) {
+            if (p[it->first].is_scalar()) {
+                it->second.value = true;
             }
         }
     }
+}
+
+static void build_cmdline(CmdlineInfo &cmdline)
+{
+    cmdline["help"] = CmdlineEntry("This message");
+    cmdline["list-components"] = CmdlineEntry("List available components with their description");
+    cmdline["version"] = CmdlineEntry("Print the version and exit");
 }
 
 extern "C" {
@@ -232,40 +153,35 @@ int sc_main(int argc, char *argv[])
     CmdlineInfo cmdline;
     DynamicLoader &dyn_loader = DynamicLoader::get();
     PlatformDescription p;
-    string yml_path;
     char *env_dynlib_paths;
+
 
     env_dynlib_paths = std::getenv("RABBITS_DYNLIB_PATH");
     if (env_dynlib_paths != NULL) {
         dyn_loader.add_colon_sep_search_paths(env_dynlib_paths);
     }
 
+    build_cmdline(cmdline);
     parse_cmdline(argc, argv, p, cmdline);
 
-    if (cmdline.print_version) {
+    if (cmdline["version"].value) {
         print_version();
         return 0;
     }
 
-    yml_path = get_yml_config(p, argv[0]);
-    if (yml_path != "") {
-        PlatformDescription p_yml;
-        DBG_STREAM("Loading config file " << yml_path << "\n");
-        p_yml.load_file_yaml(yml_path);
-        p = p.merge(p_yml);
-    }
+    build_description(p, argv[0]);
 
     dyn_loader.search_and_load_rabbits_dynlibs();
 
-    if (cmdline.enum_components) {
+    if (cmdline["list-components"].value) {
         enum_components();
         return 0;
     }
 
     PlatformBuilder builder("platform", p);
 
-    if (cmdline.print_usage) {
-        print_usage(argv[0], builder);
+    if (cmdline["help"].value) {
+        print_usage(argv[0], cmdline, builder);
         return 0;
     }
 
