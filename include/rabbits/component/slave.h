@@ -17,6 +17,11 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+/**
+ * @file slave.h
+ * Slave class declaration
+ */
+
 #ifndef _SLAVE_DEVICE_H_
 #define _SLAVE_DEVICE_H_
 
@@ -27,6 +32,10 @@
 
 #include "rabbits/component/component.h"
 
+/**
+ * @class Slave
+ * Represent a component that is connected as a slave (a target) on a bus.
+ */
 class Slave: public Component, public SlaveIface
 {
 protected:
@@ -37,6 +46,23 @@ public:
     Slave(sc_core::sc_module_name name);
     virtual ~Slave();
 
+
+    /**
+     * @brief Callback method on bus read request.
+     *
+     * This method is called on bus read request targeted to the component.
+     * The Slave class implementation calls sub-methods depending on the length of the request.
+     * It can be overridden by the child class when special bus request handling is needed.
+     *
+     * @param addr[in] Address of the request.
+     * @param data[out] Array where read result must be written.
+     * @param len[in] Length requested for the read request.
+     * @param bErr[out] To be set to true to signal a bus error.
+     *
+     * @see bus_cb_read_8
+     * @see bus_cb_read_16
+     * @see bus_cb_read_32
+     */
     virtual void bus_cb_read(uint64_t addr, uint8_t *data, unsigned int len, bool &bErr) {
         switch (len) {
         case 1:
@@ -51,18 +77,77 @@ public:
         }
     }
 
+    /**
+     * @brief Callback method on 8-bit bus read request
+     *
+     * This method is called on a 8-bit bus read request targeted to the component.
+     * The Slave class implementation signals a bus error. Children classes
+     * must override it if they want to support 8-bit read requests.
+     *
+     * @param addr[in] Address of the request.
+     * @param data[out] Array where read result must be written.
+     * @param bErr[out] To be set to true to signal a bus error.
+     *
+     * @see bus_cb_read_16
+     * @see bus_cb_read_32
+     */
     virtual void bus_cb_read_8(uint64_t addr, uint8_t *value, bool &bErr) {
     	bErr = true;
     }
 
+    /**
+     * @brief Callback method on 16-bit bus read request
+     *
+     * This method is called on a 16-bit bus read request targeted to the component.
+     * The Slave class implementation signals a bus error. Children classes
+     * must override it if they want to support 16-bit read requests.
+     *
+     * @param addr[in] Address of the request.
+     * @param data[out] Array where read result must be written.
+     * @param bErr[out] To be set to true to signal a bus error.
+     *
+     * @see bus_cb_read_8
+     * @see bus_cb_read_32
+     */
     virtual void bus_cb_read_16(uint64_t addr, uint16_t *value, bool &bErr) {
     	bErr = true;
     }
 
+    /**
+     * @brief Callback method on 32-bit bus read request
+     *
+     * This method is called on a 32-bit bus read request targeted to the component.
+     * The Slave class implementation signals a bus error. Children classes
+     * must override it if they want to support 32-bit read requests.
+     *
+     * @param addr[in] Address of the request.
+     * @param data[out] Array where read result must be written.
+     * @param bErr[out] To be set to true to signal a bus error.
+     *
+     * @see bus_cb_read_8
+     * @see bus_cb_read_16
+     */
     virtual void bus_cb_read_32(uint64_t addr, uint32_t *value, bool &bErr) {
     	bErr = true;
     }
 
+
+    /**
+     * @brief Callback method on bus write request.
+     *
+     * This method is called on bus write request targeted to the component.
+     * The Slave class implementation calls sub-methods depending on the length of the request.
+     * It can be overridden by the child class when special bus request handling is needed.
+     *
+     * @param addr[in] Address of the request.
+     * @param data[in] Array containing the data of the write request.
+     * @param len[in] Length requested for the write request.
+     * @param bErr[out] To be set to true to signal a bus error.
+     *
+     * @see bus_cb_write_8
+     * @see bus_cb_write_16
+     * @see bus_cb_write_32
+     */
     virtual void bus_cb_write(uint64_t addr, uint8_t *data, unsigned int len, bool &bErr) {
         switch (len) {
         case 1:
@@ -77,26 +162,110 @@ public:
         }
     }
 
+    /**
+     * @brief Callback method on 8-bit bus write request
+     *
+     * This method is called on a 8-bit bus write request targeted to the component.
+     * The Slave class implementation signals a bus error. Children classes
+     * must override it if they want to support 8-bit write requests.
+     *
+     * @param addr[in] Address of the request.
+     * @param data[in] Array containing the data of the write request.
+     * @param bErr[out] To be set to true to signal a bus error.
+     *
+     * @see bus_cb_write_16
+     * @see bus_cb_write_32
+     */
     virtual void bus_cb_write_8(uint64_t addr, uint8_t *value, bool &bErr) {
     	bErr = true;
     }
 
+    /**
+     * @brief Callback method on 16-bit bus write request
+     *
+     * This method is called on a 16-bit bus write request targeted to the component.
+     * The Slave class implementation signals a bus error. Children classes
+     * must override it if they want to support 16-bit write requests.
+     *
+     * @param addr[in] Address of the request.
+     * @param data[in] Array containing the data of the write request.
+     * @param bErr[out] To be set to true to signal a bus error.
+     *
+     * @see bus_cb_write_8
+     * @see bus_cb_write_32
+     */
     virtual void bus_cb_write_16(uint64_t addr, uint16_t *value, bool &bErr) {
     	bErr = true;
     }
 
+    /**
+     * @brief Callback method on 32-bit bus write request
+     *
+     * This method is called on a 32-bit bus write request targeted to the component.
+     * The Slave class implementation signals a bus error. Children classes
+     * must override it if they want to support 32-bit write requests.
+     *
+     * @param addr[in] Address of the request.
+     * @param data[in] Array containing the data of the write request.
+     * @param bErr[out] To be set to true to signal a bus error.
+     *
+     * @see bus_cb_write_8
+     * @see bus_cb_write_16
+     */
     virtual void bus_cb_write_32(uint64_t addr, uint32_t *value, bool &bErr) {
     	bErr = true;
     }
 
+    /**
+     * @brief Callback method on debug read request.
+     *
+     * This method is called on a bus debug request. This kind of request is
+     * supposed to have no side effect on the component (such as time
+     * consumption) and is used for debugging purpose.
+     *
+     * The Slave class implementation always returns 0.
+     *
+     * @param addr[in] Address of the request.
+     * @param buf[out] Array where read result must be written.
+     * @param size[in] Length of the request.
+     *
+     * @return The number of bytes effectively read.
+     */
     virtual uint64_t debug_read(uint64_t addr, uint8_t* buf, uint64_t size) {
         return 0;
     }
 
+    /**
+     * @brief Callback method on debug write request.
+     *
+     * This method is called on a bus debug request. This kind of request is
+     * supposed to have no side effect on the component (such as time
+     * consumption) and is used for debugging purpose.
+     *
+     * The Slave class implementation always returns 0.
+     *
+     * @param addr[in] Address of the request.
+     * @param buf[in] Array containing the data of the write request.
+     * @param size[in] Length of the request.
+     *
+     * @return The number of bytes effectively written.
+     */
     virtual uint64_t debug_write(uint64_t addr, const uint8_t* buf, uint64_t size) {
         return 0;
     }
 
+    /**
+     * @brief Callback method on direct memory access request
+     *
+     * This method is called when an initiator emits a TLM2.0 DMI (direct
+     * memory interface) request directed to this component. Thes Slave class
+     * implementation always returns false to signal that DMI is not supported.
+     *
+     * @param trans[in] TLM2.0 payload
+     * @param dmi_data[out] TLM2.0 DMI data
+     *
+     * @return true if DMI is supported, false otherwise
+     */
     virtual bool get_direct_mem_ptr(tlm::tlm_generic_payload& trans,
                                     tlm::tlm_dmi& dmi_data)
     {
