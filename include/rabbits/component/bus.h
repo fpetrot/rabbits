@@ -138,7 +138,7 @@ protected:
 
 public:
     BusMasterIface(MasterIface &master) : m_socket(NULL), m_free_socket(false), m_master(&master) {}
-    BusMasterIface(tlm::tlm_target_socket<BUSWIDTH> &m) : m_socket(&m), m_free_socket(false), m_master(NULL) {}
+    BusMasterIface(tlm::tlm_initiator_socket<BUSWIDTH> &m) : m_socket(&m), m_free_socket(false), m_master(NULL) {}
 
     virtual ~BusMasterIface() {
         if (m_free_socket) {
