@@ -119,10 +119,6 @@ class BusMasterIfaceBase : public tlm::tlm_fw_transport_if<> {
 public:
     virtual ~BusMasterIfaceBase() {}
 
-    virtual void b_transport(tlm::tlm_generic_payload &pl, sc_core::sc_time &t) = 0;
-    virtual unsigned int transport_dbg(tlm::tlm_generic_payload &pl) = 0;
-    virtual bool get_direct_mem_ptr(tlm::tlm_generic_payload &pl, tlm::tlm_dmi &dmi_data) = 0;
-
     template <unsigned int BUSWIDTH>
     tlm::tlm_initiator_socket<BUSWIDTH>& get_socket() {
         BusMasterIface<BUSWIDTH> *bus = dynamic_cast<BusMasterIface<BUSWIDTH>* >(this);
