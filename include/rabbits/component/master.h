@@ -17,6 +17,11 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+/**
+ * @file master.h
+ * Master class declaration
+ */
+
 #ifndef _MASTER_DEVICE_H_
 #define _MASTER_DEVICE_H_
 
@@ -27,27 +32,73 @@
 #include "rabbits/component/component.h"
 #include "rabbits/component/bus.h"
 
+/**
+ * @class Master
+ * Represent a component that is connected as a master (a initiator) on a bus.
+ */
 class Master: public Component, public MasterIface
 {
 protected:
     BusMasterIfaceBase *m_bus_iface;
     bool m_last_bus_access_error;
 
+    /**
+     * @brief Emit a request on the bus.
+     *
+     * This method emits a TLM request on the bus the master is connected to.
+     * Convenient methods bus_read and bus_write are also provided to emit
+     * respectively a read or a write request.
+     *
+     * @param[in] cmd Desired request type (read or write).
+     * @param[in] addr Address of the request.
+     * @param[in,out] data Array to the data of the request
+     * @param[in] len Length of the request.
+     *
+     * @see bus_read
+     * @see bus_write
+     */
     void bus_access(tlm::tlm_command cmd, uint64_t addr, uint8_t *data,
                     unsigned int len);
 
+
+    /**
+     * @brief Emit a debug request on the bus.
+     *
+     * This method emits a TLM debug request on the bus the master is connected
+     * to. Such requests are supposed to have no side effects on the slaves
+     * such as time consumption.
+     *
+     * @param[in] cmd Desired request type (read or write).
+     * @param[in] addr Address of the request.
+     * @param[in,out] data Array to the data of the request
+     * @param[in] len Length of the request.
+     *
+     * @return The number of bytes effectively read or written
+     */
     unsigned int debug_access(tlm::tlm_command cmd, uint64_t addr, uint8_t *data,
                     unsigned int len);
 
-    /* To be overloaded by master devices that want to be informed of memory
-     * mapping during end of elaboration */
+    /**
+     * @brief DMI information callback.
+     *
+     * This method is called during end of elaboration if a DMI capable slave
+     * is found on the bus. Any master willing to exploit DMI capabilities must
+     * override this method to obtain DMI information during end of
+     * elaboration.
+     *
+     * @param[in] start Start of the memory mapping.
+     * @param[in] size Size of the memory mapping.
+     * @param[in] data Pointer to the start of the data corresponding to the start of the mapping.
+     * @param[in] read_latency Time to wait for each read operation.
+     * @param[in] write_latency Time to wait for each write operation.
+     */
     virtual void dmi_hint_cb(uint64_t start, uint64_t size, void *data,
                              sc_core::sc_time read_latency, sc_core::sc_time write_latency) {}
 
 public:
     Master(sc_core::sc_module_name name)
         : Component(name, ComponentParameters())
-	    , m_bus_iface(NULL)
+        , m_bus_iface(NULL)
         , m_last_bus_access_error(false) {}
     Master(sc_core::sc_module_name name, ComponentParameters &params)
         : Component(name, params)
@@ -56,9 +107,43 @@ public:
 
     virtual ~Master() {}
 
+    /**
+     * @brief Emit a read request on the bus the master is connected to.
+     *
+     * @param[in] addr Address of the read request.
+     * @param[in,out] data Array where read result must be written.
+     * @param[in] len Length of the read request.
+     */
     virtual void bus_read(uint64_t addr, uint8_t *data, unsigned int len);
+
+    /**
+     * @brief Emit a write request on the bus the master is connected to.
+     *
+     * @param[in] addr Address of the write request.
+     * @param[in] data Array containing the data of the write request.
+     * @param[in] len Length of the write request.
+     */
     virtual void bus_write(uint64_t addr, uint8_t *data, unsigned int len);
 
+    /**
+     * @brief Helper method called by the PlatformBuilder instance at the end of elaboration.
+     *
+     * Helper method called by the PlatformBuilder instance at the end of
+     * elaboration to inform the master of the platform memory mapping. For
+     * each slave connect to the bus, this method is called with address start
+     * and mapping size information.
+     *
+     * This method try to initiate a DMI request to the corresponding slave. If
+     * the request succeeds, it calls back the dmi_hint_cb method with all DMI
+     * information so that the master can use them if it wants to.
+     *
+     * This method is supposed to be called by an instance of PlatformBuilder only.
+     *
+     * @param[in] start Start address of the memory mapping
+     * @param[in] size Size of the memory mapping
+     *
+     * @see dmi_hint_cb
+     */
     void dmi_hint(uint64_t start, uint64_t size);
 
     virtual void set_bus_iface(BusMasterIfaceBase *iface) { m_bus_iface = iface; }
@@ -68,10 +153,10 @@ public:
                                                tlm::tlm_phase& phase,
                                                sc_core::sc_time& t)
     {
-        
+
         ERR_PRINTF("Non-blocking transport not implemented\n");
         abort();
-        return tlm::TLM_COMPLETED; 
+        return tlm::TLM_COMPLETED;
     }
 
     virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range,
