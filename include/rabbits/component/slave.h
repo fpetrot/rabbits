@@ -54,10 +54,10 @@ public:
      * The Slave class implementation calls sub-methods depending on the length of the request.
      * It can be overridden by the child class when special bus request handling is needed.
      *
-     * @param addr[in] Address of the request.
-     * @param data[out] Array where read result must be written.
-     * @param len[in] Length requested for the read request.
-     * @param bErr[out] To be set to true to signal a bus error.
+     * @param[in] addr Address of the request.
+     * @param[out] data Array where read result must be written.
+     * @param[in] len Length requested for the read request.
+     * @param[out] bErr To be set to true to signal a bus error.
      *
      * @see bus_cb_read_8
      * @see bus_cb_read_16
@@ -84,15 +84,15 @@ public:
      * The Slave class implementation signals a bus error. Children classes
      * must override it if they want to support 8-bit read requests.
      *
-     * @param addr[in] Address of the request.
-     * @param data[out] Array where read result must be written.
-     * @param bErr[out] To be set to true to signal a bus error.
+     * @param[in] addr Address of the request.
+     * @param[out] data Array where read result must be written.
+     * @param[out] bErr To be set to true to signal a bus error.
      *
      * @see bus_cb_read_16
      * @see bus_cb_read_32
      */
     virtual void bus_cb_read_8(uint64_t addr, uint8_t *value, bool &bErr) {
-    	bErr = true;
+        bErr = true;
     }
 
     /**
@@ -102,15 +102,15 @@ public:
      * The Slave class implementation signals a bus error. Children classes
      * must override it if they want to support 16-bit read requests.
      *
-     * @param addr[in] Address of the request.
-     * @param data[out] Array where read result must be written.
-     * @param bErr[out] To be set to true to signal a bus error.
+     * @param[in] addr Address of the request.
+     * @param[out] data Array where read result must be written.
+     * @param[out] bErr To be set to true to signal a bus error.
      *
      * @see bus_cb_read_8
      * @see bus_cb_read_32
      */
     virtual void bus_cb_read_16(uint64_t addr, uint16_t *value, bool &bErr) {
-    	bErr = true;
+        bErr = true;
     }
 
     /**
@@ -120,15 +120,15 @@ public:
      * The Slave class implementation signals a bus error. Children classes
      * must override it if they want to support 32-bit read requests.
      *
-     * @param addr[in] Address of the request.
-     * @param data[out] Array where read result must be written.
-     * @param bErr[out] To be set to true to signal a bus error.
+     * @param[in] addr Address of the request.
+     * @param[out] data Array where read result must be written.
+     * @param[out] bErr To be set to true to signal a bus error.
      *
      * @see bus_cb_read_8
      * @see bus_cb_read_16
      */
     virtual void bus_cb_read_32(uint64_t addr, uint32_t *value, bool &bErr) {
-    	bErr = true;
+        bErr = true;
     }
 
 
@@ -139,10 +139,10 @@ public:
      * The Slave class implementation calls sub-methods depending on the length of the request.
      * It can be overridden by the child class when special bus request handling is needed.
      *
-     * @param addr[in] Address of the request.
-     * @param data[in] Array containing the data of the write request.
-     * @param len[in] Length requested for the write request.
-     * @param bErr[out] To be set to true to signal a bus error.
+     * @param[in] addr Address of the request.
+     * @param[in] data Array containing the data of the write request.
+     * @param[in] len Length requested for the write request.
+     * @param[out] bErr To be set to true to signal a bus error.
      *
      * @see bus_cb_write_8
      * @see bus_cb_write_16
@@ -169,15 +169,15 @@ public:
      * The Slave class implementation signals a bus error. Children classes
      * must override it if they want to support 8-bit write requests.
      *
-     * @param addr[in] Address of the request.
-     * @param data[in] Array containing the data of the write request.
-     * @param bErr[out] To be set to true to signal a bus error.
+     * @param[in] addr Address of the request.
+     * @param[in] data Array containing the data of the write request.
+     * @param[out] bErr To be set to true to signal a bus error.
      *
      * @see bus_cb_write_16
      * @see bus_cb_write_32
      */
     virtual void bus_cb_write_8(uint64_t addr, uint8_t *value, bool &bErr) {
-    	bErr = true;
+        bErr = true;
     }
 
     /**
@@ -187,15 +187,15 @@ public:
      * The Slave class implementation signals a bus error. Children classes
      * must override it if they want to support 16-bit write requests.
      *
-     * @param addr[in] Address of the request.
-     * @param data[in] Array containing the data of the write request.
-     * @param bErr[out] To be set to true to signal a bus error.
+     * @param[in] addr Address of the request.
+     * @param[in] data Array containing the data of the write request.
+     * @param[out] bErr To be set to true to signal a bus error.
      *
      * @see bus_cb_write_8
      * @see bus_cb_write_32
      */
     virtual void bus_cb_write_16(uint64_t addr, uint16_t *value, bool &bErr) {
-    	bErr = true;
+        bErr = true;
     }
 
     /**
@@ -205,15 +205,15 @@ public:
      * The Slave class implementation signals a bus error. Children classes
      * must override it if they want to support 32-bit write requests.
      *
-     * @param addr[in] Address of the request.
-     * @param data[in] Array containing the data of the write request.
-     * @param bErr[out] To be set to true to signal a bus error.
+     * @param[in] addr Address of the request.
+     * @param[in] data Array containing the data of the write request.
+     * @param[out] bErr To be set to true to signal a bus error.
      *
      * @see bus_cb_write_8
      * @see bus_cb_write_16
      */
     virtual void bus_cb_write_32(uint64_t addr, uint32_t *value, bool &bErr) {
-    	bErr = true;
+        bErr = true;
     }
 
     /**
@@ -225,9 +225,9 @@ public:
      *
      * The Slave class implementation always returns 0.
      *
-     * @param addr[in] Address of the request.
-     * @param buf[out] Array where read result must be written.
-     * @param size[in] Length of the request.
+     * @param[in] addr Address of the request.
+     * @param[out] buf Array where read result must be written.
+     * @param[in] size Length of the request.
      *
      * @return The number of bytes effectively read.
      */
@@ -244,9 +244,9 @@ public:
      *
      * The Slave class implementation always returns 0.
      *
-     * @param addr[in] Address of the request.
-     * @param buf[in] Array containing the data of the write request.
-     * @param size[in] Length of the request.
+     * @param[in] addr Address of the request.
+     * @param[in] buf Array containing the data of the write request.
+     * @param[in] size Length of the request.
      *
      * @return The number of bytes effectively written.
      */
@@ -261,8 +261,8 @@ public:
      * memory interface) request directed to this component. Thes Slave class
      * implementation always returns false to signal that DMI is not supported.
      *
-     * @param trans[in] TLM2.0 payload
-     * @param dmi_data[out] TLM2.0 DMI data
+     * @param[in] trans TLM2.0 payload
+     * @param[out] dmi_data TLM2.0 DMI data
      *
      * @return true if DMI is supported, false otherwise
      */
@@ -278,7 +278,7 @@ public:
     {
         ERR_PRINTF("Non-blocking transport not implemented\n");
         abort();
-        return tlm::TLM_COMPLETED; 
+        return tlm::TLM_COMPLETED;
     }
 
     virtual void b_transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& delay);
