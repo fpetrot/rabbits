@@ -57,8 +57,11 @@ class MasterIface : public tlm::tlm_bw_transport_if<> {
 public:
     virtual ComponentBase& get_component() = 0;
 
-    virtual void set_bus_iface(BusMasterIfaceBase *iface) = 0;
     virtual void dmi_hint(uint64_t start, uint64_t size) = 0;
+
+    virtual void set_bus_iface(BusMasterIfaceBase *iface) = 0;
+    virtual bool bus_iface_is_set() = 0;
+    virtual BusMasterIfaceBase & get_bus_iface() = 0;
 };
 
 class BusIface {
@@ -101,7 +104,7 @@ public:
     virtual const_slave_iterator child_slave_end() const = 0;
 };
 
-class ComponentBase 
+class ComponentBase
     : public sc_core::sc_module
     , public HasIrqInIface
     , public HasIrqOutIface
@@ -113,12 +116,12 @@ private:
 
 protected:
     ComponentParameters m_params;
-    
+
 public:
     ComponentBase(sc_core::sc_module_name name, const ComponentParameters &params)
         : sc_core::sc_module(name)
         , m_loglvl_override(false)
-        , m_params(params) 
+        , m_params(params)
     {
         PlatformDescription &d = m_params.get_base_description();
 
@@ -130,7 +133,7 @@ public:
         }
     }
 
-    ComponentBase(sc_core::sc_module_name name) 
+    ComponentBase(sc_core::sc_module_name name)
         : sc_core::sc_module(name)
         , m_loglvl_override(false)
     {}

@@ -146,7 +146,6 @@ public:
      */
     void dmi_hint(uint64_t start, uint64_t size);
 
-    virtual void set_bus_iface(BusMasterIfaceBase *iface) { m_bus_iface = iface; }
 
     /* tlm::tlm_bw_transport_if */
     virtual tlm::tlm_sync_enum nb_transport_bw(tlm::tlm_generic_payload& trans,
@@ -168,7 +167,9 @@ public:
 
     /* MasterIface */
     virtual ComponentBase& get_component() { return *this; }
-
+    virtual void set_bus_iface(BusMasterIfaceBase *iface) { m_bus_iface = iface; }
+    virtual bool bus_iface_is_set() { return m_bus_iface != NULL; }
+    BusMasterIfaceBase & get_bus_iface() { return *m_bus_iface; }
 };
 
 #endif

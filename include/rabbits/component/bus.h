@@ -115,7 +115,7 @@ public:
 template <unsigned int BUSWIDTH = 32>
 class BusMasterIface;
 
-class BusMasterIfaceBase {
+class BusMasterIfaceBase : public tlm::tlm_fw_transport_if<> {
 public:
     virtual ~BusMasterIfaceBase() {}
 
@@ -125,7 +125,7 @@ public:
 
     template <unsigned int BUSWIDTH>
     tlm::tlm_initiator_socket<BUSWIDTH>& get_socket() {
-        BusMasterIface<BUSWIDTH> *bus = dynamic_cast<BusMasterIface<BUSWIDTH> >(this);
+        BusMasterIface<BUSWIDTH> *bus = dynamic_cast<BusMasterIface<BUSWIDTH>* >(this);
         if (bus == NULL) {
             throw WrongBusSizeException(BUSWIDTH);
         }
@@ -136,24 +136,46 @@ public:
 template <unsigned int BUSWIDTH>
 class BusMasterIface : public BusMasterIfaceBase {
 protected:
-    tlm::tlm_initiator_socket<BUSWIDTH> m_socket;
+    tlm::tlm_initiator_socket<BUSWIDTH>* m_socket;
+    bool m_free_socket;
+    MasterIface *m_master;
 
 public:
-    virtual ~BusMasterIface() {}
+    BusMasterIface(MasterIface &master) : m_socket(NULL), m_free_socket(false), m_master(&master) {}
+    BusMasterIface(tlm::tlm_target_socket<BUSWIDTH> &m) : m_socket(&m), m_free_socket(false), m_master(NULL) {}
 
-    virtual void b_transport(tlm::tlm_generic_payload &pl, sc_core::sc_time &t) {
-        m_socket->b_transport(pl, t);
+    virtual ~BusMasterIface() {
+        if (m_free_socket) {
+            delete m_socket;
+        }
     }
 
-    virtual unsigned int transport_dbg(tlm::tlm_generic_payload &pl) {
-        return m_socket->transport_dbg(pl);
+    void b_transport(tlm::tlm_generic_payload &pl, sc_core::sc_time &t) {
+        (*m_socket)->b_transport(pl, t);
     }
 
-    virtual bool get_direct_mem_ptr(tlm::tlm_generic_payload &pl, tlm::tlm_dmi &dmi_data) {
-        return m_socket->get_direct_mem_ptr(pl, dmi_data);
+    unsigned int transport_dbg(tlm::tlm_generic_payload &pl) {
+        return (*m_socket)->transport_dbg(pl);
     }
 
-    tlm::tlm_initiator_socket<BUSWIDTH>& get_socket() { return m_socket; }
+    bool get_direct_mem_ptr(tlm::tlm_generic_payload &pl, tlm::tlm_dmi &dmi_data) {
+        return (*m_socket)->get_direct_mem_ptr(pl, dmi_data);
+    }
+
+    tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& trans,
+                                       tlm::tlm_phase& phase, sc_core::sc_time& t) {
+        return (*m_socket)->nb_transport_fw(trans, phase, t);
+    }
+
+    tlm::tlm_initiator_socket<BUSWIDTH>& get_socket() {
+        if (m_socket == NULL) {
+            m_socket = new tlm::tlm_initiator_socket<BUSWIDTH>;
+            m_socket->bind(*m_master);
+            m_free_socket = true;
+        }
+
+        return *m_socket;
+    }
 };
 
 #endif

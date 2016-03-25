@@ -34,9 +34,9 @@ protected:
 public:
     SlaveTester(sc_core::sc_module_name n)
         : Master(n)
+        , m_master_iface(*this)
         , m_slave_iface(NULL)
     {
-        m_master_iface.get_socket().bind(*this);
         set_bus_iface(&m_master_iface);
     }
 

@@ -66,12 +66,15 @@ public:
     }
 
     virtual void connect_master(MasterIface &master) {
-        BusMasterIface<BUSWIDTH> *s = new BusMasterIface<BUSWIDTH>;
-        m_init_socks[&master] = s;
+        if (!master.bus_iface_is_set()) {
+            BusMasterIface<BUSWIDTH> *s = new BusMasterIface<BUSWIDTH>(master);
+            m_init_socks[&master] = s;
+            master.set_bus_iface(s);
+        }
 
-        s->get_socket().bind(master);
-        m_interco.connect_initiator(s->get_socket());
-        master.set_bus_iface(s);
+        BusMasterIfaceBase &s = master.get_bus_iface();
+
+        m_interco.connect_initiator(s.get_socket<BUSWIDTH>());
     }
 
     virtual void connect_target_socket(tlm::tlm_target_socket<BUSWIDTH> &s, AddressRange range)
