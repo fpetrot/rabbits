@@ -20,11 +20,28 @@
 #ifndef _RABBITS_ARITH_H
 #define _RABBITS_ARITH_H
 
+/**
+ * @file arith.h
+ * Arith class declaration
+ */
+
 #include <inttypes.h>
 
+/**
+ * @brief Arithmetic and logic helpers class.
+ */
 class Arith {
 public:
-    /* Find the last set bit in a 32-bit word. Undefined if w == 0 */
+    /**
+     * @brief Find the last set bit in a 32-bit word. 
+     *
+     * Find the last set bit in a 32-bit word.
+     * The result is undefined if w equals 0.
+     *
+     * @param[in] w the 32-bit word
+     *
+     * @return The index of the last set bit in w.
+     */
     static int fls32(uint32_t w) {
         return (sizeof(w) << 3) - __builtin_clz(w) - 1;
     }

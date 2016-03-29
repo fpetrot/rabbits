@@ -30,9 +30,41 @@ public:
     };
 };
 
+/**
+ * @brief Logger interface.
+ *
+ * Classes willing to override log traces must implement this interface.
+ */
 class HasLoggerIface {
+    /**
+     * @brief Return an std::ostream object associated to the log level lvl.
+     *
+     * @param[in] lvl The wanted log level.
+     *
+     * @return an std::ostream object associated to the log level lvl.
+     */
     virtual std::ostream & log_stream(LogLevel::value lvl) const = 0;
+
+    /**
+     * @brief vprintf-like function for logging.
+     *
+     * @param[in] lvl The wanted log level.
+     * @param[in] fmt The printf-like format string.
+     * @param[in,out] ap The va_list corresponding to fmt.
+     *
+     * @return The number of character printed.
+     */
     virtual int log_vprintf(LogLevel::value lvl, const std::string fmt, va_list ap) const = 0;
+
+    /**
+     * @brief printf-like function for logging
+     *
+     * @param[in] lvl The wanted log level.
+     * @param[in] fmt The printf-like format string.
+     * @param[in,out] ... The variable number of parameters corresponding to fmt.
+     *
+     * @return The number of character printed.
+     */
     virtual int log_printf(LogLevel::value lvl, const std::string fmt, ...) const = 0;
 };
 

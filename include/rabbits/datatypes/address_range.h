@@ -17,23 +17,60 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+/**
+ * @file address_range.h
+ * AddressRange class declaration
+ */
+
 #ifndef _UTILS_DATATYPES_ADDRESS_RANGE_H
 #define _UTILS_DATATYPES_ADDRESS_RANGE_H
 
 #include <inttypes.h>
 #include <ostream>
 
+/**
+ * @brief Address range
+ *
+ * This class embed information about an address range.
+ */
 class AddressRange {
 protected:
     uint64_t m_begin;
     uint64_t m_size;
 
 public:
+    /**
+     * @brief Construct an empty address range starting at 0 and with a null size.
+     */
     AddressRange() : m_begin(0), m_size(0) {}
+
+    /**
+     * @brief Construct an address range given its start and its size.
+     *
+     * @param begin The address range start.
+     * @param size The address range size.
+     */
     AddressRange(uint64_t begin, uint64_t size) : m_begin(begin), m_size(size) { }
 
+    /**
+     * @brief Return the address range start.
+     *
+     * @return the address range start.
+     */
     uint64_t begin() const { return m_begin; }
+
+    /**
+     * @brief Return the address range size.
+     *
+     * @return the address range size.
+     */
     uint64_t size()  const { return m_size; }
+
+    /**
+     * @brief Return the address range end.
+     *
+     * @return the address range end.
+     */
     uint64_t end()   const { return m_begin + m_size - 1; }
 };
 

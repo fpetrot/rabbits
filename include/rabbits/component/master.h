@@ -125,26 +125,6 @@ public:
      */
     virtual void bus_write(uint64_t addr, uint8_t *data, unsigned int len);
 
-    /**
-     * @brief Helper method called by the PlatformBuilder instance at the end of elaboration.
-     *
-     * Helper method called by the PlatformBuilder instance at the end of
-     * elaboration to inform the master of the platform memory mapping. For
-     * each slave connect to the bus, this method is called with address start
-     * and mapping size information.
-     *
-     * This method try to initiate a DMI request to the corresponding slave. If
-     * the request succeeds, it calls back the dmi_hint_cb method with all DMI
-     * information so that the master can use them if it wants to.
-     *
-     * This method is supposed to be called by an instance of PlatformBuilder only.
-     *
-     * @param[in] start Start address of the memory mapping
-     * @param[in] size Size of the memory mapping
-     *
-     * @see dmi_hint_cb
-     */
-    void dmi_hint(uint64_t start, uint64_t size);
 
 
     /* tlm::tlm_bw_transport_if */
@@ -167,6 +147,7 @@ public:
 
     /* MasterIface */
     virtual ComponentBase& get_component() { return *this; }
+    void dmi_hint(uint64_t start, uint64_t size);
     virtual void set_bus_iface(BusMasterIfaceBase *iface) { m_bus_iface = iface; }
     virtual bool bus_iface_is_set() { return m_bus_iface != NULL; }
     BusMasterIfaceBase & get_bus_iface() { return *m_bus_iface; }

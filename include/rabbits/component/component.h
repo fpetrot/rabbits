@@ -17,6 +17,11 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+/**
+ * @file component.h
+ * Component class declaration
+ */
+
 #ifndef _UTILS_COMPONENT_COMPONENT_H
 #define _UTILS_COMPONENT_COMPONENT_H
 
@@ -28,6 +33,18 @@
 #include "component_base.h"
 #include "rabbits/rabbits_exception.h"
 
+/**
+ * @brief A rabbits component.
+ *
+ * This class represents a rabbits component. It can have in and out IRQs, and
+ * children components.
+ *
+ * Not connected IRQs at end of elaboration are automatically stubbed by
+ * connecting a signal to them.
+ *
+ * @see Slave, Master
+ * @see IrqIn, IrqOut
+ */
 class Component : public ComponentBase {
 protected:
     IrqPool<IrqIn> m_irqs_in;
@@ -37,31 +54,70 @@ protected:
     std::map<std::string, SlaveIface*> m_slave_children;
     std::map<std::string, MasterIface*> m_master_children;
 
+    /**
+     * @brief Declare a child component.
+     *
+     * @param id Name associated to the child.
+     * @param c The child.
+     */
     virtual void declare_component(std::string id, ComponentBase& c)
     {
         m_comp_children[id] = &c;
     }
 
+    /**
+     * @brief Declare a slave child component.
+     *
+     * @param id Name associated to the slave child.
+     * @param s The slave child.
+     */
     virtual void declare_slave(std::string id, SlaveIface& s)
     {
         m_slave_children[id] = &s;
         m_comp_children[id] = &(s.get_component());
     }
 
+    /**
+     * @brief Declare a master child component.
+     *
+     * @param id Name associated to the master child.
+     * @param s The master child.
+     */
     virtual void declare_master(std::string id, MasterIface& s)
     { 
         m_master_children[id] = &s;
         m_comp_children[id] = &(s.get_component());
     }
 
+    /**
+     * @brief Declare a input IRQ line.
+     *
+     * @param id Name associated to the input IRQ line.
+     * @param irq Component's port associated to this IRQ line.
+     */
     virtual void declare_irq_in(std::string id, sc_core::sc_in<bool> & irq) {
         m_irqs_in.add(new IrqIn(id, irq));
     }
 
+    /**
+     * @brief Declare a input IRQ line.
+     *
+     * @param irq Already configured IRQ object.
+     */
     virtual void declare_irq_in(IrqIn *irq) {
         m_irqs_in.add(irq);
     }
 
+    /**
+     * @brief Declare multiple input IRQ lines.
+     *
+     * Declare multiple input IRQ given the ports vector v. Each created IRQ is
+     * named after id, plus the index of the IRQ starting at 0.
+     *
+     * @param id The prefix associated to the input IRQ lines. The final name
+     * is formed with this prefix concatenated with the index of the IRQ line.
+     * @param v The vector of Component ports associated to the IRQ lines.
+     */
     virtual void declare_vector_irq_in(std::string id, sc_core::sc_vector<sc_core::sc_in<bool> > & v) {
         sc_core::sc_vector<sc_core::sc_in<bool> >::iterator it;
         int i;
@@ -73,14 +129,35 @@ protected:
         }
     }
 
+    /**
+     * @brief Declare a output IRQ line.
+     *
+     * @param id Name associated to the output IRQ line.
+     * @param irq Component's port associated to this IRQ line.
+     */
     virtual void declare_irq_out(std::string id, sc_core::sc_out<bool> & irq) {
         m_irqs_out.add(new IrqOut(id, irq));
     }
 
+    /**
+     * @brief Declare a output IRQ line.
+     *
+     * @param irq Already configured IRQ object.
+     */
     virtual void declare_irq_out(IrqOut *irq) {
         m_irqs_out.add(irq);
     }
 
+    /**
+     * @brief Declare multiple output IRQ lines.
+     *
+     * Declare multiple output IRQ given the ports vector v. Each created IRQ is
+     * named after id, plus the index of the IRQ starting at 0.
+     *
+     * @param id The prefix associated to the output IRQ lines. The final name
+     * is formed with this prefix concatenated with the index of the IRQ line.
+     * @param v The vector of Component ports associated to the IRQ lines.
+     */
     virtual void declare_vector_irq_out(std::string id, sc_core::sc_vector<sc_core::sc_out<bool> > & v) {
         sc_core::sc_vector<sc_core::sc_out<bool> >::iterator it;
         int i;
