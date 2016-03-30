@@ -17,9 +17,19 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+/**
+ * @file param_data.h
+ * @brief ParamDataBase and ParamData class declaration.
+ */
+
 #ifndef _UTILS_COMPONENT_PARAMETER_PARAM_DATA_H
 #define _UTILS_COMPONENT_PARAMETER_PARAM_DATA_H
 
+/**
+ * @brief ParamData, base class.
+ *
+ * This class is internally used by parameters as data storage for their values.
+ */
 class ParamDataBase {
 private:
     bool m_inited;
@@ -34,6 +44,11 @@ public:
     bool is_inited() const { return m_inited; }
 };
 
+/**
+ * @brief ParamData.
+ *
+ * This class is internally used by parameters as data storage for their values.
+ */
 template <typename T>
 class ParamData : public ParamDataBase {
 protected:
@@ -44,7 +59,18 @@ public:
     explicit ParamData(const T& d) : m_data(d) { inited(); }
     virtual ~ParamData() {}
 
+    /**
+     * @brief Get the internal storage value.
+     *
+     * @return the internal storage value.
+     */
     T get() const { return m_data; }
+
+    /**
+     * @brief Set the internal storage value.
+     *
+     * @param d the new internal storage value.
+     */
     void set(const T &d) { m_data = d; inited(); }
 };
 

@@ -19,7 +19,7 @@
 
 /**
  * @file slave.h
- * Slave class declaration
+ * @brief Slave class declaration
  */
 
 #ifndef _SLAVE_DEVICE_H_
@@ -33,7 +33,8 @@
 #include "rabbits/component/component.h"
 
 /**
- * @class Slave
+ * @brief Slave (target) component on a bus
+ *
  * Represent a component that is connected as a slave (a target) on a bus.
  */
 class Slave: public Component, public SlaveIface

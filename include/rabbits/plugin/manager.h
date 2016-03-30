@@ -17,6 +17,11 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+/**
+ * @file manager.h
+ * @brief PluginManager class declaration.
+ */
+
 #ifndef _UTILS_PLUGIN_MANAGER_H
 #define _UTILS_PLUGIN_MANAGER_H
 
@@ -26,6 +31,9 @@
 
 class PluginFactory;
 
+/**
+ * @brief The plugin manager.
+ */
 class PluginManager {
 private:
     static PluginManager *m_inst;
@@ -38,10 +46,26 @@ protected:
 public:
     virtual ~PluginManager() {}
 
+    /**
+     * @brief Return the singleton instance of the plugin manager.
+     *
+     * @return the singleton instance of the plugin manager.
+     */
     static PluginManager& get();
 
+    /**
+     * @brief Register a new plugin into the manager.
+     *
+     * @param[in] PluginFactory The factory of the plugin to register.
+     */
     void register_plugin(PluginFactory*);
 
+    /**
+     * @brief Run the hook corresponding to the hook type HOOK.
+     *
+     * @tparam HOOK the hook type.
+     * @param[in] h the hook context instance.
+     */
     template <typename HOOK>
     void run_hook(const HOOK &h);
 };

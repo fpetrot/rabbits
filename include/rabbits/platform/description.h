@@ -17,6 +17,11 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+/**
+ * @file description.h
+ * @brief PlatformDescription class declaration.
+ */
+
 #ifndef _UTILS_PLATFORM_DESCRIPTION_H
 #define _UTILS_PLATFORM_DESCRIPTION_H
 
@@ -41,20 +46,57 @@ namespace platformdescription {
 template <typename T> struct converter;
 };
 
+/**
+ * @brief A description representing a platform.
+ *
+ * This data structure is used as a configuration database for Rabbits.
+ * It can be fed with YAML files and the command line (and possibly more in the
+ * future).
+ *
+ * The description contains nodes of several types (scalar, map, vector, nil
+ * and invalid), with scalars being the ones carrying the values and the map
+ * acting as hash tables pointing to other nodes. Hence, the final data
+ * structure is roughly a tree with named children.
+ * Scalar nodes can be converted to arbitrary data type using the as<T>() method.
+ *
+ * Given the following YAML description:
+ * <pre>
+ * foo:
+ *   bar: 5
+ * </pre>
+ * in the code, one can access the "bar" value like this:
+ *
+ * <code>int bar_value = d["foo"]["bar"].as<int>();</code>
+ */
 class PlatformDescription {
 public:
     typedef std::map<std::string, PlatformDescription>::iterator iterator;
     typedef std::map<std::string, PlatformDescription>::const_iterator const_iterator;
     typedef std::map<std::string, PlatformDescription>::size_type size_type;
 
-    enum NodeType { MAP, VECTOR, SCALAR, NIL, INVALID };
+    /**
+     * @brief Possible node types.
+     */
+    enum NodeType {
+        MAP,    /**< A node having named child nodes. */
+        VECTOR, /**< A node having child nodes (not implemented). */
+        SCALAR, /**< A scalar node carrying a value. */
+        NIL,    /**< A empty node. */
+        INVALID /**< An invalid node resulting from an erroneous description manipulation. */
+    };
 
+    /**
+     * @brief Raised when converting a node to a given type is impossible.
+     */
     class InvalidConversionException : public RabbitsException {
     public:
         explicit InvalidConversionException(const std::string & what) : RabbitsException(what) {}
         virtual ~InvalidConversionException() throw() {}
     };
 
+    /**
+     * @brief Raised when an error is encountered while parsing the command line.
+     */
     class InvalidCmdLineException : public RabbitsException {
     protected:
         std::string build_what(const std::string & arg) { return "Invalid argument: " + arg; }
@@ -63,6 +105,9 @@ public:
         virtual ~InvalidCmdLineException() throw() {}
     };
 
+    /**
+     * @brief The PlatformDescription internal node
+     */
     class Node {
     private:
         /* Memory management */
@@ -238,7 +283,7 @@ public:
         }
 
         virtual const std::string & raw_data() const { return m_val; }
-	void set_raw_data(const std::string &data) { m_val = data; }
+        void set_raw_data(const std::string &data) { m_val = data; }
     };
 
 protected:
@@ -257,21 +302,105 @@ public:
 
     PlatformDescription& operator=(const PlatformDescription&);
 
+    /**
+     * @brief Load a YAML description into this description.
+     *
+     * @param[in] yaml the YAML description.
+     */
     void load_yaml(const std::string & yaml);
+
+    /**
+     * @brief Load a YAML description from the given file.
+     *
+     * @param[in] file The path to the file containing the description.
+     */
     void load_file_yaml(const std::string & file);
 
+    /**
+     * @brief Parse the command line and add the information to the description.
+     *
+     * This method accepts a set of unary arguments, which are arguments that
+     * accept no values on the command line. They are converted to boolean
+     * scalar nodes with the `true` value.
+     *
+     * Example: 
+     *   ./rabbits -help -components.foo.bar 1337
+     *
+     * Here, help is a unary argument, as components.foo.bar is not and as the `1337` value.
+     *
+     * @param[in] argc main function argc parameter.
+     * @param[in] argv main function argv parameter.
+     * @param[in] unaries set of unaries arguments.
+     *
+     * @throw InvalidCmdLineException in case of parsing error.
+     */
     void parse_cmdline(int argc, const char * const argv[], const std::set<std::string> & unaries);
 
+    /**
+     * @brief Return the type of the root node.
+     *
+     * @return the type of the root node.
+     */
     NodeType type() const { return m_node->type(); }
 
+    /**
+     * @brief Return true if the root node is a map node.
+     *
+     * @return true if the root node is a map node, false otherwise.
+     */
     bool is_map() const { return type() == MAP; }
+
+    /**
+     * @brief Return true if the root node is a vector node.
+     *
+     * @return true if the root node is a vector node, false otherwise.
+     */
     bool is_vector() const { return type() == VECTOR; }
+
+    /**
+     * @brief Return true if the root node is a scalar node.
+     *
+     * @return true if the root node is a scalar node, false otherwise.
+     */
     bool is_scalar() const { return type() == SCALAR; }
+
+    /**
+     * @brief Return true if the root node is a nil node.
+     *
+     * @return true if the root node is a nil node, false otherwise.
+     */
     bool is_nil() const { return type() == NIL; }
+
+    /**
+     * @brief Return true if the root node is a invalid node.
+     *
+     * @return true if the root node is a invalid node, false otherwise.
+     */
     bool is_invalid() const { return type() == INVALID; }
 
+    /**
+     * @brief Return the child node associated to the given k.
+     *
+     * If the node type is a map, this method returns the child node associated
+     * to the key k. If the key does not exist, a nil node is returned.
+     *
+     * If the node type is not a map, this method returns the INVALID_DESCRIPTION.
+     *
+     * @param[in] k the child key.
+     *
+     * @return the child node.
+     */
     PlatformDescription & operator[] (const std::string& k) { return (*m_node)[k]; }
 
+    /**
+     * @brief Return true if the child node exists.
+     *
+     * If the node type is not a map, this method returns false.
+     *
+     * @param[in] k the key of the child node.
+     *
+     * @return true if the child node exists.
+     */
     bool exists(const std::string& k) const {
         NodeType t = (*m_node)[k].type();
         return ((t != NIL) && (t != INVALID));
@@ -279,15 +408,58 @@ public:
 
     void alias(const std::string& root, const std::string& child);
 
-    PlatformDescription merge(PlatformDescription &);
+    /**
+     * @brief Merge two descriptions and return the now one.
+     *
+     * Merge the current description with the one given as parameter.
+     * The current description has priority over the one given as parameter.
+     * If two nodes conflicts, the one from the current description will be
+     * used in the final description.
+     *
+     * @param[in] p the description to merge to.
+     *
+     * @return the merged description.
+     */
+    PlatformDescription merge(PlatformDescription &p);
 
+    /**
+     * @brief Return an iterator to the first child node of a map node.
+     *
+     * @return an iterator to the first child node of a map node.
+     */
     iterator begin() { return m_node->begin(); }
+
+    /**
+     * @brief Return an iterator to the <i>past-the-end</i> child node of a map node.
+     *
+     * @return an iterator to the <i>past-the-end</i> child node of a map node.
+     */
     iterator end() { return m_node->end(); }
 
+    /**
+     * @brief Return a constant iterator to the first child node of a map node.
+     *
+     * @return a constant iterator to the first child node of a map node.
+     */
     const_iterator begin() const { return m_node->begin(); }
+
+    /**
+     * @brief Return a constant iterator to the <i>past-the-end</i> child node of a map node.
+     *
+     * @return a constant iterator to the <i>past-the-end</i> child node of a map node.
+     */
     const_iterator end() const { return m_node->end(); }
 
-    /* Data access/conversion */
+    /**
+     * @brief Convert a node to the given type.
+     *
+     * The node must be convertible to the type T or a
+     * InvalidConversionException will be thrown.
+     *
+     * @tparam T the conversion type.
+     *
+     * @return the conversion result.
+     */
     template <typename T> const T as() const {
         T ret;
 
@@ -302,6 +474,9 @@ public:
 private:
     static NodeInvalid INVALID_NODE;
 public:
+    /**
+     * @brief The invalid description.
+     */
     static PlatformDescription INVALID_DESCRIPTION;
 };
 

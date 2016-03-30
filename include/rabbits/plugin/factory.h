@@ -17,6 +17,11 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+/**
+ * @file factory.h
+ * @brief PluginFactory class declaration.
+ */
+
 #ifndef _UTILS_PLUGIN_FACTORY_H
 #define _UTILS_PLUGIN_FACTORY_H
 
@@ -27,6 +32,9 @@
 
 class Plugin;
 
+/**
+ * @brief Plugin factory base class.
+ */
 class PluginFactory {
 private:
     PluginFactory(const PluginFactory&);

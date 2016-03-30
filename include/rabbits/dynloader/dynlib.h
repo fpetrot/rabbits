@@ -17,14 +17,25 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+/**
+ * @file dynlib.h
+ * @brief DynLib class declaration
+ */
+
 #ifndef _DYNLOADER_DYNLIB_H
 #define _DYNLOADER_DYNLIB_H
 
 #include "rabbits/rabbits_exception.h"
 #include <string>
 
+/**
+ * @brief A dynamic library
+ */
 class DynLib {
 public:
+    /**
+     * @brief Raised when a dynamic library cannot be open.
+     */
     class CannotOpenDynLibException : public RabbitsException {
         std::string build_what(const std::string &fn, const std::string &reason) {
             return "Cannot open " + fn + ": " + reason;
@@ -35,6 +46,9 @@ public:
         ~CannotOpenDynLibException() throw () {}
     };
 
+    /**
+     * @brief Raised when the requested symbol is not found in a dynamic library.
+     */
     class SymbolNotFoundException : public RabbitsException {
         std::string build_what(const std::string &sym) {
             return "Symbol not found:" + sym;
@@ -58,12 +72,57 @@ protected:
 public:
     virtual ~DynLib() {}
 
+    /**
+     * @brief Check if the given symbol exists.
+     *
+     * @param[in] sym The symbol name.
+     *
+     * @return true if the symbol exists in the dynamic library, false otherwise.
+     */
     virtual bool check_symbol(const std::string &sym) = 0;
+
+    /**
+     * @brief Return the address of the given symbol.
+     *
+     * @param[in] sym The symbol name.
+     *
+     * @return the address of the given symbol.
+     * @throw SymbolNotFoundException if the symbol does not exists.
+     */
     virtual void * get_symbol(const std::string &sym) = 0;
 
+    /**
+     * @brief Return the file extension of dynamic libraries on the current operating system.
+     *
+     * @return the file extension of dynamic libraries on the current operating system.
+     */
     static const std::string & get_lib_extension();
+
+    /**
+     * @brief Open a dynamic library.
+     *
+     * This method is meant to be used by the DynamicLoader, and not directly.
+     * If you want to load a dynamic library, see the DynamicLoader class.
+     *
+     * @param[in] fn path to the dynamic library.
+     *
+     * @return the dynamic library
+     * @throw CannotOpenDynLibException if the operation fails.
+     *
+     * @see DynamicLoader
+     */
     static DynLib * open(const std::string &fn);
-    static void close(DynLib *);
+
+    /**
+     * @brief Close a dynamic library.
+     *
+     * This method is meant to be used by the DynamicLoader, and not directly.
+     *
+     * @param[in] lib The dynamic library
+     *
+     * @see DynamicLoader
+     */
+    static void close(DynLib *lib);
 };
 
 #endif

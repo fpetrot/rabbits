@@ -65,7 +65,7 @@ public:
         FIXUP_BOOT_DATA,        /**< Patch with the boot data loading address (dtb or atag structure). */
         FIXUP_KERNEL_ENTRY,     /**< Patch with the kernel entry address. */
         FIXUP_SMP_BOOTREG,      /**< Patch with the SMP boot register address. */
-        FIXUP_SECONDARY_ENTRYi, /**< Patch with the SMP secondary blob load address */
+        FIXUP_SECONDARY_ENTRY,  /**< Patch with the SMP secondary blob load address */
 
         NUM_FIXUP
     };

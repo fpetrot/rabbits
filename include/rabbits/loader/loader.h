@@ -17,6 +17,11 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+/**
+ * @file loader.h
+ * @brief Loader class declaration
+ */
+
 #ifndef _UTILS_LOADER_H
 #define _UTILS_LOADER_H
 
@@ -32,6 +37,9 @@
 
 #include "rabbits/logger.h"
 
+/**
+ * @brief Helper class to load binary and ELF file to platform memory.
+ */
 class Loader {
 private:
     /* Align addr on page boundary, as required by mmap
@@ -122,6 +130,18 @@ fail:
     }
 
 public:
+    /**
+     * @brief Load an ELF image to platform memory.
+     *
+     * This method uses a DebugInitiator to write to the platform memory.
+     * It can return the ELF entry point into the entry pointer if it is not NULL.
+     *
+     * @param[in] elf_fn Path to the ELF image to load.
+     * @param[in,out] bus The DebugInitiator used to write to memory.
+     * @param[out] entry The ELF entry point.
+     *
+     * @return 0 on success, a positive value on error.
+     */
     static int load_elf(const std::string & elf_fn, DebugInitiator *bus, uint64_t *entry)
     {
         int fd, ret;
@@ -162,6 +182,19 @@ open_fail:
         return 1;
     }
 
+    /**
+     * @brief Load a binary image to platform memory.
+     *
+     * This method uses a DebugInitiator to write to the platform memory.
+     * It can return the binary image size into the img_size pointer if it is not NULL.
+     *
+     * @param[in] img_fn Path to the binary image.
+     * @param[in,out] bus The DebugInitiator used to write to memory.
+     * @param[in] load_addr Load address of the binary image.
+     * @param[out] img_size The binary image size.
+     *
+     * @return 0 on success, a positive value on error.
+     */
     static int load_image(const std::string & img_fn, DebugInitiator *bus, uint64_t load_addr, uint64_t *img_size)
     {
         int fd;

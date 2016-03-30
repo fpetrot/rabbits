@@ -17,11 +17,19 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+/**
+ * @file logger.h
+ * @brief Logger class declaration
+ */
+
 #ifndef _RABBITS_LOGGER_LOGGER_H
 #define _RABBITS_LOGGER_LOGGER_H
 
 #include "has_logger_iface.h"
 
+/**
+ * @brief Main logging system.
+ */
 class Logger : public HasLoggerIface {
 public:
     static const std::string PREFIXES[];
@@ -58,26 +66,77 @@ protected:
     mutable std::vector<char> m_format_buf;
 
 public:
+    /**
+     * @brief Return the singleton instance of the Logger.
+     *
+     * @return the singleton instance of the Logger.
+     */
     static Logger & get() { return m_logger; }
 
+    /**
+     * @brief Set the stream associated with the given log level.
+     *
+     * Default stream is std::cout for all log levels.
+     *
+     * @param[in] lvl The log level.
+     * @param[in] str The stream to associate to the log level.
+     */
     void set_stream(LogLevel::value lvl, std::ostream *str) { m_streams[lvl] = str; }
+
+    /**
+     * @brief Set the current maximum log level displayed.
+     *
+     * All traces having a log level greater than the lvl value will be
+     * discarded and won't be given to their corresponding stream.
+     *
+     * @param[in] lvl The log level to set.
+     */
     void set_log_level(LogLevel::value lvl) { m_level = lvl; }
+
+    /**
+     * @brief Get the current log level.
+     *
+     * @return the current log level.
+     */
     LogLevel::value get_log_level() { return m_level; }
 
     int log_printf(LogLevel::value lvl, const std::string fmt, ...) const ;
     int log_vprintf(LogLevel::value lvl, const std::string fmt, va_list ap) const;
     std::ostream & log_stream(LogLevel::value lvl) const;
 
+    /**
+     * @brief Save the current streams flags.
+     */
     void save_flags();
+
+    /**
+     * @brief Restore the streams flags previously saved.
+     */
     void restore_flags();
 
+    /**
+     * @brief Enable or disable the banner emitted by the Logger such as "[warn]".
+     *
+     * @param enabled the desired banner state (enabled or disabled).
+     *
+     * @return The previous state.
+     */
     bool enable_banner(bool enabled) {
         bool save = m_banner_enabled;
         m_banner_enabled = enabled;
         return save;
     }
 
+    /**
+     * @brief Mute the Logger.
+     *
+     * All traces will be discarded. Nothing will be logged.
+     */
     void mute() { m_muted = true; }
+
+    /**
+     * @brief Unmute the Logger.
+     */
     void unmute() { m_muted = false; }
 };
 #endif

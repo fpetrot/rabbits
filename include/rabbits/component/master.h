@@ -33,7 +33,8 @@
 #include "rabbits/component/bus.h"
 
 /**
- * @class Master
+ * @brief Master (initiator) component on a bus.
+ *
  * Represent a component that is connected as a master (a initiator) on a bus.
  */
 class Master: public Component, public MasterIface

@@ -51,7 +51,7 @@ class DynLib;
 class DynamicLoaderVisitor;
 
 /**
- * @brief Rabbits dynamic loader.
+ * @brief Rabbits dynamic library loader.
  *
  * This class load dynamic libraries and Rabbits dynlibs.
  */

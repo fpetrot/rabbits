@@ -17,6 +17,11 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+/**
+ * @file parameter.h
+ * @brief ParameterBase and Parameter class declaration
+ */
+
 #ifndef _UTILS_COMPONENT_PARAMETER_PARAMETER_H
 #define _UTILS_COMPONENT_PARAMETER_PARAMETER_H
 
@@ -28,8 +33,18 @@
 #include "rabbits/rabbits_exception.h"
 #include "rabbits/platform/description.h"
 
+/**
+ * @brief Parameter, base class.
+ *
+ * This class allows parameter manipulation while being parameter type agnostic.
+ * When a conversion is requested, a runtime check is performed to ensure the
+ * parameter can be converted to the requested type.
+ */
 class ParameterBase {
 public:
+    /**
+     * @brief Raised when converting a parameter to a type failed.
+     */
     class InvalidParameterTypeException : public RabbitsException {
     public:
         explicit InvalidParameterTypeException(const std::string & what) : RabbitsException(what) {}
@@ -51,14 +66,62 @@ protected:
 public:
     virtual ~ParameterBase() {}
 
+    /**
+     * @brief Convert a parameter to a given type.
+     *
+     * @tparam T type to convert the parameter to.
+     *
+     * @return The conversion result.
+     *
+     * @throw InvalidParameterTypeException if the conversion failed.
+     */
     template <typename T> T as();
-    virtual void set(const PlatformDescription &) = 0;
+
+    /**
+     * @brief Set the parameter to the value of the root node in the given PlatformDescription.
+     *
+     * The given PlatformDescription is supposed to be convertible to the type of the parameter.
+     *
+     * @param[in] p The platform description.
+     */
+    virtual void set(const PlatformDescription &p) = 0;
+
+    /**
+     * @brief Clone the parameter.
+     *
+     * The clone is dynamically allocated and must be deleted by the caller.
+     *
+     * @return a clone of the parameter.
+     */
     virtual ParameterBase* clone() const = 0;
+
+    /**
+     * @brief Convert the parameter to string.
+     *
+     * This method is implemented using a std::stringstream for the conversion.
+     * Thus, a function ostream& operator<<(ostream&, T) must exists for this method to
+     * compile (with T being the parameter type).
+     *
+     * @return the string representing the parameter value.
+     */
     virtual std::string to_str() const = 0;
 
+    /**
+     * @brief Return a textual description of the parameter.
+     *
+     * @return a textual description of the parameter.
+     */
     const std::string & get_description() { return m_description; }
 };
 
+/**
+ * @brief a Component parameter.
+ *
+ * Represent a component parameter having a value of type T, a description and
+ * a compulsory default value.
+ *
+ * @tparam T the parameter type.
+ */
 template <typename T>
 class Parameter : public ParameterBase {
 protected:
@@ -75,6 +138,13 @@ public:
         , m_default_storage(p.m_default_storage) {}
     virtual ~Parameter() {}
 
+    /**
+     * @brief Get the value of the parameter.
+     *
+     * If the parameter is not set, this method returns its default value.
+     *
+     * @return the value of the parameter.
+     */
     T get() const {
         if (m_data_storage.is_inited()) {
             return m_data_storage.get();
@@ -83,6 +153,11 @@ public:
         }
     }
 
+    /**
+     * @brief Set the value of the parameter.
+     *
+     * @param d the new value of the parameter.
+     */
     void set(const T& d) {
         m_data_storage.set(d);
     }

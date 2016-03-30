@@ -17,12 +17,19 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+/**
+ * @brief Plugin hooks classes declaration.
+ */
+
 #ifndef _UTILS_PLUGIN_HOOK_H
 #define _UTILS_PLUGIN_HOOK_H
 
 class PlatformDescription;
 class PlatformBuilder;
 
+/**
+ * @brief Hook context used before the build starts.
+ */
 class PluginHookBeforeBuild {
 protected:
     PlatformDescription *m_descr;
@@ -32,10 +39,24 @@ public:
     PluginHookBeforeBuild(PlatformDescription *descr, PlatformBuilder *builder) 
         : m_descr(descr), m_builder(builder) {}
 
+    /**
+     * @brief Get the platform description.
+     *
+     * @return the platform description.
+     */
     PlatformDescription* get_descr() const { return m_descr; }
+
+    /**
+     * @brief Get the platform builder.
+     *
+     * @return the platform builder.
+     */
     PlatformBuilder* get_builder() const { return m_builder; }
 };
 
+/**
+ * @brief Hook context used after the components discovery step.
+ */
 class PluginHookAfterComponentDiscovery {
 protected:
     PlatformDescription *m_descr;
@@ -45,10 +66,24 @@ public:
     PluginHookAfterComponentDiscovery (PlatformDescription *descr, PlatformBuilder *builder) 
         : m_descr(descr), m_builder(builder) {}
 
+    /**
+     * @brief Get the platform description.
+     *
+     * @return the platform description.
+     */
     PlatformDescription* get_descr() const { return m_descr; }
+
+    /**
+     * @brief Get the platform builder.
+     *
+     * @return the platform builder.
+     */
     PlatformBuilder* get_builder() const { return m_builder; }
 };
 
+/**
+ * @brief Hook context used after the components creation step.
+ */
 class PluginHookAfterComponentInst {
 protected:
     PlatformDescription *m_descr;
@@ -58,10 +93,24 @@ public:
     PluginHookAfterComponentInst (PlatformDescription *descr, PlatformBuilder *builder) 
         : m_descr(descr), m_builder(builder) {}
 
+    /**
+     * @brief Get the platform description.
+     *
+     * @return the platform description.
+     */
     PlatformDescription* get_descr() const { return m_descr; }
+
+    /**
+     * @brief Get the platform builder.
+     *
+     * @return the platform builder.
+     */
     PlatformBuilder* get_builder() const { return m_builder; }
 };
 
+/**
+ * @brief Hook context used after the components connection step.
+ */
 class PluginHookAfterBusConnections {
 protected:
     PlatformDescription *m_descr;
@@ -71,10 +120,24 @@ public:
     PluginHookAfterBusConnections (PlatformDescription *descr, PlatformBuilder *builder) 
         : m_descr(descr), m_builder(builder) {}
 
+    /**
+     * @brief Get the platform description.
+     *
+     * @return the platform description.
+     */
     PlatformDescription* get_descr() const { return m_descr; }
+
+    /**
+     * @brief Get the platform builder.
+     *
+     * @return the platform builder.
+     */
     PlatformBuilder* get_builder() const { return m_builder; }
 };
 
+/**
+ * @brief Hook context used at the end of the build.
+ */
 class PluginHookAfterBuild {
 protected:
     PlatformDescription *m_descr;
@@ -84,7 +147,18 @@ public:
     PluginHookAfterBuild(PlatformDescription *descr, PlatformBuilder *builder) 
         : m_descr(descr), m_builder(builder) {}
 
+    /**
+     * @brief Get the platform description.
+     *
+     * @return the platform description.
+     */
     PlatformDescription* get_descr() const { return m_descr; }
+
+    /**
+     * @brief Get the platform builder.
+     *
+     * @return the platform builder.
+     */
     PlatformBuilder* get_builder() const { return m_builder; }
 };
 

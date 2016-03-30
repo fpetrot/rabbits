@@ -22,6 +22,9 @@
 
 #include <cstdarg>
 
+/**
+ * @brief Log level.
+ */
 class LogLevel {
 public:
     enum value {
