@@ -322,12 +322,14 @@ class Component
   end
 
   def build_include
+    dirname = File.dirname(@fn)
+
     if @include.is_a?(Array) then
       @include.map do |i|
-        '#include "' + i + '"'
+        "#include \"#{dirname}/#{i}\""
       end.join("\n")
     else
-      "#include \"#{@include}\""
+      "#include \"#{dirname}/#{@include}\""
     end
   end
 
@@ -385,12 +387,14 @@ class Plugin
   end
 
   def build_include
+    dirname = File.dirname(@fn)
+
     if @include.is_a?(Array) then
       @include.map do |i|
-        '#include "' + i + '"'
+        "#include \"#{dirname}/#{i}\""
       end.join("\n")
     else
-      "#include \"#{@include}\""
+      "#include \"#{dirname}/#{@include}\""
     end
   end
 
