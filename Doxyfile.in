@@ -1,0 +1,21 @@
+DOXYFILE_ENCODING      = UTF-8
+PROJECT_NAME           = Rabbits
+PROJECT_NUMBER         = @RABBITS_VERSION@
+
+STRIP_FROM_PATH        = @PROJECT_BINARY_DIR@ \
+                         @PROJECT_SOURCE_DIR@
+
+OUTPUT_DIRECTORY       = @PROJECT_BINARY_DIR@/doc
+OUTPUT_LANGUAGE        = English
+
+QUIET                  = NO
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = NO
+WARN_AS_ERROR          = NO
+
+INPUT                  = @PROJECT_SOURCE_DIR@/include
+FILE_PATTERNS          = *.cc \
+                         *.h
+RECURSIVE              = YES
