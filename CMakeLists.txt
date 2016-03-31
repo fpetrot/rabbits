@@ -144,6 +144,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/RabbitsConfig.cmake
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/rabbits_add_files.cmake
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/rabbits_components.cmake
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindSystemC.cmake
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindRubyInterp.cmake
     DESTINATION ${RABBITS_LIB_DIR}/rabbits/cmake)
 
 
