@@ -8,7 +8,7 @@ include(rabbits_components)
 
 find_package(SystemC REQUIRED)
 find_package(yaml-cpp REQUIRED)
-find_package(Ruby 2.0 REQUIRED)
+find_package(RubyInterp 2.0 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem)
 find_package(Doxygen)
 
