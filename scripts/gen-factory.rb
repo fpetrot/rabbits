@@ -575,7 +575,7 @@ begin
     out.puts DYNAMIC_LOADER_TPL % { 
       :includes => includes,
       :create_insts => insts,
-      :module_name => $modname,
+      :module_name => cc_ify($modname),
       :module_version => $modver
     }
   end
