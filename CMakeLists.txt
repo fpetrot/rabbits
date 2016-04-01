@@ -14,7 +14,7 @@ find_package(Doxygen)
 
 # Options
 option(USE_SDL "Use SDL1.2 for framebuffer devices" ON)
-option(BUILD_DOCUMENTATION "Build the Doxygen HTML documentation (requires Doxygen)" ON)
+option(BUILD_DOCUMENTATION "Build the Doxygen HTML documentation (requires Doxygen)" OFF)
 
 if(NOT RABBITS_DESCR_SEARCH_PATH)
     set(RABBITS_DESCR_SEARCH_PATH "${CMAKE_INSTALL_PREFIX}/share/rabbits/platforms")
@@ -92,21 +92,28 @@ include_directories("${CMAKE_CURRENT_BINARY_DIR}/include")
 add_subdirectory(librabbits)
 add_subdirectory(rabbits)
 
-if(BUILD_DOCUMENTATION)
-    if(NOT DOXYGEN_FOUND)
-        message(WARNING "Doxygen was not found, skipping documentation building.")
-    else()
-        configure_file(
-            ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
-            ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-            @ONLY)
+if(BUILD_DOCUMENTATION AND NOT DOXYGEN_FOUND)
+    message(WARNING "Doxygen was not found, skipping documentation building.")
+endif()
 
-        add_custom_target(doc
-            COMMAND ${DOXYGEN_EXECUTABLE}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-            COMMENT "Generating API documentation with Doxygen"
-            VERBATIM)
+if(DOXYGEN_FOUND)
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
+        ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+        @ONLY)
 
+    unset(_all)
+    if(BUILD_DOCUMENTATION)
+        set(_all ALL)
+    endif()
+
+    add_custom_target(doc ${_all}
+        COMMAND ${DOXYGEN_EXECUTABLE}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Generating API documentation with Doxygen"
+        VERBATIM)
+
+    if(BUILD_DOCUMENTATION)
         install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc/html
             DESTINATION ${RABBITS_DOC_DIR})
     endif()

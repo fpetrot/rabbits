@@ -8,7 +8,7 @@ STRIP_FROM_PATH        = @PROJECT_BINARY_DIR@ \
 OUTPUT_DIRECTORY       = @PROJECT_BINARY_DIR@/doc
 OUTPUT_LANGUAGE        = English
 
-QUIET                  = NO
+QUIET                  = YES
 WARNINGS               = YES
 WARN_IF_UNDOCUMENTED   = YES
 WARN_IF_DOC_ERROR      = YES
