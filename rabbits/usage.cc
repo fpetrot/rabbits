@@ -140,15 +140,19 @@ void print_usage(const char* arg0, CmdlineInfo &cmdline, PlatformBuilder &p)
     cout << "Arguments:\n";
     print_cmdline_usage(cmdline);
 
+    if (p.is_empty()) {
+        return;
+    }
+
     cout << "\nPlatform arguments:\n";
     for (it = p.comp_begin(); it != p.comp_end(); it++) {
         print_comp_usage(it->first, it->second->get_params());
     }
 }
 
-void print_version()
+void print_version(ostream &s)
 {
-    cout << RABBITS_APP_NAME
+    s << RABBITS_APP_NAME
         << " version " << RABBITS_VERSION
         << " api version " << RABBITS_API_VERSION << "\n";
 }

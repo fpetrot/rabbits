@@ -80,7 +80,7 @@ void PlatformBuilder::create_components(PlatformDescription &descr, CreationStag
     ComponentManager &cm = ComponentManager::get();
 
     if ((!descr.exists("components")) || (descr["components"].type() != PlatformDescription::MAP)) {
-        WRN_STREAM("No component found in description\n");
+        DBG_STREAM("No component found in description\n");
         return;
     }
 

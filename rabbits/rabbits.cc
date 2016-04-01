@@ -43,8 +43,6 @@ using boost::filesystem::is_regular_file;
 using std::string;
 using std::vector;
 using std::set;
-using std::cout;
-using std::ostream;
 
 static void get_yml_from_basename(const char *arg0, vector<string> & files)
 {
@@ -161,17 +159,18 @@ int sc_main(int argc, char *argv[])
 
     if (cmdline["debug"].value) {
         Logger::get().set_log_level(LogLevel::DEBUG);
+        print_version(Logger::get().log_stream(LogLevel::DEBUG));
+    }
+
+    if (cmdline["version"].value) {
+        print_version(std::cout);
+        return 0;
     }
 
     DynamicLoader &dyn_loader = DynamicLoader::get();
     char * env_dynlib_paths = std::getenv("RABBITS_DYNLIB_PATH");
     if (env_dynlib_paths != NULL) {
         dyn_loader.add_colon_sep_search_paths(env_dynlib_paths);
-    }
-
-    if (cmdline["version"].value) {
-        print_version();
-        return 0;
     }
 
     build_description(p, argv[0]);
@@ -188,6 +187,11 @@ int sc_main(int argc, char *argv[])
     if (cmdline["help"].value) {
         print_usage(argv[0], cmdline, builder);
         return 0;
+    }
+
+    if (builder.is_empty()) {
+        ERR_STREAM("Empty platform. Please provide a platform description file with the -config argument.\n");
+        return 1;
     }
 
     simu_manager().start();

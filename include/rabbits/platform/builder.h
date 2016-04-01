@@ -56,7 +56,7 @@ protected:
      * @brief The components creation stages.
      */
     struct CreationStage {
-        enum value { 
+        enum value {
             DISCOVER, /**< First stage, no creation is performed yet. */
             CREATE    /**< Second stage, actual creation happens here. */
         };
@@ -170,6 +170,13 @@ public:
 
         return *m_components[name];
     }
+
+    /**
+     * @brief Return true if the built platform contains no components.
+     *
+     * @return true if the built platform contains no components.
+     */
+    bool is_empty() const { return m_components.empty(); }
 };
 
 #endif

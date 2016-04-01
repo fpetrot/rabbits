@@ -20,9 +20,11 @@
 #ifndef _RABBITS_RABBITS_USAGE_H
 #define _RABBITS_RABBITS_USAGE_H
 
+#include <ostream>
+
 #include "cmdline.h"
 
-void print_version();
+void print_version(std::ostream &);
 void print_usage(const char* arg0, CmdlineInfo &cmdline, PlatformBuilder &p);
 void enum_components();
 
