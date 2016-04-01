@@ -75,7 +75,7 @@ rabbits_get_version(RABBITS_VERSION)
 # By convention, API Version is Rabbits major version.
 string(REGEX MATCH "^([0-9]+)" RABBITS_API_VERSION "${RABBITS_VERSION}")
 
-if(NOT RABBITS_API_VERSION)
+if(NOT RABBITS_API_VERSION MATCHES "^[0-9]+$")
     # fallback
     set(RABBITS_API_VERSION 0)
     message(WARNING "Rabbits version number is invalid.")
