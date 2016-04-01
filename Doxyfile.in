@@ -19,3 +19,5 @@ INPUT                  = @PROJECT_SOURCE_DIR@/include
 FILE_PATTERNS          = *.cc \
                          *.h
 RECURSIVE              = YES
+
+GENERATE_LATEX         = NO
