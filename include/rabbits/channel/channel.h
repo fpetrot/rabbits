@@ -88,7 +88,7 @@ class ClockedByteChannel : public sc_core::sc_module, public Channel<uint8_t>
         // SOLUTION 2: MatlabConnector to notify channel when value change ?
 };
 
-#include <components/i2c/dwapb/i2c.h>
+#include "i2c.h"
 
 class I2cMasterChannel : public Channel<i2c_packet> {
     public:

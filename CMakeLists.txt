@@ -55,7 +55,6 @@ else()
 endif()
 
 include_directories(
-    "${PROJECT_SOURCE_DIR}"
     "${PROJECT_SOURCE_DIR}/include"
     "${SYSTEMC_INCLUDE_DIR}"
     "${YAMLCPP_INCLUDE_DIR}"
