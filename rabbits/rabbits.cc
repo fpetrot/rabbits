@@ -144,25 +144,30 @@ static void build_cmdline(CmdlineInfo &cmdline)
 {
     cmdline["help"] = CmdlineEntry("This message");
     cmdline["list-components"] = CmdlineEntry("List available components with their description");
+    cmdline["debug"] = CmdlineEntry("Enable debug messages");
     cmdline["version"] = CmdlineEntry("Print the version and exit");
 }
 
 extern "C" {
 int sc_main(int argc, char *argv[])
 {
+    Logger::get().set_log_level(LogLevel::INFO);
+
     CmdlineInfo cmdline;
-    DynamicLoader &dyn_loader = DynamicLoader::get();
     PlatformDescription p;
-    char *env_dynlib_paths;
-
-
-    env_dynlib_paths = std::getenv("RABBITS_DYNLIB_PATH");
-    if (env_dynlib_paths != NULL) {
-        dyn_loader.add_colon_sep_search_paths(env_dynlib_paths);
-    }
 
     build_cmdline(cmdline);
     parse_cmdline(argc, argv, p, cmdline);
+
+    if (cmdline["debug"].value) {
+        Logger::get().set_log_level(LogLevel::DEBUG);
+    }
+
+    DynamicLoader &dyn_loader = DynamicLoader::get();
+    char * env_dynlib_paths = std::getenv("RABBITS_DYNLIB_PATH");
+    if (env_dynlib_paths != NULL) {
+        dyn_loader.add_colon_sep_search_paths(env_dynlib_paths);
+    }
 
     if (cmdline["version"].value) {
         print_version();
@@ -184,8 +189,6 @@ int sc_main(int argc, char *argv[])
         print_usage(argv[0], cmdline, builder);
         return 0;
     }
-
-    Logger::get().set_log_level(LogLevel::INFO);
 
     simu_manager().start();
 
