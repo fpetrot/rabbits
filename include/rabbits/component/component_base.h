@@ -385,7 +385,7 @@ public:
             Logger::get().set_log_level(eff);
         }
 
-        std::ostream & ret = ::log_stream(eff);
+        std::ostream & ret = ::log_stream(lvl);
 
         if (m_loglvl_override) {
             Logger::get().set_log_level(save);
@@ -406,7 +406,7 @@ public:
 
         ::log_printf(eff, "[%s] ", name());
         bool banner = Logger::get().enable_banner(false);
-        int ret = ::log_vprintf(eff, fmt, ap);
+        int ret = ::log_vprintf(lvl, fmt, ap);
         Logger::get().enable_banner(banner);
 
         if (m_loglvl_override) {
