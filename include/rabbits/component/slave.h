@@ -39,7 +39,7 @@
  */
 class Slave: public Component, public SlaveIface
 {
-protected:
+private:
     BusSlaveIfaceBase *m_bus_iface;
 
 public:
@@ -287,7 +287,7 @@ public:
 
     /* SlaveIface */
     virtual ComponentBase& get_component() { return *this; }
-    virtual void set_bus_iface(BusSlaveIfaceBase *iface) { m_bus_iface = iface; }
+    virtual void set_bus_iface(BusSlaveIfaceBase &iface) { m_bus_iface = &iface; }
     virtual bool bus_iface_is_set() { return m_bus_iface != NULL; }
     virtual BusSlaveIfaceBase & get_bus_iface() { return *m_bus_iface; }
 

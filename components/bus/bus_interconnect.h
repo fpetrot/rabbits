@@ -57,7 +57,7 @@ public:
         if (!slave.bus_iface_is_set()) {
             BusSlaveIface<BUSWIDTH> *s = new BusSlaveIface<BUSWIDTH>(slave);
             m_target_socks[&slave] = s;
-            slave.set_bus_iface(s);
+            slave.set_bus_iface(*s);
         }
 
         BusSlaveIfaceBase &s = slave.get_bus_iface();
@@ -69,7 +69,7 @@ public:
         if (!master.bus_iface_is_set()) {
             BusMasterIface<BUSWIDTH> *s = new BusMasterIface<BUSWIDTH>(master);
             m_init_socks[&master] = s;
-            master.set_bus_iface(s);
+            master.set_bus_iface(*s);
         }
 
         BusMasterIfaceBase &s = master.get_bus_iface();

@@ -37,7 +37,7 @@ public:
         , m_master_iface(*this)
         , m_slave_iface(NULL)
     {
-        set_bus_iface(&m_master_iface);
+        set_bus_iface(m_master_iface);
     }
 
     ~SlaveTester()
@@ -52,7 +52,7 @@ public:
     {
         if (!s.bus_iface_is_set()) {
             m_slave_iface = new BusSlaveIface<BUSWIDTH>(s);
-            s.set_bus_iface(m_slave_iface);
+            s.set_bus_iface(*m_slave_iface);
         }
 
         BusSlaveIfaceBase &iface = s.get_bus_iface();

@@ -68,7 +68,7 @@ public:
      *
      * @param[in] iface the bus interface.
      */
-    virtual void set_bus_iface(BusSlaveIfaceBase *iface) = 0;
+    virtual void set_bus_iface(BusSlaveIfaceBase &iface) = 0;
 
     /**
      * @brief Check if this slave as already a bus interface.
@@ -127,7 +127,7 @@ public:
      *
      * @param[in] iface the bus interface.
      */
-    virtual void set_bus_iface(BusMasterIfaceBase *iface) = 0;
+    virtual void set_bus_iface(BusMasterIfaceBase &iface) = 0;
 
     /**
      * @brief Check if this master as already a bus interface.
