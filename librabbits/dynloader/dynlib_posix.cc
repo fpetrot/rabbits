@@ -24,7 +24,7 @@
 DynLibPosix::DynLibPosix(const std::string &filename)
     : DynLib(filename)
 {
-    m_handle = dlopen(filename.c_str(), RTLD_NOW | RTLD_GLOBAL);
+    m_handle = dlopen(filename.c_str(), RTLD_NOW);
 
     if (m_handle == NULL) {
         throw CannotOpenDynLibException(filename, dlerror());
