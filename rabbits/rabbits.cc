@@ -95,6 +95,7 @@ static void get_yml_configs(PlatformDescription &p, const char *arg0, vector<str
 
 static void build_description(PlatformDescription& p, const char *arg0)
 {
+    PlatformDescription p_configs;
     vector<string> configs;
     vector<string>::iterator it;
 
@@ -105,8 +106,11 @@ static void build_description(PlatformDescription& p, const char *arg0)
 
         DBG_STREAM("Loading " << *it << "\n");
         p_yml.load_file_yaml(*it);
-        p = p.merge(p_yml);
+        p_configs = p_yml.merge(p_configs);
     }
+
+    /* Command line has absolute priority */
+    p = p.merge(p_configs);
 }
 
 static void map_to_set(const CmdlineInfo &in, set<string> &out)
