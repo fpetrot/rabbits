@@ -26,12 +26,14 @@
 #define _UTILS_COMPONENT_COMPONENT_H
 
 #include <map>
+#include <utility>
 #include <vector>
 #include <sstream>
 #include <systemc>
 
 #include "component_base.h"
 #include "rabbits/rabbits_exception.h"
+#include "rabbits/datatypes/indexed_pool.h"
 
 /**
  * @brief A rabbits component.
@@ -46,311 +48,120 @@
  * @see IrqIn, IrqOut
  */
 class Component : public ComponentBase {
+public:
+    SC_HAS_PROCESS(Component);
+
 protected:
-    IrqPool<IrqIn> m_irqs_in;
-    IrqPool<IrqOut> m_irqs_out;
+    IndexedPool<std::string, Port*> m_ports;
 
-    std::map<std::string, ComponentBase*> m_comp_children;
-    std::map<std::string, SlaveIface*> m_slave_children;
-    std::map<std::string, MasterIface*> m_master_children;
+    std::vector< std::function<void() > > m_pushed_threads;
 
-    /**
-     * @brief Declare a child component.
-     *
-     * @param id Name associated to the child.
-     * @param c The child.
-     */
-    virtual void declare_component(std::string id, ComponentBase& c)
+    Attributes m_attributes;
+
+    void pushed_threads_entry()
     {
-        m_comp_children[id] = &c;
+        auto &t = m_pushed_threads.back();
+        m_pushed_threads.pop_back();
+
+        t();
     }
 
-    /**
-     * @brief Declare a slave child component.
-     *
-     * @param id Name associated to the slave child.
-     * @param s The slave child.
-     */
-    virtual void declare_slave(std::string id, SlaveIface& s)
+    /* Macro to avoid SystemC warnings about name duplication */
+#define indexed_SC_THREAD(func)                                \
+    declare_thread_process(func ## _handle,                    \
+                           sc_core::sc_gen_unique_name(#func), \
+                           SC_CURRENT_USER_MODULE,             \
+                           func)
+
+    void create_pushed_threads()
     {
-        m_slave_children[id] = &s;
-        m_comp_children[id] = &(s.get_component());
-    }
-
-    /**
-     * @brief Declare a master child component.
-     *
-     * @param id Name associated to the master child.
-     * @param s The master child.
-     */
-    virtual void declare_master(std::string id, MasterIface& s)
-    { 
-        m_master_children[id] = &s;
-        m_comp_children[id] = &(s.get_component());
-    }
-
-    /**
-     * @brief Declare a input IRQ line.
-     *
-     * @param id Name associated to the input IRQ line.
-     * @param irq Component's port associated to this IRQ line.
-     */
-    virtual void declare_irq_in(std::string id, sc_core::sc_in<bool> & irq) {
-        m_irqs_in.add(new IrqIn(id, irq));
-    }
-
-    /**
-     * @brief Declare a input IRQ line.
-     *
-     * @param irq Already configured IRQ object.
-     */
-    virtual void declare_irq_in(IrqIn *irq) {
-        m_irqs_in.add(irq);
-    }
-
-    /**
-     * @brief Declare multiple input IRQ lines.
-     *
-     * Declare multiple input IRQ given the ports vector v. Each created IRQ is
-     * named after id, plus the index of the IRQ starting at 0.
-     *
-     * @param id The prefix associated to the input IRQ lines. The final name
-     * is formed with this prefix concatenated with the index of the IRQ line.
-     * @param v The vector of Component ports associated to the IRQ lines.
-     */
-    virtual void declare_vector_irq_in(std::string id, sc_core::sc_vector<sc_core::sc_in<bool> > & v) {
-        sc_core::sc_vector<sc_core::sc_in<bool> >::iterator it;
-        int i;
-
-        for (it = v.begin(), i = 0; it != v.end(); it++, i++) {
-            std::stringstream ss;
-            ss << id << i;
-            declare_irq_in(ss.str(), *it);
+        for (unsigned int i = 0; i < m_pushed_threads.size(); i++) {
+            indexed_SC_THREAD(pushed_threads_entry);
         }
     }
 
-    /**
-     * @brief Declare a output IRQ line.
-     *
-     * @param id Name associated to the output IRQ line.
-     * @param irq Component's port associated to this IRQ line.
-     */
-    virtual void declare_irq_out(std::string id, sc_core::sc_out<bool> & irq) {
-        m_irqs_out.add(new IrqOut(id, irq));
-    }
+#undef indexed_SC_THREAD
 
-    /**
-     * @brief Declare a output IRQ line.
-     *
-     * @param irq Already configured IRQ object.
-     */
-    virtual void declare_irq_out(IrqOut *irq) {
-        m_irqs_out.add(irq);
-    }
+    virtual void before_end_of_elaboration()
+    {
+        ComponentBase::before_end_of_elaboration();
 
-    /**
-     * @brief Declare multiple output IRQ lines.
-     *
-     * Declare multiple output IRQ given the ports vector v. Each created IRQ is
-     * named after id, plus the index of the IRQ starting at 0.
-     *
-     * @param id The prefix associated to the output IRQ lines. The final name
-     * is formed with this prefix concatenated with the index of the IRQ line.
-     * @param v The vector of Component ports associated to the IRQ lines.
-     */
-    virtual void declare_vector_irq_out(std::string id, sc_core::sc_vector<sc_core::sc_out<bool> > & v) {
-        sc_core::sc_vector<sc_core::sc_out<bool> >::iterator it;
-        int i;
+        create_pushed_threads(); 
 
-        for (it = v.begin(), i = 0; it != v.end(); it++, i++) {
-            std::stringstream ss;
-            ss << id << i;
-            declare_irq_out(ss.str(), *it);
+        for (const auto & p : m_ports) {
+            p.second->before_end_of_elaboration();
         }
     }
 
-    virtual void stub_not_connected_irqs() {
-        HasIrqInIface::iterator iti;
-        HasIrqOutIface::iterator ito;
-        
-        for (ito = m_irqs_out.begin(); ito != m_irqs_out.end(); ito++) {
-            if (!ito->second->is_connected()) {
-                sc_core::sc_out<bool> &p = ito->second->get_port();
-                sc_core::sc_signal<bool> &s = * new sc_core::sc_signal<bool>;
-                p(s);
-            }
-        }
+    virtual void end_of_elaboration()
+    {
+        ComponentBase::end_of_elaboration();
 
-        for (iti = m_irqs_in.begin(); iti != m_irqs_in.end(); iti++) {
-            if (!iti->second->is_connected()) {
-                sc_core::sc_in<bool> &p = iti->second->get_port();
-                sc_core::sc_signal<bool> &s = * new sc_core::sc_signal<bool>;
-                p(s);
-            }
+        for (const auto & p : m_ports) {
+            p.second->end_of_elaboration();
         }
     }
 
-    virtual void before_end_of_elaboration() {
-        stub_not_connected_irqs();
+    virtual void start_of_simulation()
+    {
+        ComponentBase::start_of_simulation();
+
+        for (const auto & p : m_ports) {
+            p.second->start_of_simulation();
+        }
+    }
+
+    virtual void end_of_simulation()
+    {
+        ComponentBase::end_of_simulation();
+
+        for (const auto & p : m_ports) {
+            p.second->end_of_simulation();
+        }
     }
 
 public:
     Component(sc_core::sc_module_name name, const ComponentParameters &params)
         : ComponentBase(name, params) {}
+
     Component(sc_core::sc_module_name name) : ComponentBase(name) {}
+
     virtual ~Component() {}
 
-    /* HasIrqInIface */
-    virtual IrqIn& get_irq_in(std::string id) {
-        return m_irqs_in[id];
+    /* HasPortIface */
+    virtual void declare_port(Port &p, const std::string &name) { m_ports.add(name, &p); }
+    virtual bool port_exists(const std::string &name) const { return m_ports.exists(name); }
+    virtual Port& get_port(const std::string &name) { return *m_ports[name]; }
+    virtual bool port_exists(int index) const { return m_ports.exists(index); }
+    virtual Port& get_port(int index) { return *m_ports[index]; }
+    virtual port_iterator port_begin() { return m_ports.begin(); }
+    virtual port_iterator port_end() { return m_ports.end(); }
+    virtual const_port_iterator port_begin() const { return m_ports.begin(); }
+    virtual const_port_iterator port_end() const { return m_ports.end(); }
+    virtual std::string hasport_name() const { return name(); }
+    virtual void push_sc_thread(std::function<void()> cb) {
+        m_pushed_threads.push_back(cb);
+    }
+    
+    /* HasAttributesIface */
+    void add_attr(const std::string & key, const std::string & value)
+    {
+        m_attributes[key] = value;
     }
 
-    virtual IrqIn& get_irq_in(unsigned int idx) {
-        return m_irqs_in[idx];
+    bool has_attr(const std::string & key)
+    {
+        return (m_attributes.find(key) != m_attributes.end());
     }
 
-    virtual bool irq_in_exists(std::string id) {
-        return m_irqs_in.exists(id);
-    }
-
-    virtual bool irq_in_exists(unsigned int idx) {
-        return m_irqs_in.exists(idx);
-    }
-
-    virtual HasIrqInIface::iterator irqs_in_begin() {
-        return m_irqs_in.begin();
-    }
-
-    virtual HasIrqInIface::iterator irqs_in_end() {
-        return m_irqs_in.end();
-    }
-
-    virtual HasIrqInIface::const_iterator irqs_in_begin() const {
-        return m_irqs_in.begin();
-    }
-
-    virtual HasIrqInIface::const_iterator irqs_in_end() const {
-        return m_irqs_in.end();
-    }
-
-    /* HasIrqOutIface */
-    virtual IrqOut& get_irq_out(std::string id) {
-        return m_irqs_out[id];
-    }
-
-    virtual IrqOut& get_irq_out(unsigned int idx) {
-        return m_irqs_out[idx];
-    }
-
-    virtual bool irq_out_exists(std::string id) {
-        return m_irqs_out.exists(id);
-    }
-
-    virtual bool irq_out_exists(unsigned int idx) {
-        return m_irqs_out.exists(idx);
-    }
-
-    virtual HasIrqOutIface::iterator irqs_out_begin() {
-        return m_irqs_out.begin();
-    }
-
-    virtual HasIrqOutIface::iterator irqs_out_end() {
-        return m_irqs_out.end();
-    }
-
-    virtual HasIrqOutIface::const_iterator irqs_out_begin() const {
-        return m_irqs_out.begin();
-    }
-
-    virtual HasIrqOutIface::const_iterator irqs_out_end() const {
-        return m_irqs_out.end();
-    }
-
-    /* HasChildCompIface */
-    virtual bool child_component_exists(std::string id) const {
-        return m_comp_children.find(id) != m_comp_children.end();
-    }
-
-    virtual ComponentBase& get_child_component(std::string id) {
-        if (!child_component_exists(id)) {
-            throw ComponentNotFoundException(id);
+    std::string get_attr(const std::string & key)
+    {
+        if (!has_attr(key)) {
+            return "";
         }
 
-        return *m_comp_children[id];
+        return m_attributes[key];
     }
-
-    virtual component_iterator child_component_begin() {
-        return m_comp_children.begin();
-    }
-
-    virtual component_iterator child_component_end() {
-        return m_comp_children.end();
-    }
-
-    virtual const_component_iterator child_component_begin() const {
-        return m_comp_children.begin();
-    }
-
-    virtual const_component_iterator child_component_end() const {
-        return m_comp_children.end();
-    }
-
-    virtual bool child_slave_exists(std::string id) const {
-        return m_slave_children.find(id) != m_slave_children.end();
-    }
-
-    virtual SlaveIface& get_child_slave(std::string id) {
-        if (!child_slave_exists(id)) {
-            throw ComponentNotFoundException(id);
-        }
-
-        return *m_slave_children[id];
-    }
-
-    virtual bool child_master_exists(std::string id) const {
-        return m_master_children.find(id) != m_master_children.end();
-    }
-
-    virtual MasterIface& get_child_master(std::string id) {
-        if (!child_master_exists(id)) {
-            throw ComponentNotFoundException(id);
-        }
-
-        return *m_master_children[id];
-    }
-
-    virtual master_iterator child_master_begin() {
-        return m_master_children.begin();
-    }
-
-    virtual master_iterator child_master_end() {
-        return m_master_children.end();
-    }
-
-    virtual const_master_iterator child_master_begin() const {
-        return m_master_children.begin();
-    }
-
-    virtual const_master_iterator child_master_end() const {
-        return m_master_children.end();
-    }
-
-    virtual slave_iterator child_slave_begin() {
-        return m_slave_children.begin();
-    }
-
-    virtual slave_iterator child_slave_end() {
-        return m_slave_children.end();
-    }
-
-    virtual const_slave_iterator child_slave_begin() const {
-        return m_slave_children.begin();
-    }
-
-    virtual const_slave_iterator child_slave_end() const {
-        return m_slave_children.end();
-    }
-
 };
 
 #endif

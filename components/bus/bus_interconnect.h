@@ -22,69 +22,50 @@
 
 #include <map>
 
-#include <rabbits/component/bus.h>
-#include <rabbits/datatypes/address_range.h>
+#include <rabbits/component/component.h>
+#include <rabbits/component/port/tlm_bus.h>
 
 #include "interconnect.h"
 
 
 template <unsigned int BUSWIDTH = 32>
-class BusInterconnect : public Bus
+class BusInterconnect : public Component, public TlmBusIface<BUSWIDTH>
 {
 protected:
     Interconnect<BUSWIDTH> m_interco;
-    std::map<SlaveIface*, BusSlaveIface<BUSWIDTH>* > m_target_socks;
-    std::map<MasterIface*, BusMasterIface<BUSWIDTH>* > m_init_socks;
+    std::vector<AddressRange> m_mem_map;
 
 public:
+    TlmBusPort<> bus;
+
     BusInterconnect(sc_core::sc_module_name name, ComponentParameters &params)
-        : Bus(name, params)
-        , m_interco("interco") {}
+        : Component(name, params)
+        , m_interco("interco")
+        , bus("bus", *this) {}
 
-    virtual ~BusInterconnect() {
-        typename std::map<SlaveIface*, BusSlaveIface<BUSWIDTH>* >::iterator it_s;
-        typename std::map<MasterIface*, BusMasterIface<BUSWIDTH>* >::iterator it_m;
+    virtual ~BusInterconnect() {}
 
-        for (it_s = m_target_socks.begin(); it_s != m_target_socks.end(); it_s++) {
-            delete it_s->second;
-        }
-        for (it_m = m_init_socks.begin(); it_m != m_init_socks.end(); it_m++) {
-            delete it_m->second;
-        }
-    }
-
-    virtual void connect_slave(SlaveIface &slave, AddressRange range) {
-        if (!slave.bus_iface_is_set()) {
-            BusSlaveIface<BUSWIDTH> *s = new BusSlaveIface<BUSWIDTH>(slave);
-            m_target_socks[&slave] = s;
-            slave.set_bus_iface(*s);
-        }
-
-        BusSlaveIfaceBase &s = slave.get_bus_iface();
-
-        m_interco.connect_target(s.get_socket<BUSWIDTH>(), range.begin(), range.size());
-    }
-
-    virtual void connect_master(MasterIface &master) {
-        if (!master.bus_iface_is_set()) {
-            BusMasterIface<BUSWIDTH> *s = new BusMasterIface<BUSWIDTH>(master);
-            m_init_socks[&master] = s;
-            master.set_bus_iface(*s);
-        }
-
-        BusMasterIfaceBase &s = master.get_bus_iface();
-
-        m_interco.connect_initiator(s.get_socket<BUSWIDTH>());
-    }
-
-    virtual void connect_target_socket(tlm::tlm_target_socket<BUSWIDTH> &s, AddressRange range)
+    /* TlmBusIface */
+    void connect_target(typename TlmSocketBase<BUSWIDTH>::Target &s, const AddressRange &r)
     {
-        m_interco.connect_target(s, range.begin(), range.size());
+         m_interco.connect_target(s, r.begin(), r.size());
+
+         m_mem_map.push_back(r);
     }
 
-    virtual void connect_initiator_socket(tlm::tlm_initiator_socket<BUSWIDTH> &s)
+    void connect_initiator(typename TlmSocketBase<BUSWIDTH>::Initiator &s)
     {
         m_interco.connect_initiator(s);
+    }
+
+    sc_core::sc_module* get_sc_module()
+    {
+        return this;
+    }
+
+    const std::vector<AddressRange> & get_memory_mapping() const
+    {
+        return m_mem_map;
     }
 };
 

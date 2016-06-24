@@ -17,30 +17,35 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "rabbits-common.h"
-#include "rabbits/component/debug_initiator.h"
+#ifndef _RABBITS_COMPONENT_PORT_OUT_H
+#define _RABBITS_COMPONENT_PORT_OUT_H
 
-DebugInitiator::DebugInitiator(sc_core::sc_module_name n) : Master(n)
-{
-}
+#include "rabbits/component/port.h"
+#include "rabbits/component/connection_strategy/signal.h"
 
-DebugInitiator::DebugInitiator(sc_core::sc_module_name n, ComponentParameters &cp) : Master(n, cp)
-{
-}
+#include <systemc>
 
-DebugInitiator::~DebugInitiator()
-{
-}
+template <typename T>
+class OutPort : public Port {
+public:
+    typedef typename sc_core::sc_out<T>::inout_if_type sc_if_type;
 
+    using Port::bind;
+    using Port::operator();
 
-uint64_t DebugInitiator::debug_read(uint64_t addr, void *buf, uint64_t size)
-{
-    return static_cast<uint64_t>(
-        p_bus.debug_read(addr, reinterpret_cast<uint8_t*>(buf), size));
-}
+    sc_core::sc_out<T> sc_p;
 
-uint64_t DebugInitiator::debug_write(uint64_t addr, void *buf, uint64_t size)
-{
-    return static_cast<uint64_t>(
-        p_bus.debug_write(addr, reinterpret_cast<uint8_t*>(buf), size));
-}
+private:
+    SignalCS<T> m_cs;
+
+public:
+    OutPort(const std::string &name) : Port(name), sc_p(name.c_str()), m_cs(sc_p) {
+        add_connection_strategy(m_cs);
+        declare_parent(sc_p.get_parent_object());
+    }
+
+    virtual ~OutPort() {}
+
+};
+
+#endif

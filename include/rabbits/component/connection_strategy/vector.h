@@ -17,30 +17,28 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "rabbits-common.h"
-#include "rabbits/component/debug_initiator.h"
+#ifndef _RABBITS_COMPONENT_CONNECTION_STRATEGY_VECTOR_H
+#define _RABBITS_COMPONENT_CONNECTION_STRATEGY_VECTOR_H
 
-DebugInitiator::DebugInitiator(sc_core::sc_module_name n) : Master(n)
-{
-}
+#include "rabbits/component/connection_strategy.h"
 
-DebugInitiator::DebugInitiator(sc_core::sc_module_name n, ComponentParameters &cp) : Master(n, cp)
-{
-}
+template <class T>
+class VectorPortBase;
 
-DebugInitiator::~DebugInitiator()
-{
-}
+template <typename T>
+class VectorCS : public ConnectionStrategy< VectorCS<T> > {
+public:
+    using typename ConnectionStrategyBase::BindingResult;
 
+private:
+    VectorPortBase<T> &m_vec;
 
-uint64_t DebugInitiator::debug_read(uint64_t addr, void *buf, uint64_t size)
-{
-    return static_cast<uint64_t>(
-        p_bus.debug_read(addr, reinterpret_cast<uint8_t*>(buf), size));
-}
+public:
+    VectorCS(VectorPortBase<T> &v) : m_vec(v) {}
+    virtual ~VectorCS() {}
 
-uint64_t DebugInitiator::debug_write(uint64_t addr, void *buf, uint64_t size)
-{
-    return static_cast<uint64_t>(
-        p_bus.debug_write(addr, reinterpret_cast<uint8_t*>(buf), size));
-}
+    BindingResult bind_peer(VectorCS<T> &cs, PlatformDescription &d);
+    BindingResult bind_hierarchical(VectorCS<T> &parent_cs);
+};
+
+#endif

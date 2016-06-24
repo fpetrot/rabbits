@@ -109,14 +109,48 @@ public:
      * @brief The PlatformDescription internal node
      */
     class Node {
+    public:
+        struct Origin {
+            enum eOrigin { FILE, CMDLINE, UNKNOWN };
+            eOrigin origin;
+	    std::string filename;
+            int line;
+            int column;
+
+            Origin() : origin(UNKNOWN), line(0), column(0) {}
+            explicit Origin(eOrigin o) : origin(o), line(0), column(0) {}
+            Origin(std::string fn, int l, int c) : origin(FILE), filename(fn), line(l), column(c) {}
+
+            std::string format() const {
+                std::stringstream res;
+
+                switch (origin) {
+                case FILE:
+                    res << filename;
+                    break;
+                case CMDLINE:
+                    res << "<cmdline>";
+                    break;
+                case UNKNOWN:
+                    res << "<unknown>";
+                }
+
+                res << ":" << line << ":" << column;
+                return res.str();
+            }
+        };
+
     private:
         /* Memory management */
         int m_ref_count;
         bool m_is_static;
     protected:
         NodeType m_type;
+        Origin m_origin;
+
     public:
         Node() : m_ref_count(0), m_is_static(false) {}
+        explicit Node(const Origin &o) : m_ref_count(0), m_is_static(false), m_origin(o) {}
         explicit Node(bool is_static) : m_ref_count(0), m_is_static(is_static) {}
 
         virtual ~Node() {}
@@ -131,6 +165,7 @@ public:
         virtual const_iterator end() const = 0;
         virtual const std::string & raw_data() const { throw InvalidConversionException("Invalid rawdata use"); }
 
+        const Origin& origin() { return m_origin; }
 
         /* Memory management */
         void inc_ref() { m_ref_count++; }
@@ -139,6 +174,10 @@ public:
     };
 
     class NodeNil : public Node {
+    public:
+        NodeNil() : Node() {}
+        explicit NodeNil(const Origin &o) : Node(o) {}
+
         virtual NodeType type() const { return PlatformDescription::NIL; };
 
         virtual PlatformDescription& operator[] (const std::string & k) {
@@ -165,6 +204,10 @@ public:
     };
 
     class NodeInvalid : public Node {
+    public:
+        NodeInvalid() : Node() {}
+        explicit NodeInvalid(const Origin &o) : Node(o) {}
+
         virtual NodeType type() const { return PlatformDescription::INVALID; };
 
         virtual PlatformDescription& operator[] (const std::string & k) {
@@ -189,7 +232,6 @@ public:
             throw InvalidConversionException("Cannot iterate over invalid");
         }
 
-    public:
         NodeInvalid(bool is_static) : Node(is_static) {}
     };
 
@@ -197,6 +239,9 @@ public:
     protected:
         std::map<std::string, PlatformDescription> m_child;
     public:
+        NodeMap() : Node() {}
+        explicit NodeMap(const Origin &o) : Node(o) {}
+
         virtual NodeType type() const { return PlatformDescription::MAP; };
         virtual PlatformDescription& operator[] (const std::string & k) {
             return m_child[k];
@@ -225,6 +270,9 @@ public:
     protected:
         std::vector<PlatformDescription> m_child;
     public:
+        NodeVector() : Node() {}
+        explicit NodeVector(const Origin &o) : Node(o) {}
+
         virtual NodeType type() const { return PlatformDescription::VECTOR; };
         void push_back(const PlatformDescription &p) {m_child.push_back(p);}
 
@@ -257,8 +305,12 @@ public:
     protected:
         std::string m_val;
     public:
+        NodeScalar() : Node() {}
+        explicit NodeScalar(const Origin &o) : Node(o) {}
+        explicit NodeScalar(std::string val) : m_val(val) {}
+        NodeScalar(std::string val, const Origin &o) : Node(o), m_val(val) {}
+
         virtual NodeType type() const { return PlatformDescription::SCALAR; };
-        NodeScalar(std::string val) : m_val(val) {}
 
         virtual PlatformDescription& operator[] (const std::string & k) {
             return PlatformDescription::INVALID_DESCRIPTION;
@@ -289,9 +341,10 @@ public:
 protected:
     Node *m_node;
 
-    Node * load_yaml_req(YAML::Node);
+    Node * load_yaml_req(YAML::Node root, Node::Origin &origin);
+    
     void tokenize_arg(const std::string arg, std::list<std::string>& toks);
-    NodeScalar* parse_arg_req(std::list<std::string>& toks);
+    NodeScalar* parse_arg_req(std::list<std::string>& toks, Node::Origin &origin);
 
     explicit PlatformDescription(Node *);
 
@@ -469,6 +522,8 @@ public:
 
         return ret;
     }
+
+    std::string origin() const { return m_node->origin().format(); }
 
     /* The invalid description */
 private:

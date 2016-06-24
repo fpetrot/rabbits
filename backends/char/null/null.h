@@ -17,30 +17,35 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "rabbits-common.h"
-#include "rabbits/component/debug_initiator.h"
+#ifndef _CONSOLE_BACKEND_H
+#define _CONSOLE_BACKEND_H
 
-DebugInitiator::DebugInitiator(sc_core::sc_module_name n) : Master(n)
-{
-}
+#include <vector>
 
-DebugInitiator::DebugInitiator(sc_core::sc_module_name n, ComponentParameters &cp) : Master(n, cp)
-{
-}
-
-DebugInitiator::~DebugInitiator()
-{
-}
+#include <rabbits/component/component.h>
+#include <rabbits/component/port/uart.h>
 
 
-uint64_t DebugInitiator::debug_read(uint64_t addr, void *buf, uint64_t size)
-{
-    return static_cast<uint64_t>(
-        p_bus.debug_read(addr, reinterpret_cast<uint8_t*>(buf), size));
-}
+class NullCharDevice : public Component{
+private:
+    UartPort m_port;
 
-uint64_t DebugInitiator::debug_write(uint64_t addr, void *buf, uint64_t size)
-{
-    return static_cast<uint64_t>(
-        p_bus.debug_write(addr, reinterpret_cast<uint8_t*>(buf), size));
-}
+    void recv_thread()
+    {
+        std::vector<uint8_t> data;
+
+        for(;;) {
+            m_port.recv(data);
+        }
+    }
+
+public:
+    SC_HAS_PROCESS(NullCharDevice);
+    NullCharDevice(sc_core::sc_module_name n, ComponentParameters &p) 
+        : Component(n, p), m_port("uart")
+    {
+        SC_THREAD(recv_thread);
+    }
+};
+
+#endif

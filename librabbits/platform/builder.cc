@@ -19,29 +19,40 @@
 
 #include <sstream>
 #include <set>
+#include <vector>
 
 #include "rabbits/platform/builder.h"
 
 #include "rabbits/logger.h"
 #include "rabbits/platform/description.h"
 #include "rabbits/component/factory.h"
-#include "rabbits/component/component.h"
 #include "rabbits/datatypes/address_range.h"
 
 #include "rabbits/plugin/hook.h"
 #include "rabbits/plugin/manager.h"
 
-#include "rabbits/component/slave.h"
-#include "rabbits/component/master.h"
-#include "rabbits/component/bus.h"
-
 using namespace sc_core;
 using std::string;
 using std::stringstream;
+using std::vector;
 
+static inline void report_parse_warning(const string &msg, const PlatformDescription &descr)
+{
+    WRN_STREAM(msg << " (at " << descr.origin() << ")\n");
+}
+
+static void tokenize(const string s, vector<string>& toks, const char sep = '.')
+{
+    std::istringstream ss(s);
+    string tok;
+
+    while(std::getline(ss, tok, sep)) {
+        toks.push_back(tok);
+    }
+}
 
 PlatformBuilder::PlatformBuilder(sc_module_name name, PlatformDescription &descr)
-    : sc_module(name), m_dbg("dbg-initiator"), m_bus(NULL)
+    : sc_module(name), m_dbg(NULL)
 {
     PluginManager &pm = PluginManager::get();
 
@@ -53,24 +64,48 @@ PlatformBuilder::PlatformBuilder(sc_module_name name, PlatformDescription &descr
     create_components(descr, CreationStage::CREATE);
     pm.run_hook(PluginHookAfterComponentInst(&descr, this));
     
-    do_bus_connections(descr);
+    do_bindings(descr);
     pm.run_hook(PluginHookAfterBusConnections(&descr, this));
 
-    do_irq_connections(descr);
-
-    if (m_bus) {
-        m_bus->connect_master(m_dbg);
-    }
+    create_dbg_init();
 
     pm.run_hook(PluginHookAfterBuild(&descr, this));
 }
 
 PlatformBuilder::~PlatformBuilder()
-{
-    std::vector< sc_signal<bool>* >::iterator it;
+{}
 
-    for (it = m_sigs.begin(); it != m_sigs.end(); it++) {
-        delete *it;
+void PlatformBuilder::create_dbg_init()
+{
+    /*
+     * To create the debug initiator, we must know which component is the main
+     * system bus. The current implemented heuristic takes the only bus of the
+     * platform.  If we have multiple buses, this heuristic will need to be
+     * updated to know which bus must be considered.
+     */
+
+    vector<ComponentBase*> buses;
+
+    find_comp_by_attr("tlm-bus", buses);
+
+    if (buses.size() > 1) {
+        ERR_STREAM("Multiple buses in platform is not yet correctly handled. Except failures\n");
+        return;
+    }
+
+    for (ComponentBase* bus : buses) {
+        m_dbg = new DebugInitiator("dbg-initiator");
+
+        assert(bus->has_attr("tlm-bus-port"));
+        assert(m_dbg->has_attr("tlm-initiator-port"));
+
+        const string &bus_port_name = bus->get_attr("tlm-bus-port");
+        const string &dbg_port_name = m_dbg->get_attr("tlm-initiator-port");
+
+        DBG_STREAM("Connecting the debug initiator to the main system bus\n");
+        do_binding(bus->get_port(bus_port_name),
+                   m_dbg->get_port(dbg_port_name),
+                   PlatformDescription::INVALID_DESCRIPTION);
     }
 }
 
@@ -114,391 +149,175 @@ void PlatformBuilder::create_components(PlatformDescription &descr, CreationStag
     }
 }
 
-void PlatformBuilder::connect_master(MasterIface *m, Bus *b)
+void PlatformBuilder::find_comp_by_attr(const std::string &key, std::vector<ComponentBase*> &out)
 {
-    if (m_connected.find(&(m->get_component())) == m_connected.end()) {
-        DBG_STREAM("Bus mapping: " 
-                   << m->get_component().name() 
-                   << " -> " << b->name() << "\n");
+    comp_iterator it;
 
-        b->connect_master(*m);
-        m_masters.push_back(m);
-        m_connected.insert(&(m->get_component()));
+    for (it = comp_begin(); it != comp_end(); it++) {
+        if (it->second->has_attr(key)) {
+            out.push_back(it->second);
+        }
     }
 }
 
-void PlatformBuilder::connect_slave(SlaveIface *s, Bus *b, const AddressRange& r)
-{
-    if (m_connected.find(&(s->get_component())) == m_connected.end()) {
-        DBG_STREAM("Bus mapping: " 
-                   << s->get_component().name() 
-                   << " -> " << b->name() << r << "\n");
-        b->connect_slave(*s, r);
-        m_mappings.push_back(r);
-        m_connected.insert(&(s->get_component()));
-    }
-}
-
-Bus* PlatformBuilder::get_bus_parent(PlatformDescription &descr)
-{
-    ComponentBase *c_bus = NULL;
-    Bus *bus = NULL;
-
-    if ((!descr.exists("bus-parent")) || (descr["bus-parent"].type() != PlatformDescription::SCALAR)) {
-        return NULL;
-    }
-    
-    string n = descr["bus-parent"].as<string>();
-
-    if (m_components.find(n) == m_components.end()) {
-        WRN_STREAM("Bus component `" << n << "` not found\n";);
-        return NULL;
-    }
-
-    c_bus = m_components[n];
-
-    bus = dynamic_cast<Bus*>(c_bus);
-
-    if (bus == NULL) {
-        WRN_STREAM("Component `" << n << "` is not a bus\n");
-        return NULL;
-    }
-
-    return bus;
-}
-
-bool PlatformBuilder::get_bus_mapping(PlatformDescription &descr, AddressRange &ret)
-{
-    if ((!descr.exists("bus-mapping")) || (descr["bus-mapping"].type() != PlatformDescription::MAP)) {
-        return false;
-    }
-
-    ret = descr["bus-mapping"].as<AddressRange>();
-    return true;
-}
-
-void PlatformBuilder::do_master_child_bus_connections(ComponentBase *c, Bus *b)
-{
-    HasChildCompIface::master_iterator it;
-
-    for (it = c->child_master_begin(); it != c->child_master_end(); it++) {
-        connect_master(it->second, b);
-    }
-}
-void PlatformBuilder::do_child_bus_connections(ComponentBase *c, Bus *b, PlatformDescription &descr)
+void PlatformBuilder::do_bindings(PlatformDescription &descr)
 {
     PlatformDescription::iterator it;
 
-    do_master_child_bus_connections(c, b);
-
-    if (!descr.exists("child-bus-mapping")) {
-        return;
-    }
-
-    if (!descr.is_map()) {
-        WRN_STREAM("Invalid child-bus-mapping attribute for component `"
-                   << c->name() << "`\n");
-        return;
-    }
-
-
-    for (it = descr["child-bus-mapping"].begin(); it != descr["child-bus-mapping"].end(); it++) {
-        const string &name = it->first;
-        PlatformDescription &d = it->second;
-
-        if (!c->child_slave_exists(name)) {
-            WRN_STREAM("Slave child `" << name << "` not found for component `"
-                       << c->name() << "`\n");
-            continue;
-        }
-
-        if (!d.is_map()) {
-            WRN_STREAM("Invalid mapping description for slave child `"
-                       << name << "` of component `" << c->name() << "`\n");
-            continue;
-        }
-
-        SlaveIface &s = c->get_child_slave(name);
-        AddressRange mapping = d.as<AddressRange>();
-
-        connect_slave(&s, b, mapping);
-    }
-}
-
-void PlatformBuilder::do_bus_connections(PlatformDescription &descr)
-{
-    PlatformDescription::iterator it;
-    SlaveIface *s = NULL;
-    MasterIface *m = NULL;
-    BusIface *bus = NULL;
-
-    if ((!descr.exists("components")) || (descr["components"].type() != PlatformDescription::MAP)) {
+    if (!descr["components"].is_map()) {
         return;
     }
 
     for (it = descr["components"].begin(); it != descr["components"].end(); it++) {
-        const string &name = it->first;
-        PlatformDescription &comp_descr = it->second;
-
-        if (m_components.find(name) == m_components.end()) {
+        if (m_components.find(it->first) == m_components.end()) {
             continue;
         }
 
-        ComponentBase *comp = m_components[name];
-        Bus *bus_parent = get_bus_parent(comp_descr);
-
-        if (bus_parent) {
-            if ((s = dynamic_cast<SlaveIface*>(comp)) != NULL) {
-                AddressRange mapping;
-
-                if(!get_bus_mapping(comp_descr, mapping)) {
-                    WRN_STREAM("Missing or invalid attribute `bus-mapping` for component `"
-                               << name << "`\n");
-                    continue;
-                }
-
-                connect_slave(s, bus_parent, mapping);
-
-            } else if((m = dynamic_cast<MasterIface*>(comp)) != NULL) {
-                connect_master(m, bus_parent);
-            }
-        } else if ((bus = dynamic_cast<BusIface*>(comp)) != NULL) {
-            /* Top-level bus */
-            m_bus = bus;
-
-        } else {
-            WRN_STREAM("Component `" << name << "` has no or invalid `bus-parent` attribute\n");
-            continue;
-        }
-
-        do_child_bus_connections(comp, bus_parent, comp_descr);
+        do_bindings(*m_components[it->first], it->second);
     }
 }
 
-
-
-ComponentBase* PlatformBuilder::get_irq_parent(PlatformDescription &descr)
-{
-    if ((!descr.exists("irq-parent")) || (descr["irq-parent"].type() != PlatformDescription::SCALAR)) {
-        return NULL;
-    }
-    
-    string n = descr["irq-parent"].as<string>();
-
-    if (m_components.find(n) == m_components.end()) {
-        WRN_STREAM("IRQ parent component `" << n << "` not found\n";);
-        return NULL;
-    }
-
-    return m_components[n];
-}
-
-IrqIn* PlatformBuilder::get_irq_in(ComponentBase &c, const string &id)
-{
-    unsigned int idx;
-    if (c.irq_in_exists(id)) {
-        /* As id */
-        return &(c.get_irq_in(id));
-    } else if ((stringstream(id) >> idx) && (c.irq_in_exists(idx))) {
-        /* As idx */
-        return &(c.get_irq_in(idx));
-    } else {
-        return NULL;
-    }
-}
-
-IrqOut* PlatformBuilder::get_irq_out(ComponentBase &c, const string &id)
-{
-    unsigned int idx;
-    if (c.irq_out_exists(id)) {
-        /* As id */
-        return &(c.get_irq_out(id));
-    } else if ((stringstream(id) >> idx) && (c.irq_out_exists(idx))) {
-        /* As idx */
-        return &(c.get_irq_out(idx));
-    } else {
-        return NULL;
-    }
-}
-
-ComponentBase* PlatformBuilder::get_irq_parent_from_mapping(const string &mapping, string &final_irq)
-{
-    size_t dot = mapping.find_first_of('.');
-
-    if (dot == string::npos) {
-        return NULL;
-    }
-
-    string cname = mapping.substr(0, dot);
-
-    if (m_components.find(cname) == m_components.end()) {
-        WRN_STREAM("IRQ parent component `" << cname << "` not found\n";);
-        return NULL;
-    }
-
-    final_irq = mapping.substr(dot+1, string::npos);
-    return m_components[cname];
-}
-
-void PlatformBuilder::get_irq_mapping(PlatformDescription &descr,
-                                      ComponentBase &src, ComponentBase *dst, 
-                                      std::vector< IrqPair > &pairs)
+void PlatformBuilder::do_bindings(ComponentBase &c, PlatformDescription &descr)
 {
     PlatformDescription::iterator it;
-    PlatformDescription &map = descr["irq-mapping"];
-    IrqOut *irq_out;
-    IrqIn *irq_in;
-    std::set<string> mapped_out;
-    HasIrqOutIface::iterator irq_it;
 
-    switch (map.type()) {
+    if (!descr["bindings"].is_map()) {
+        return;
+    }
+
+    for (it = descr["bindings"].begin(); it != descr["bindings"].end(); it++) {
+        const string &pname = it->first;
+
+        if (!c.port_exists(pname)) {
+            report_parse_warning("Port `" + pname + "' in component `" + c.name() + "' not found", it->second);
+            continue;
+        }
+
+        do_binding(c.get_port(pname), it->second);
+    }
+}
+
+class ParsedPeer {
+private:
+    string m_name_space;
+    string m_name;
+    string m_port;
+
+    bool name_ok, port_ok, name_space_ok;
+
+public:
+    ParsedPeer() : name_ok(false), port_ok(false), name_space_ok(false) {}
+
+    void set_name(const string &n) { m_name = n; name_ok = true; }
+    void set_name_space(const string &n) { m_name_space = n; name_space_ok = true; }
+    void set_port(const string &n) { m_port = n; port_ok = true; }
+
+    bool is_valid() { return name_ok && port_ok; }
+    bool has_name() { return name_ok; }
+    bool has_port() { return port_ok; }
+
+    const string & name() { return m_name; }
+    const string & name_space() { return m_name_space; }
+    const string & port() { return m_port; }
+};
+
+static bool parse_peer_name(const string name, ParsedPeer &peer)
+{
+    vector<string> toks;
+    tokenize(name, toks);
+
+    switch(toks.size()) {
+    case 3:
+        /* namespace.component.port */
+        report_parse_warning("n/i", PlatformDescription());
+        return false;
+
+    case 2:
+        /* component.port (current namespace) */
+        peer.set_name(toks[0]);
+        peer.set_port(toks[1]);
+        break;
+
+    case 1:
+        /* component (current namespace, implicit port) */
+        peer.set_name(toks[0]);
+        break;
+
+    default:
+        return false;
+    }
+
+    return true;
+}
+
+void PlatformBuilder::do_binding(Port &p, PlatformDescription &descr)
+{
+    ParsedPeer peer;
+
+    switch (descr.type()) {
     case PlatformDescription::MAP:
-        for (it = map.begin(); it != map.end(); it++) {
-            const string &src_irq = it->first;
-            irq_out = get_irq_out(src, src_irq);
-
-            if (irq_out == NULL) {
-                WRN_STREAM("No irq out named `" << src_irq
-                           << "` for component `" << src.name() << "`\n");
-                continue;
+        if (descr["peer"].is_scalar()) {
+            if (!parse_peer_name(descr["peer"].as<string>(), peer)) {
+                report_parse_warning("Invalid peer binding description", descr);
+                return;
             }
+        }
 
-            if (it->second.type() != PlatformDescription::SCALAR) {
-                WRN_STREAM("Invalid IRQ mapping. Ignoring\n");
-                continue;
-            }
-
-            const string &dst_irq = it->second.as<string>();
-
-            ComponentBase *d;
-            string final_irq;
-
-            if (dst == NULL) {
-                d = get_irq_parent_from_mapping(dst_irq, final_irq);
-                if (d == NULL) {
-                    continue;
-                }
-            } else {
-                d = dst;
-                final_irq = dst_irq;
-            }
-            
-            irq_in = get_irq_in(*d, final_irq);
-
-            if (irq_in == NULL) {
-                WRN_STREAM("No irq in named `" << final_irq
-                           << "` for component `" << d->name() << "`\n");
-                continue;
-            }
-
-            pairs.push_back(IrqPair(irq_in, irq_out));
-            mapped_out.insert(irq_out->name());
+        if (descr["port"].is_scalar()) {
+            peer.set_port(descr["port"].as<string>());
         }
         break;
 
     case PlatformDescription::SCALAR:
-        /* Take the first src irq out and connect it to dst, to the irq designed by the scalar */
-        irq_out = get_irq_out(src, "0");
-
-        if (irq_out == NULL) {
-            WRN_STREAM("No irq out found for component `"
-                       << src.name() << "`\n");
-            break;
+        if (!parse_peer_name(descr.as<string>(), peer)) {
+            report_parse_warning("Invalid peer binding description", descr);
+            return;
         }
-
-        {
-            const string &dst_irq = map.as<string>();
-            irq_in = get_irq_in(*dst, dst_irq);
-
-            if (irq_in == NULL) {
-                WRN_STREAM("No irq in named `" << dst_irq
-                           << "` for component `" << dst->name() << "`\n");
-                break;
-            }
-        }
-
-        pairs.push_back(IrqPair(irq_in, irq_out));
-        mapped_out.insert(irq_out->name());
         break;
 
-    case PlatformDescription::VECTOR:
-    case PlatformDescription::NIL:
-    case PlatformDescription::INVALID:
-        break;
-    }
-
-    if (dst != NULL) {
-        /* Automatic connections of irqs with same name */
-        for (irq_it = src.irqs_out_begin(); irq_it != src.irqs_out_end(); irq_it++) {
-            if (mapped_out.find(irq_it->first) != mapped_out.end()) {
-                /* Already manually connected */
-                continue;
-            }
-
-            if (dst->irq_in_exists(irq_it->first)) {
-                irq_out = irq_it->second;
-                irq_in = &(dst->get_irq_in(irq_it->first));
-
-                pairs.push_back(IrqPair(irq_in, irq_out));
-            }
-        }
-    }
-
-    for (std::vector<IrqPair>::iterator it = pairs.begin(); it != pairs.end(); it++) {
-        irq_in = it->first;
-        irq_out = it->second;
-        DBG_STREAM("IRQ mapping: " 
-                   << src.name() << ":" << irq_out->name() << " -> " 
-                   << (dst ? dst->name(): "?") << ":" << irq_in->name() << "\n");
-    }
-}
-
-void PlatformBuilder::do_irq_connections(PlatformDescription &descr)
-{
-    PlatformDescription::iterator it;
-
-    if ((!descr.exists("components")) || (descr["components"].type() != PlatformDescription::MAP)) {
+    default:
+        report_parse_warning("Invalid binding description for port `" + p.name() + "'", descr);
         return;
     }
 
-    for (it = descr["components"].begin(); it != descr["components"].end(); it++) {
-        const string &name = it->first;
-        PlatformDescription &comp_descr = it->second;
-
-        if (m_components.find(name) == m_components.end()) {
-            continue;
-        }
-
-        ComponentBase *comp = m_components[name];
-        ComponentBase *irq_parent = get_irq_parent(comp_descr);
-
-	std::vector< IrqPair > pairs;
-	std::vector< IrqPair >::iterator it;
-
-	get_irq_mapping(comp_descr, *comp, irq_parent, pairs);
-
-	for (it = pairs.begin(); it != pairs.end(); it++) {
-		sc_signal<bool> *s = NULL;
-
-		s = it->first->connect(*(it->second));
-
-		if (s) {
-			m_sigs.push_back(s);
-		}
-	}
+    if (!peer.has_name()) {
+        report_parse_warning("Invalid peer binding description", descr);
+        return;
     }
+
+    if (!comp_exists(peer.name())) {
+        report_parse_warning("Peer component `" + peer.name() + "' not found", descr);
+        return;
+    }
+
+    ComponentBase &peer_comp = get_comp(peer.name());
+
+    if (!peer.has_port()) {
+        /* When no port is specified, we take the first available port */
+        if (peer_comp.port_exists(0)) {
+            peer.set_port(peer_comp.get_port(0).name());
+        } else {
+            report_parse_warning("No port found on component `" + peer.name() + "'", descr);
+            return;
+        }
+    }
+
+    if (!peer_comp.port_exists(peer.port())) {
+        report_parse_warning("Port `" + peer.port() + "' on peer component `" + peer.name() + "' not found", descr);
+        return;
+    }
+
+    Port &peer_port = peer_comp.get_port(peer.port());
+
+    do_binding(p, peer_port, descr);
 }
 
-void PlatformBuilder::end_of_elaboration()
+void PlatformBuilder::do_binding(Port &p0, Port &p1, PlatformDescription &descr)
 {
-    std::vector<MasterIface *>::iterator master;
-    std::vector<AddressRange>::iterator descr;
-
-    /* Inform masters of mapped addresses */
-    for (master = m_masters.begin(); master != m_masters.end(); master++) {
-        for (descr = m_mappings.begin(); descr != m_mappings.end(); descr++) {
-            (*master)->dmi_hint(descr->begin(), descr->size());
-        }
+    DBG_STREAM("Binding `" << p0.full_name() << "' to `" << p1.full_name() << "'\n");
+    if (!p0.connect(p1, descr)) {
+        report_parse_warning("Cannot bind `" + p0.full_name() + "' to port `" + p1.full_name() + "'", descr);
+        return;
     }
 }
 

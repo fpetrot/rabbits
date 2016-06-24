@@ -20,52 +20,43 @@
 #ifndef _RABBITS_TEST_SLAVE_TESTER_H
 #define _RABBITS_TEST_SLAVE_TESTER_H
 
-#include "rabbits/component/slave.h"
 #include "rabbits/component/master.h"
-#include "rabbits/component/bus.h"
+#include "rabbits/test/test.h"
 
 template <unsigned int BUSWIDTH = 32>
-class SlaveTester : public Master {
-protected:
-    Slave *m_slave;
-    BusMasterIface<BUSWIDTH> m_master_iface;
-    BusSlaveIfaceBase *m_slave_iface;
-
+class SlaveTester : public Master<> {
 public:
-    SlaveTester(sc_core::sc_module_name n)
-        : Master(n)
-        , m_master_iface(*this)
-        , m_slave_iface(NULL)
-    {
-        set_bus_iface(m_master_iface);
-    }
+    SlaveTester(sc_core::sc_module_name n) : Master(n) {}
 
-    ~SlaveTester()
+    virtual ~SlaveTester() {}
+
+    void connect_slave(ComponentBase &c)
     {
-        if (m_slave_iface != NULL) {
-            delete m_slave_iface;
-            m_slave_iface = NULL;
+        if (!c.has_attr("tlm-target")) {
+            throw TestFailureException("Missing tlm-target attribute "
+                                       "on tested component. "
+                                       "Can't connect it to the slave tester.");
         }
-    }
-
-    void connect(Slave &s)
-    {
-        if (!s.bus_iface_is_set()) {
-            m_slave_iface = new BusSlaveIface<BUSWIDTH>(s);
-            s.set_bus_iface(*m_slave_iface);
+        
+        if (!c.has_attr("tlm-target-port")) {
+            throw TestFailureException("Missing tlm-target-port attribute "
+                                       "on tested component. "
+                                       "Can't connect it to the slave tester.");
         }
 
-        BusSlaveIfaceBase &iface = s.get_bus_iface();
+        const std::string &pname = c.get_attr("tlm-target-port");
 
-        iface.get_socket<BUSWIDTH>().bind(m_master_iface.get_socket());
+        p_bus.connect(c.get_port(pname));
     }
-    
+
     void bus_write_u8(uint64_t addr, uint8_t data) {
         Master::bus_write(addr, &data, sizeof(data));
     }
+
     void bus_write_u16(uint64_t addr, uint16_t data) {
         Master::bus_write(addr, reinterpret_cast<uint8_t*>(&data), sizeof(data));
     }
+
     void bus_write_u32(uint64_t addr, uint32_t data) {
         Master::bus_write(addr, reinterpret_cast<uint8_t*>(&data), sizeof(data));
     }
@@ -75,11 +66,13 @@ public:
         Master::bus_read(addr, &data, sizeof(data));
         return data;
     }
+
     uint16_t bus_read_u16(uint64_t addr) {
         uint16_t data;
         Master::bus_read(addr, reinterpret_cast<uint8_t*>(&data), sizeof(data));
         return data;
     }
+
     uint32_t bus_read_u32(uint64_t addr) {
         uint32_t data;
         Master::bus_read(addr, reinterpret_cast<uint8_t*>(&data), sizeof(data));
@@ -90,7 +83,7 @@ public:
                              uint8_t *data, unsigned int len) {
         unsigned int ret;
         
-        ret = Master::debug_access(cmd, addr, data, len);
+	ret = p_bus.debug_access(cmd, addr, data, len);
 
         if (ret != len) {
             throw TestFailureException("Debug access length failed");
@@ -109,18 +102,12 @@ public:
                             reinterpret_cast<uint8_t*>(&data), sizeof(data));
     }
 
-    bool get_dmi_info(tlm::tlm_dmi & dmi_data) {
-        tlm::tlm_generic_payload trans;
-
-        trans.set_address(0);
-        trans.set_command(tlm::TLM_READ_COMMAND);
-
-        return m_bus_iface->get_direct_mem_ptr(trans, dmi_data);
-
+    bool get_dmi_info(DmiInfo &dmi_info) {
+	return p_bus.dmi_probe(AddressRange(0,0), dmi_info);
     }
 
-    bool last_access_succeeded() { return !m_last_bus_access_error; }
-    bool last_access_failed() { return m_last_bus_access_error; }
+    bool last_access_failed() { return p_bus.get_last_access_status().is_error(); }
+    bool last_access_succeeded() { return !last_access_failed(); }
 };
 
 #endif

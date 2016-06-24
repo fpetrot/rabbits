@@ -17,30 +17,36 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "rabbits-common.h"
-#include "rabbits/component/debug_initiator.h"
+#include "rabbits/component/port.h"
+#include "rabbits/component/component_base.h"
 
-DebugInitiator::DebugInitiator(sc_core::sc_module_name n) : Master(n)
+using namespace sc_core;
+
+void Port::declare_parent(HasPortIface *p)
 {
+    m_parent = p;
+
+    if (p) {
+        m_parent->declare_port(*this, m_name);
+    }
 }
 
-DebugInitiator::DebugInitiator(sc_core::sc_module_name n, ComponentParameters &cp) : Master(n, cp)
+void Port::declare_parent(sc_object *p)
 {
+    HasPortIface *pp = dynamic_cast<HasPortIface*>(p);
+
+    if (pp == NULL) {
+        return;
+    }
+
+    declare_parent(pp);
 }
 
-DebugInitiator::~DebugInitiator()
+void Port::add_attr_to_parent(const std::string & key, const std::string & value)
 {
-}
+    HasAttributesIface *parent = dynamic_cast<HasAttributesIface*>(m_parent);
 
-
-uint64_t DebugInitiator::debug_read(uint64_t addr, void *buf, uint64_t size)
-{
-    return static_cast<uint64_t>(
-        p_bus.debug_read(addr, reinterpret_cast<uint8_t*>(buf), size));
-}
-
-uint64_t DebugInitiator::debug_write(uint64_t addr, void *buf, uint64_t size)
-{
-    return static_cast<uint64_t>(
-        p_bus.debug_write(addr, reinterpret_cast<uint8_t*>(buf), size));
+    if (parent != NULL) {
+        parent->add_attr(key, value);
+    }
 }

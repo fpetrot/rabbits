@@ -37,7 +37,7 @@
  * This helper component allows to easily emits read or write debug requests on
  * the bus it is connected to.
  */
-class DebugInitiator : public Master {
+class DebugInitiator : public Master<> {
 public:
     DebugInitiator(sc_core::sc_module_name name);
     DebugInitiator(sc_core::sc_module_name name, ComponentParameters &cp);

@@ -26,26 +26,28 @@
 #define _SLAVE_DEVICE_H_
 
 #include <systemc>
-#include <tlm>
 
 #include "rabbits/logger.h"
 
 #include "rabbits/component/component.h"
+#include "rabbits/component/port/tlm_target.h"
 
 /**
  * @brief Slave (target) component on a bus
  *
+ * @tparam BUSWIDTH Width of the bus the slave will be connected to.
+ *
  * Represent a component that is connected as a slave (a target) on a bus.
  */
-class Slave: public Component, public SlaveIface
+template <unsigned int BUSWIDTH = 32>
+class SlaveTraits: public tlm::tlm_fw_transport_if<>
 {
-private:
-    BusSlaveIfaceBase *m_bus_iface;
-
 public:
-    Slave(sc_core::sc_module_name name, const ComponentParameters &params);
-    Slave(sc_core::sc_module_name name);
-    virtual ~Slave();
+    TlmTargetPort<BUSWIDTH> p_bus;
+
+    SlaveTraits() : p_bus("bus", *this) {}
+
+    virtual ~SlaveTraits() {}
 
 
     /**
@@ -285,13 +287,60 @@ public:
     virtual void b_transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& delay);
     virtual unsigned int transport_dbg(tlm::tlm_generic_payload& trans);
 
-    /* SlaveIface */
-    virtual ComponentBase& get_component() { return *this; }
-    virtual void set_bus_iface(BusSlaveIfaceBase &iface) { m_bus_iface = &iface; }
-    virtual bool bus_iface_is_set() { return m_bus_iface != NULL; }
-    virtual BusSlaveIfaceBase & get_bus_iface() { return *m_bus_iface; }
-
 };
 
+template <unsigned int BUSWIDTH>
+void SlaveTraits<BUSWIDTH>::b_transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& delay)
+{
+    bool bErr = false;
+
+    uint64_t addr = trans.get_address();
+    uint8_t *buf = reinterpret_cast<uint8_t *>(trans.get_data_ptr());
+    uint64_t size = trans.get_data_length();
+
+    switch (trans.get_command()) {
+    case tlm::TLM_WRITE_COMMAND:
+        bus_cb_write(addr, buf, size, bErr);
+        break;
+    case tlm::TLM_READ_COMMAND:
+        bus_cb_read(addr, buf, size, bErr);
+        break;
+    default:
+        ERR_PRINTF("Unknown bus access command\n");
+        trans.set_response_status(tlm::TLM_COMMAND_ERROR_RESPONSE);
+        return;
+    }
+
+    trans.set_response_status(bErr ? tlm::TLM_GENERIC_ERROR_RESPONSE
+                                   : tlm::TLM_OK_RESPONSE);
+}
+
+template <unsigned int BUSWIDTH>
+unsigned int SlaveTraits<BUSWIDTH>::transport_dbg(tlm::tlm_generic_payload& trans)
+{
+    uint64_t addr = trans.get_address();
+    uint8_t *buf = reinterpret_cast<uint8_t *>(trans.get_data_ptr());
+    uint64_t size = trans.get_data_length();
+
+    switch (trans.get_command()) {
+    case tlm::TLM_READ_COMMAND:
+        return debug_read(addr, buf, size);
+    case tlm::TLM_WRITE_COMMAND:
+        return debug_write(addr, buf, size);
+    default:
+        ERR_PRINTF("Unsupported transport debug command\n");
+        return 0;
+    }
+}
+
+
+template <unsigned int BUSWIDTH = 32>
+class Slave : public Component, public SlaveTraits<BUSWIDTH> {
+public:
+    explicit Slave(sc_core::sc_module_name name) : Component(name) {}
+    Slave(sc_core::sc_module_name name, ComponentParameters &params) : Component(name, params) {}
+
+    virtual ~Slave() {}
+};
 
 #endif

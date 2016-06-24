@@ -33,80 +33,81 @@ class Interconnect
     , public tlm::tlm_fw_transport_if<>
     , public tlm::tlm_bw_transport_if<>
 {
+public:
+    typedef tlm::tlm_base_target_socket_b<BUSWIDTH,
+                                          tlm::tlm_fw_transport_if<>,
+                                          tlm::tlm_bw_transport_if<> > BaseTargetSocket;
+
+    typedef tlm::tlm_base_initiator_socket_b<BUSWIDTH,
+                                             tlm::tlm_fw_transport_if<>,
+                                             tlm::tlm_bw_transport_if<> > BaseInitiatorSocket;
+
 protected:
-    struct AddressRange {
-        tlm::tlm_initiator_socket<BUSWIDTH> * socket;
+    struct TargetMapping {
+        int target_index;
         uint64_t begin;
         uint64_t end;
     };
 
-    std::vector<tlm::tlm_target_socket<BUSWIDTH> *> m_initiators;
-    std::vector<tlm::tlm_initiator_socket<BUSWIDTH> *> m_targets;
-    std::vector<AddressRange *> m_ranges;
+    std::vector<TargetMapping *> m_ranges;
 
-    tlm::tlm_initiator_socket<BUSWIDTH> * decode_address(sc_dt::uint64 addr,
-                                                         sc_dt::uint64& addr_offset)
+    tlm::tlm_target_socket<BUSWIDTH, tlm::tlm_base_protocol_types, 0> m_target;
+    tlm::tlm_initiator_socket<BUSWIDTH, tlm::tlm_base_protocol_types, 0> m_initiator;
+
+    int decode_address(sc_dt::uint64 addr,
+                       sc_dt::uint64& addr_offset)
     {
         unsigned int i;
-        AddressRange *range;
+        TargetMapping *range;
 
         for (i = 0; i < m_ranges.size(); i++) {
             range = m_ranges[i];
-            if (addr >= range->begin && addr < range->end)
-                break;
-        }
-        if (i == m_ranges.size()) {
-            return NULL;
+            if (addr >= range->begin && addr < range->end) {
+                addr_offset = range->begin;
+                return range->target_index;
+            }
         }
 
-        addr_offset = range->begin;
-
-        return range->socket;
+        return -1;
     }
 
 public:
     SC_HAS_PROCESS(Interconnect);
-    Interconnect(sc_core::sc_module_name name) : sc_core::sc_module(name) {}
+    Interconnect(sc_core::sc_module_name name) 
+        : sc_core::sc_module(name)
+        , m_target("bus_target_socket")
+        , m_initiator("bus_initiator_socket")
+    {
+        m_target.bind(*this);
+        m_initiator.bind(*this);
+    }
 
     virtual ~Interconnect()
     {
-        unsigned int i;
-
-        for (i = 0; i < m_initiators.size(); i++) {
-            delete m_initiators[i];
-        }
-
-        for (i = 0; i < m_targets.size(); i++) {
-            delete m_targets[i];
-        }
     }
 
 
-    void connect_initiator(tlm::tlm_initiator_socket<BUSWIDTH> &initiator)
+    void connect_initiator(BaseInitiatorSocket &initiator)
     {
-        tlm::tlm_target_socket<BUSWIDTH> *socket = new tlm::tlm_target_socket<BUSWIDTH>;
-        socket->bind(*this);
-
-        m_initiators.push_back(socket);
-        initiator.bind(*socket);
+        m_target.bind(initiator);
     }
 
 
-    void connect_target(tlm::tlm_target_socket<BUSWIDTH> &target,
+    void connect_target(BaseTargetSocket &target,
                         uint64_t addr, uint64_t len)
     {
-        tlm::tlm_initiator_socket<BUSWIDTH> *socket = new tlm::tlm_initiator_socket<BUSWIDTH>;
+        TargetMapping *range = new TargetMapping();
 
-        socket->bind(*this);
-        socket->bind(target);
+        /* XXX This piece of code relies on non-standard SystemC behavior.
+         * It works with the Accellera reference implementation but is not
+         * guaranteed to work with others. */
+        range->target_index = m_initiator.size();
 
-        m_targets.push_back(socket);
-
-        AddressRange *range = new AddressRange();
-        range->socket = socket;
         range->begin = addr;
         range->end = addr + len;
         m_ranges.push_back(range);
+
+        m_initiator.bind(target);
     }
 
 
@@ -116,16 +117,16 @@ public:
     {
         bool ret;
         sc_dt::uint64 offset;
-        tlm::tlm_initiator_socket<BUSWIDTH> *target;
 
-        target = decode_address(trans.get_address(), offset);
-        if (!target) {
+        int target_index = decode_address(trans.get_address(), offset);
+
+        if (target_index == -1) {
             return false;
         }
 
         trans.set_address(trans.get_address() - offset);
 
-        ret = (*target)->get_direct_mem_ptr(trans, dmi_data);
+        ret = m_initiator[target_index]->get_direct_mem_ptr(trans, dmi_data);
 
         if (ret) {
             dmi_data.set_start_address(dmi_data.get_start_address() + offset);
@@ -141,27 +142,26 @@ public:
     {
         ERR_PRINTF("Non-blocking transport not implemented\n");
         abort();
-        return tlm::TLM_COMPLETED; 
+        return tlm::TLM_COMPLETED;
     }
 
     virtual void b_transport(tlm::tlm_generic_payload& trans,
                              sc_core::sc_time& delay)
     {
         sc_dt::uint64 offset;
-        tlm::tlm_initiator_socket<BUSWIDTH> *target;
 
         wait(3, sc_core::SC_NS);
 
-        target = decode_address(trans.get_address(), offset);
-        if (!target) {
+        int target_index = decode_address(trans.get_address(), offset);
+        if (target_index == -1) {
             ERR_PRINTF("Cannot find slave at address %" PRIx64 "\n",
-                    static_cast<uint64_t>(trans.get_address()));
+                       static_cast<uint64_t>(trans.get_address()));
             trans.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
         }
 
         trans.set_address(trans.get_address() - offset);
 
-        (*target)->b_transport(trans, delay);
+        m_initiator[target_index]->b_transport(trans, delay);
 
         wait(1, sc_core::SC_NS);
     }
@@ -169,15 +169,14 @@ public:
     virtual unsigned int transport_dbg(tlm::tlm_generic_payload& trans)
     {
         sc_dt::uint64 offset;
-        tlm::tlm_initiator_socket<BUSWIDTH> *target;
 
-        target = decode_address(trans.get_address(), offset);
-        if(!target) {
+        int target_index = decode_address(trans.get_address(), offset);
+        if(target_index == -1) {
             return 0;
         }
 
         trans.set_address(trans.get_address() - offset);
-        return (*target)->transport_dbg(trans);
+        return m_initiator[target_index]->transport_dbg(trans);
     }
 
 
@@ -188,7 +187,7 @@ public:
     {
         ERR_PRINTF("Non-blocking transport not implemented\n");
         abort();
-        return tlm::TLM_COMPLETED; 
+        return tlm::TLM_COMPLETED;
     }
 
     virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range,

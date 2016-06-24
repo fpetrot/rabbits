@@ -72,6 +72,26 @@ public:
      * @return the address range end.
      */
     uint64_t end()   const { return m_begin + m_size - 1; }
+
+    /**
+     * @brief Return true if the two address range are the same.
+     *
+     * @return true if the two address range are the same.
+     */
+    bool operator== (const AddressRange & a) const {
+        return (m_begin == a.m_begin) && (m_size == a.m_size);
+    } 
+
+    /**
+     * @brief Return true if the two address range are different.
+     *
+     * @return true if the two address range are different.
+     */
+    bool operator!= (const AddressRange & a) const {
+        return !(*this == a);
+    } 
+
+
 };
 
 inline std::ostream & operator<< (std::ostream &o, const AddressRange &a)

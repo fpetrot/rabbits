@@ -29,16 +29,13 @@
 
 #include <vector>
 #include <map>
-#include <set>
 
 #include "rabbits/component/manager.h"
 #include "rabbits/component/component.h"
 #include "rabbits/component/debug_initiator.h"
-#include "rabbits/component/bus.h"
 
 class PlatformDescription;
 class AddressRange;
-class Master;
 
 /**
  * @brief The platform builder.
@@ -62,41 +59,17 @@ protected:
         };
     };
 
-    typedef std::pair<IrqIn*, IrqOut*> IrqPair;
-
     std::map<std::string, ComponentBase*> m_components;
-    std::vector<MasterIface*> m_masters;
-    std::vector<AddressRange> m_mappings;
-    std::set<ComponentBase*> m_connected;
-
-    DebugInitiator m_dbg;
-    BusIface *m_bus;
-
-    std::vector< sc_core::sc_signal<bool>* > m_sigs;
+    DebugInitiator *m_dbg;
 
     void create_components(PlatformDescription &descr, CreationStage::value);
 
-    void connect_master(MasterIface *m, Bus *b);
-    void connect_slave(SlaveIface *s, Bus *b, const AddressRange&);
+    void do_bindings(PlatformDescription &descr);
+    void do_bindings(ComponentBase &c, PlatformDescription &descr);
+    void do_binding(Port &p, PlatformDescription &descr);
+    void do_binding(Port &p0, Port &p1, PlatformDescription &descr);
 
-    void do_child_bus_connections(ComponentBase *c, Bus *b, PlatformDescription &descr);
-    void do_master_child_bus_connections(ComponentBase *c, Bus *b);
-    void do_bus_connections(PlatformDescription &descr);
-    void do_irq_connections(PlatformDescription &descr);
-
-    Bus * get_bus_parent(PlatformDescription &descr);
-    bool get_bus_mapping(PlatformDescription &descr, AddressRange&);
-
-    ComponentBase * get_irq_parent(PlatformDescription &descr);
-    ComponentBase * get_irq_parent_from_mapping(const std::string &mapping, std::string &final_irq);
-    void get_irq_mapping(PlatformDescription &descr,
-                         ComponentBase &src, ComponentBase *dst,
-                         std::vector< IrqPair > &pairs);
-
-    IrqIn* get_irq_in(ComponentBase &c, const std::string &id);
-    IrqOut* get_irq_out(ComponentBase &c, const std::string &id);
-
-    virtual void end_of_elaboration();
+    void create_dbg_init();
 
 public:
     SC_HAS_PROCESS(PlatformBuilder);
@@ -115,7 +88,7 @@ public:
      *
      * @return the DebugInitiator instance connected to the platform bus.
      */
-    DebugInitiator& get_dbg_init() { return m_dbg; }
+    DebugInitiator& get_dbg_init() { return *m_dbg; }
 
     /**
      * @brief Return an iterator to the first component of the platform.
@@ -153,6 +126,8 @@ public:
      * @return true if the component exists, false otherwise.
      */
     bool comp_exists(const std::string &name) const { return m_components.find(name) != m_components.end(); }
+
+    void find_comp_by_attr(const std::string &key, std::vector<ComponentBase*> &out);
 
     /**
      * @brief Return the component of the given name.

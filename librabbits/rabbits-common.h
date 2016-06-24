@@ -24,7 +24,7 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <systemc.h>
+#include <systemc>
 #include <inttypes.h>
 #include <sys/types.h>
 #include <sys/stat.h>

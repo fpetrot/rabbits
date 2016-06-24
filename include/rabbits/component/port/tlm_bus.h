@@ -17,30 +17,29 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "rabbits-common.h"
-#include "rabbits/component/debug_initiator.h"
+#ifndef _RABBITS_COMPONENT_PORT_TLM_BUS_H
+#define _RABBITS_COMPONENT_PORT_TLM_BUS_H
 
-DebugInitiator::DebugInitiator(sc_core::sc_module_name n) : Master(n)
-{
-}
+#include "rabbits/component/port.h"
+#include "rabbits/component/connection_strategy/tlm_target_bus.h"
+#include "rabbits/component/connection_strategy/tlm_initiator_bus.h"
 
-DebugInitiator::DebugInitiator(sc_core::sc_module_name n, ComponentParameters &cp) : Master(n, cp)
-{
-}
+template <unsigned int BUSWIDTH = 32>
+class TlmBusPort : public Port {
+private:
+    TlmTargetBusCS<BUSWIDTH> m_cs_target;
+    TlmInitiatorBusCS<BUSWIDTH> m_cs_init;
 
-DebugInitiator::~DebugInitiator()
-{
-}
+public:
+    TlmBusPort(const std::string &name, TlmBusIface<BUSWIDTH> &bus)
+        : Port(name), m_cs_target(bus), m_cs_init(bus)
+    {
+        add_connection_strategy(m_cs_target);
+        add_connection_strategy(m_cs_init);
+        declare_parent(bus.get_sc_module());
+        add_attr_to_parent("tlm-bus", "true");
+        add_attr_to_parent("tlm-bus-port", Port::name());
+    }
+};
 
-
-uint64_t DebugInitiator::debug_read(uint64_t addr, void *buf, uint64_t size)
-{
-    return static_cast<uint64_t>(
-        p_bus.debug_read(addr, reinterpret_cast<uint8_t*>(buf), size));
-}
-
-uint64_t DebugInitiator::debug_write(uint64_t addr, void *buf, uint64_t size)
-{
-    return static_cast<uint64_t>(
-        p_bus.debug_write(addr, reinterpret_cast<uint8_t*>(buf), size));
-}
+#endif

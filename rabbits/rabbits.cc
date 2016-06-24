@@ -146,6 +146,26 @@ static void build_cmdline(CmdlineInfo &cmdline)
     cmdline["version"] = CmdlineEntry("Print the version and exit");
 }
 
+static void print_indent(int indent)
+{
+    for (int i = 0; i < indent; i++) {
+        std::cout << "-- ";
+    }
+}
+
+static void dump_systemc_hierarchy(const sc_core::sc_object &top_level, int indent = 0) 
+{
+    const vector<sc_core::sc_object*> & children = top_level.get_child_objects();
+    vector<sc_core::sc_object*>::const_iterator it;
+
+    print_indent(indent);
+    std::cout << top_level.basename() << std::endl;
+
+    for (it = children.begin(); it != children.end(); it++) {
+        dump_systemc_hierarchy(**it, indent+1);
+    }
+}
+
 extern "C" {
 int sc_main(int argc, char *argv[])
 {
@@ -193,6 +213,9 @@ int sc_main(int argc, char *argv[])
         ERR_STREAM("Empty platform. Please provide a platform description file with the -config argument.\n");
         return 1;
     }
+
+    //dump_systemc_hierarchy(builder);
+    //return 0;
 
     simu_manager().start();
 

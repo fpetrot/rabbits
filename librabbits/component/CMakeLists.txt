@@ -3,7 +3,6 @@ rabbits_add_sources(
 	factory.cc
 	Makefile.objs
 	manager.cc
-	master.cc
 	parameters.cc
-	slave.cc
+	port.cc
 )

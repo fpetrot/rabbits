@@ -8,6 +8,7 @@ add_subdirectory(plugin)
 add_subdirectory(ui)
 add_subdirectory(dynloader)
 add_subdirectory(../components ../components)
+add_subdirectory(../backends ../backends)
 add_subdirectory(../plugins ../plugins)
 rabbits_add_sources(
 	logger.cc

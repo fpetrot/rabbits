@@ -37,7 +37,7 @@ using std::set;
 PlatformDescription::NodeInvalid
 PlatformDescription::INVALID_NODE(true);
 
-PlatformDescription 
+PlatformDescription
 PlatformDescription::INVALID_DESCRIPTION(&PlatformDescription::INVALID_NODE);
 
 PlatformDescription::PlatformDescription()
@@ -69,37 +69,40 @@ PlatformDescription::~PlatformDescription()
 }
 
 PlatformDescription::Node *
-PlatformDescription::load_yaml_req(YAML::Node root)
+PlatformDescription::load_yaml_req(YAML::Node root, Node::Origin &origin)
 {
     YAML::Node::iterator it;
     Node *n = NULL;
     NodeMap *nm = NULL;
     NodeVector *nv = NULL;
 
+    origin.line = root.Mark().line;
+    origin.column = root.Mark().column;
+
     switch (root.Type()) {
     case YAML::NodeType::Map:
-        nm = new NodeMap;
+        nm = new NodeMap(origin);
         for (it = root.begin(); it != root.end(); it++) {
             (*nm)[it->first.as<string>()] =
-                PlatformDescription(load_yaml_req(it->second));
+                PlatformDescription(load_yaml_req(it->second, origin));
         }
         n = nm;
         break;
 
     case YAML::NodeType::Sequence:
-        nv = new NodeVector;
+        nv = new NodeVector(origin);
         for (it = root.begin(); it != root.end(); it++) {
-            nv->push_back(PlatformDescription(load_yaml_req(*it)));
+            nv->push_back(PlatformDescription(load_yaml_req(*it, origin)));
         }
         n = nv;
         break;
 
     case YAML::NodeType::Scalar:
-        n = new NodeScalar(root.as<string>());
+        n = new NodeScalar(root.as<string>(), origin);
         break;
 
     case YAML::NodeType::Null:
-        n = new NodeNil;
+        n = new NodeNil(origin);
         break;
 
     default:
@@ -113,13 +116,16 @@ PlatformDescription::load_yaml_req(YAML::Node root)
 void PlatformDescription::load_file_yaml(const string &file)
 {
     YAML::Node y_root = YAML::LoadFile(file);
-    *this = PlatformDescription(load_yaml_req(y_root));
+    Node::Origin origin(file, 0, 0);
+
+    *this = PlatformDescription(load_yaml_req(y_root, origin));
 }
 
 void PlatformDescription::load_yaml(const string &yaml)
 {
     YAML::Node y_root = YAML::Load(yaml);
-    *this = PlatformDescription(load_yaml_req(y_root));
+    Node::Origin origin;
+    *this = PlatformDescription(load_yaml_req(y_root, origin));
 }
 
 void PlatformDescription::tokenize_arg(const string arg, list<string>& toks)
@@ -133,15 +139,17 @@ void PlatformDescription::tokenize_arg(const string arg, list<string>& toks)
 }
 
 PlatformDescription::NodeScalar*
-PlatformDescription::parse_arg_req(list<string>& toks)
+PlatformDescription::parse_arg_req(list<string>& toks, Node::Origin &origin)
 {
+    Node::Origin cur_orig = origin;
+
     if (toks.empty()) {
         if ((type() != NIL) && (type() != SCALAR)) {
             throw InvalidCmdLineException("");
             abort();
         }
 
-        NodeScalar *n = new NodeScalar("");
+        NodeScalar *n = new NodeScalar("", origin);
         *this = PlatformDescription(n);
         return n;
     }
@@ -151,10 +159,11 @@ PlatformDescription::parse_arg_req(list<string>& toks)
 
     switch (type()) {
     case NIL:
-        *this = PlatformDescription(new NodeMap);
+        *this = PlatformDescription(new NodeMap(cur_orig));
         /* fallthrough */
     case MAP:
-        return (*m_node)[tok].parse_arg_req(toks);
+        origin.column += tok.length() + 1;
+        return (*m_node)[tok].parse_arg_req(toks, origin);
         break;
 
     case VECTOR:
@@ -173,6 +182,9 @@ void PlatformDescription::parse_cmdline(int argc, const char * const argv[],
     enum { ARG, VAL } state = ARG;
     list<string> toks;
     NodeScalar *n;
+    Node::Origin origin(Node::Origin::CMDLINE);
+
+    origin.column += string(argv[0]).length();
 
     for(int i = 1; i < argc; i++) {
         string arg(argv[i]);
@@ -189,7 +201,7 @@ void PlatformDescription::parse_cmdline(int argc, const char * const argv[],
                 tokenize_arg(sarg, toks);
 
                 try {
-                    n = parse_arg_req(toks);
+                    n = parse_arg_req(toks, origin);
                 } catch (InvalidCmdLineException) {
                     throw InvalidCmdLineException(arg);
                 }
@@ -207,6 +219,7 @@ void PlatformDescription::parse_cmdline(int argc, const char * const argv[],
         case VAL:
             n->set_raw_data(arg);
             state = ARG;
+            origin.column += arg.length();
             break;
         }
     }

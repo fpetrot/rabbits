@@ -22,6 +22,8 @@
 #include "rabbits-common.h"
 #include "rabbits/ui/ui.h"
 
+using namespace sc_core;
+
 void simu_manager::start()
 {
     while (sc_get_status() != SC_STOPPED) {

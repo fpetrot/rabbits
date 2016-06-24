@@ -22,7 +22,7 @@ PLUGIN_HEADER_TPL='
 %{include}
 
 namespace autogen {
-
+namespace plugin {
 class %{factory_class}: public PluginFactory {
 public:
     virtual ~%{factory_class}() {}
@@ -34,6 +34,7 @@ public:
     virtual std::string get_name() { return "%{name}"; }
 };
 
+}; /* namespace plugin */
 }; /* namespace autogen */
 '
 
@@ -44,7 +45,7 @@ DISCOVER_TPL=(' ' * 4) +
         ComponentParameters cp = get_params();
         cp.fill_from_description(params);
         
-        %{discover_snippet}
+        %{class}::discover(name, cp);
     }
 '
 
@@ -53,6 +54,7 @@ COMPONENT_HEADER_TPL='
 %{include}
 
 namespace autogen {
+namespace component {
 
 class %{factory_class} : public ComponentFactory {
 public:
@@ -75,17 +77,18 @@ public:
     virtual std::string description() { return "%{description}"; }
 };
 
+}; /* namespace component */
 }; /* namespace autogen */
 '
 
 STATIC_INST_TPL='
 %{self_include}
-static autogen::%{factory_class} %{factory_class}_inst;
+static autogen::%{kind}::%{factory_class} %{factory_class}_inst;
 '
 
 
-DYNAMIC_COMP_INST_TPL=(' ' * 8) + 'm_comp_insts.push_back(new autogen::%{factory_class});'
-DYNAMIC_PLUGIN_INST_TPL=(' ' * 8) + 'm_plugin_insts.push_back(new autogen::%{factory_class});'
+DYNAMIC_COMP_INST_TPL=(' ' * 8) + 'm_comp_insts.push_back(new autogen::component::%{factory_class});'
+DYNAMIC_PLUGIN_INST_TPL=(' ' * 8) + 'm_plugin_insts.push_back(new autogen::plugin::%{factory_class});'
 
 DYNAMIC_LOADER_TPL='
 #include <vector>
@@ -339,7 +342,7 @@ class Component
 
   def build_discover
     if @discover then
-      DISCOVER_TPL % { :discover_snippet => @discover + ';' }
+      DISCOVER_TPL % { :class =>  + @class }
     else
       ''
     end
@@ -356,6 +359,7 @@ class Component
       :self_include => build_self_include,
       :parameters => build_parameters,
       :discover => build_discover,
+      :kind => "component",
     }
   end
 
@@ -409,6 +413,7 @@ class Plugin
       :factory_class => cc_ify(@name) + "Factory",
       :include => build_include,
       :self_include => build_self_include,
+      :kind => "plugin",
     }
   end
 
@@ -538,11 +543,51 @@ def parse_args
   return [ mode, out, in_files ]
 end
 
+def hash_merge(h0, h1)
+  merger = proc do |k, oldval, newval|
+    if oldval.is_a?(Hash) and newval.is_a?(Hash)
+      oldval.merge(newval, &merger)
+    else
+      newval
+    end
+  end
+
+  h0.merge(h1, &merger)
+end
+
+def load_yml(f)
+  yml = Psych.load_file(f)
+
+  case yml['include']
+  when String, Fixnum
+    inc = [ yml['include'] ]
+  when Array
+    inc = yml['include']
+  when NilClass
+    inc = []
+  else
+    raise StandardError.new('Invalid include directive in file ' + f)
+  end
+
+  incs_yml = {}
+
+  inc.each do |inc_f|
+    abs_inc_f = File::join(File::dirname(f), inc_f)
+    incs_yml = hash_merge(incs_yml, load_yml(abs_inc_f))
+  end
+
+  yml = hash_merge(incs_yml, yml)
+
+  yml.delete("include")
+
+  yml
+end
+
 begin 
   mode, out, in_files = parse_args
 
   comps = in_files.collect do |f|
-    yml = Psych.load_file(f)
+    yml = load_yml(f)
     case yml.keys.first
     when "component"
       Component.new(f, yml['component'])

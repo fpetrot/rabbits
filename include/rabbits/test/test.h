@@ -129,7 +129,6 @@ protected:
 
     void failure(const std::string &what)
     {
-        m_test_result = false;
         throw TestFailureException(name(), what, get_current_file(), get_current_line());
     }
 
@@ -164,6 +163,7 @@ protected:
         try {
             unit();
         } catch (TestFailureException e) {
+            m_test_result = false;
             ERR_STREAM(e.what_without_bt() << "\n");
         }
     }
