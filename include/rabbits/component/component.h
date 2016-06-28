@@ -33,7 +33,6 @@
 
 #include "component_base.h"
 #include "rabbits/rabbits_exception.h"
-#include "rabbits/datatypes/indexed_pool.h"
 
 /**
  * @brief A rabbits component.
@@ -52,7 +51,7 @@ public:
     SC_HAS_PROCESS(Component);
 
 protected:
-    IndexedPool<std::string, Port*> m_ports;
+    std::map<std::string, Port*> m_ports;
 
     std::vector< std::function<void() > > m_pushed_threads;
 
@@ -129,11 +128,17 @@ public:
     virtual ~Component() {}
 
     /* HasPortIface */
-    virtual void declare_port(Port &p, const std::string &name) { m_ports.add(name, &p); }
-    virtual bool port_exists(const std::string &name) const { return m_ports.exists(name); }
-    virtual Port& get_port(const std::string &name) { return *m_ports[name]; }
-    virtual bool port_exists(int index) const { return m_ports.exists(index); }
-    virtual Port& get_port(int index) { return *m_ports[index]; }
+    virtual void declare_port(Port &p, const std::string &name) { m_ports[name] = &p; }
+    virtual bool port_exists(const std::string &name) const { return (m_ports.find(name) != m_ports.end()); }
+
+    virtual Port& get_port(const std::string &name)
+    {
+        if (!port_exists(name)) {
+            throw PortNotFoundException(name);
+        }
+        return *m_ports[name];
+    }
+
     virtual port_iterator port_begin() { return m_ports.begin(); }
     virtual port_iterator port_end() { return m_ports.end(); }
     virtual const_port_iterator port_begin() const { return m_ports.begin(); }

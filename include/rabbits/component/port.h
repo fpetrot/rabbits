@@ -41,9 +41,6 @@ public:
     virtual bool port_exists(const std::string &name) const = 0;
     virtual Port& get_port(const std::string &name) = 0;
 
-    virtual bool port_exists(int index) const = 0;
-    virtual Port& get_port(int index) = 0;
-
     typedef std::map<std::string, Port*>::iterator port_iterator;
     typedef std::map<std::string, Port*>::const_iterator const_port_iterator;
 

@@ -294,8 +294,9 @@ void PlatformBuilder::do_binding(Port &p, PlatformDescription &descr)
 
     if (!peer.has_port()) {
         /* When no port is specified, we take the first available port */
-        if (peer_comp.port_exists(0)) {
-            peer.set_port(peer_comp.get_port(0).name());
+        auto p = peer_comp.port_begin();
+        if (p != peer_comp.port_end()) {
+            peer.set_port(p->first);
         } else {
             report_parse_warning("No port found on component `" + peer.name() + "'", descr);
             return;
