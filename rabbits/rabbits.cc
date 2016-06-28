@@ -29,6 +29,8 @@
 
 #include <rabbits/dynloader/dynloader.h>
 
+#include <rabbits/config/manager.h>
+
 #include <boost/filesystem.hpp>
 
 #include <cstdlib>
@@ -153,7 +155,7 @@ static void print_indent(int indent)
     }
 }
 
-static void dump_systemc_hierarchy(const sc_core::sc_object &top_level, int indent = 0) 
+static void dump_systemc_hierarchy(const sc_core::sc_object &top_level, int indent = 0)
 {
     const vector<sc_core::sc_object*> & children = top_level.get_child_objects();
     vector<sc_core::sc_object*>::const_iterator it;
@@ -166,23 +168,57 @@ static void dump_systemc_hierarchy(const sc_core::sc_object &top_level, int inde
     }
 }
 
+static void declare_global_params(ConfigManager &config)
+{
+    config.add_global_param("show-help",
+                            Parameter<bool>("Display this help text and exit",
+                                            false));
+
+    config.add_global_param("list-components",
+                            Parameter<bool>("List available components "
+                                            "with their description",
+                                            false));
+
+    config.add_global_param("debug",
+                            Parameter<bool>("Enable debug messages",
+                                            false));
+
+    config.add_global_param("show-version",
+                            Parameter<bool>("Display version information and exit",
+                                            false));
+}
+
+static void declare_aliases(ConfigManager &config)
+{
+    ComponentParameters &p = config.get_global_params();
+
+    config.add_param_alias("help",            p["show-help"]);
+    config.add_param_alias("list-components", p["list-components"]);
+    config.add_param_alias("debug",           p["debug"]);
+    config.add_param_alias("version",         p["show-version"]);
+    config.add_param_alias("platform",        p["selected-platform"]);
+}
+
 extern "C" {
 int sc_main(int argc, char *argv[])
 {
     Logger::get().set_log_level(LogLevel::INFO);
 
-    CmdlineInfo cmdline;
-    PlatformDescription p;
+    ConfigManager config;
 
-    build_cmdline(cmdline);
-    parse_cmdline(argc, argv, p, cmdline);
+    declare_global_params(config);
+    declare_aliases(config);
 
-    if (cmdline["debug"].value) {
+    config.add_cmdline(argc, argv);
+
+    ComponentParameters &globals = config.get_global_params();
+
+    if (globals["debug"].as<bool>()) {
         Logger::get().set_log_level(LogLevel::DEBUG);
         print_version(Logger::get().log_stream(LogLevel::DEBUG));
     }
 
-    if (cmdline["version"].value) {
+    if (globals["show-version"].as<bool>()) {
         print_version(std::cout);
         return 0;
     }
@@ -193,29 +229,34 @@ int sc_main(int argc, char *argv[])
         dyn_loader.add_colon_sep_search_paths(env_dynlib_paths);
     }
 
-    build_description(p, argv[0]);
-
     dyn_loader.search_and_load_rabbits_dynlibs();
 
-    if (cmdline["list-components"].value) {
+    if (globals["list-components"].as<bool>()) {
         enum_components();
         return 0;
     }
 
-    PlatformBuilder builder("platform", p);
+    std::string pname = globals["selected-platform"].as<string>();
 
-    if (cmdline["help"].value) {
-        print_usage(argv[0], cmdline, builder);
-        return 0;
-    }
-
-    if (builder.is_empty()) {
-        ERR_STREAM("Empty platform. Please provide a platform description file with the -config argument.\n");
+    if (pname.empty()) {
+        ERR_STREAM("No selected platform. Please select a platform with -platform. Try -help.\n");
         return 1;
     }
 
-    //dump_systemc_hierarchy(builder);
-    //return 0;
+    if (!config.platform_exists(pname)) {
+        ERR_STREAM("Platform " << pname << " not found. Try -help.\n");
+        return 1;
+    }
+
+    DBG_STREAM("Selected platform is " << pname << "\n");
+
+    PlatformDescription platform = config.apply_platform(pname);
+    PlatformBuilder(pname.c_str(), platform);
+
+    if (globals["show-help"].as<bool>()) {
+        //print_usage(argv[0], cmdline, builder);
+        return 0;
+    }
 
     simu_manager().start();
 
