@@ -75,8 +75,13 @@ public:
      *
      * @throw InvalidParameterTypeException if the conversion failed.
      */
-    template <typename T> T as();
+    template <typename T> T as() const;
 
+    template <typename T> void set(const T& v);
+
+    template <typename T> ParameterBase& operator= (const T& v) { set(v); return *this; }
+
+    template <typename T> bool is_convertible_to() const;
     /**
      * @brief Set the parameter to the value of the root node in the given PlatformDescription.
      *
@@ -176,12 +181,29 @@ public:
 };
 
 template <typename T>
-inline T ParameterBase::as() {
-    Parameter<T> *p = dynamic_cast<Parameter<T>*>(this);
-    if (p == NULL) {
+inline T ParameterBase::as() const
+{
+    const Parameter<T> *p = dynamic_cast<const Parameter<T>*>(this);
+    if (p == nullptr) {
         throw InvalidParameterTypeException("Parameter type mismatch");
     }
     return p->get();
+}
+
+template <typename T>
+inline void ParameterBase::set(const T& v)
+{
+    Parameter<T> *p = dynamic_cast<Parameter<T>*>(this);
+    if (p == nullptr) {
+        throw InvalidParameterTypeException("Parameter type mismatch");
+    }
+    p->set(v);
+}
+
+template <typename T>
+inline bool ParameterBase::is_convertible_to() const
+{
+    return dynamic_cast<const Parameter<T>*>(this) != nullptr;
 }
 
 #endif
