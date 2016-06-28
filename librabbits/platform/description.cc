@@ -243,15 +243,26 @@ void PlatformDescription::alias(const string& root, const string& child)
     /* XXX */
 }
 
+#ifdef DEBUG_MERGE
+# define DBG_MERGE DBG_STREAM
+#else
+# define DBG_MERGE(...) do {} while(0)
+#endif
+
 PlatformDescription PlatformDescription::merge(PlatformDescription &p)
 {
+    DBG_MERGE("--> Start merge\n");
+
     switch(type()) {
     case NIL:
+        DBG_MERGE("<-- this is nil, returning p\n");
         return p;
         break;
 
     case MAP:
         if (p.is_map()) {
+            DBG_MERGE("this and p are map\n");
+
             NodeMap *n = new NodeMap;
 
             iterator it;
@@ -265,25 +276,32 @@ PlatformDescription PlatformDescription::merge(PlatformDescription &p)
                 const string key = it->first;
 
                 if (p.exists(key)) {
+                    DBG_MERGE("same key " << key << " on both side, we must go deeper\n");
                     (*n)[key] = it->second.merge(p[key]);
                     to_merge.erase(key);
                 } else {
+                    assert(to_merge.find(key) == to_merge.end());
+                    DBG_MERGE("key " << key << " only on this side, merging\n");
                     (*n)[key] = it->second;
                 }
             }
 
             for (set<string>::iterator it2 = to_merge.begin(); it2 != to_merge.end(); it2++) {
+                DBG_MERGE("key " << *it2 << " only on p side, merging\n");
                 (*n)[*it2] = p[*it2];
             }
 
+            DBG_MERGE("<-- returning merged node\n");
             return PlatformDescription(n);
 
         } else {
+            DBG_MERGE("<-- this is map, returning this\n");
             return *this;
         }
         break;
 
     case SCALAR:
+        DBG_MERGE("<-- this is scalar, returning this\n");
         return *this;
         break;
 
@@ -292,3 +310,43 @@ PlatformDescription PlatformDescription::merge(PlatformDescription &p)
         break;
     }
 }
+
+static void indent(std::ostream &os, int lvl)
+{
+    for (int i = 0; i < lvl; i++) {
+        os << "  ";
+    }
+}
+
+void PlatformDescription::dump(std::ostream &os, int lvl) const
+{
+    switch(type()) {
+    case NIL:
+        indent(os, lvl);
+        os << "(nil)\n";
+        break;
+
+    case SCALAR:
+        indent(os, lvl);
+        os << m_node->raw_data() << "\n";
+        break;
+
+    case MAP:
+        for (auto e : *this) {
+            indent(os, lvl);
+            os << e.first << ":" << "\n";
+            e.second.dump(os, lvl+1);
+        }
+        break;
+
+    default:
+        assert(false);
+        break;
+    }
+}
+
+void PlatformDescription::dump(std::ostream &os) const
+{
+    dump(os, 0);
+}
+

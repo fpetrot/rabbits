@@ -113,7 +113,7 @@ public:
         struct Origin {
             enum eOrigin { FILE, CMDLINE, UNKNOWN };
             eOrigin origin;
-	    std::string filename;
+            std::string filename;
             int line;
             int column;
 
@@ -164,6 +164,7 @@ public:
         virtual const_iterator begin() const = 0;
         virtual const_iterator end() const = 0;
         virtual const std::string & raw_data() const { throw InvalidConversionException("Invalid rawdata use"); }
+        virtual bool exists(const std::string &key) const { throw InvalidConversionException("Non-map node as no child"); }
 
         const Origin& origin() { return m_origin; }
 
@@ -248,6 +249,8 @@ public:
         }
 
         virtual size_type size() const { return m_child.size(); }
+
+        virtual bool exists(const std::string &key) const { return m_child.find(key) != m_child.end(); }
 
         virtual iterator begin() {
             return m_child.begin();
@@ -342,11 +345,13 @@ protected:
     Node *m_node;
 
     Node * load_yaml_req(YAML::Node root, Node::Origin &origin);
-    
+
     void tokenize_arg(const std::string arg, std::list<std::string>& toks);
     NodeScalar* parse_arg_req(std::list<std::string>& toks, Node::Origin &origin);
 
     explicit PlatformDescription(Node *);
+
+    void dump(std::ostream &os, int lvl) const;
 
 public:
     PlatformDescription();
@@ -376,7 +381,7 @@ public:
      * accept no values on the command line. They are converted to boolean
      * scalar nodes with the `true` value.
      *
-     * Example: 
+     * Example:
      *   ./rabbits -help -components.foo.bar 1337
      *
      * Here, help is a unary argument, as components.foo.bar is not and as the `1337` value.
@@ -455,8 +460,9 @@ public:
      * @return true if the child node exists.
      */
     bool exists(const std::string& k) const {
-        NodeType t = (*m_node)[k].type();
-        return ((t != NIL) && (t != INVALID));
+        if (!is_map()) { return false; }
+
+        return m_node->exists(k);
     }
 
     void alias(const std::string& root, const std::string& child);
@@ -524,6 +530,16 @@ public:
     }
 
     std::string origin() const { return m_node->origin().format(); }
+
+    /**
+     * @brief Dump the content of the description.
+     *
+     * Dump the content of the description using the output stream given as a
+     * parameter.
+     *
+     * @param[in] os the stream to use for the dump.
+     */
+    void dump(std::ostream &os) const;
 
     /* The invalid description */
 private:
