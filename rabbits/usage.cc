@@ -48,6 +48,17 @@ static inline string get_param_full_name(const ParameterBase &param)
     return "-" + param.get_namespace() + "." + param.get_name();
 }
 
+static inline string strip_last_nl(const string &s)
+{
+    string ret = s;
+
+    if (ret[ret.size()-1] == '\n') {
+        ret.resize(ret.size()-1);
+    }
+
+    return ret;
+}
+
 class TextFormatter {
 public:
     typedef boost::tokenizer<boost::char_separator<char> > Tokenizer;
@@ -60,30 +71,30 @@ private:
     int m_start_at, m_max_len;
     int m_cur;
 
-    static string tabs(int c)
+    void spaces(int c)
     {
-        string ret;
-
         while(c--) {
-            ret += "\t";
+            m_logger << " ";
         }
-
-        return ret;
     }
+
 
 public:
     TextFormatter(Logger &l, LogLevel::value lvl) : m_logger(l), m_lvl(lvl)
     {
         m_is_tty = l.is_tty(m_lvl);
+        set_start_col(0);
     }
 
     void reset_pos()
     {
-        m_logger << "\r" << tabs(m_start_at);
-        m_cur = m_start_at * 8;
+        if (m_cur > m_start_at) {
+            m_logger << "\r";
+            m_cur = 0;
+        }
 
-        m_logger << "\r" << tabs(m_start_at);
-        m_cur = m_start_at * 8;
+        spaces(m_start_at - m_cur);
+        m_cur = m_start_at;
     }
 
     void set_start_col(int col)
@@ -96,11 +107,7 @@ public:
 
         m_logger.get_tty_attr(m_lvl, rows, cols);
 
-        m_start_at = col / 8;
-        if (col % 8) {
-            m_start_at++;
-        }
-
+        m_start_at = col;
         m_max_len = cols;
 
         /* XXX m_max_len <= 0 */
@@ -109,13 +116,17 @@ public:
 
     void wrap() {
         m_logger << "\n";
-        reset_pos();
+        m_cur = 0;
+
+        if (m_is_tty) {
+            reset_pos();
+        }
     }
 
     void print(const string &s)
     {
         if (!m_is_tty) {
-            m_logger << s;
+            m_logger << s << " ";
             return;
         }
 
@@ -129,6 +140,14 @@ public:
         std::vector<string> lines;
         std::copy(lines_toks.begin(), lines_toks.end(), std::back_inserter(lines));
 
+        if ((!lines.size()) && s.size()) {
+            /* \n only */
+            for (unsigned int i = 0; i < s.size(); i++) {
+                wrap();
+            }
+            return;
+        }
+
         int nl_count = lines.size();
         if (s[s.size()-1] != '\n') {
             nl_count--;
@@ -136,27 +155,57 @@ public:
 
         for (auto line : lines) {
             Tokenizer words(line, word_sep);
+            bool first = true;
 
             for (auto word : words) {
                 if (int(word.size()) > m_max_len) {
-                    l << word << " ";
+                    l << word;
                     wrap();
                     continue;
                 }
 
                 if (m_cur + int(word.size()) >= m_max_len) {
                     wrap();
+                    first = true;
                 } 
 
-                l << word << " ";
-                m_cur += word.size() + 1;
+                if (!first) {
+                    l << " ";
+                    m_cur++;
+                }
+
+                l << word;
+                m_cur += word.size();
+
+                first = false;
+            }
+
+            if (line[line.size()-1] == ' ') {
+                l << " ";
+                m_cur++;
             }
 
             if (nl_count--) {
-                l << "\n";
-                reset_pos();
+                wrap();
             }
         }
+    }
+
+    template <class T>
+    TextFormatter & operator << (const T& t)
+    {
+        std::stringstream ss;
+
+        ss << t;
+        print(ss.str());
+
+        return *this;
+    }
+
+    TextFormatter & operator << (Logger & (*pf)(Logger &))
+    {
+        (*pf)(m_logger);
+        return *this;
     }
 
     Logger & get_logger() { return m_logger; }
@@ -182,16 +231,10 @@ public:
     void print_left(TextFormatter &f)
     {
         f.wrap();
-
-        f.get_logger() << format::white_b;
-        f.print(m_name + ":");
-
-        f.get_logger() << format::reset;
+        f << format::white_b << m_name << ":" << format::reset;
     }
 
-    void print_right(TextFormatter &f)
-    {
-    }
+    void print_right(TextFormatter &f) {}
 };
 
 class UsageEntryAlias : public UsageEntry {
@@ -209,17 +252,14 @@ public:
 
     void print_left(TextFormatter &f)
     {
-        f.print("-" + m_name);
+        f << "-" << m_name;
     }
 
     void print_right(TextFormatter &f)
     {
-        f.print(m_param.get_description());
-
-        f.get_logger() << format::black_b;
-        f.print("(shortcut for " + get_param_full_name(m_param) + ")");
-
-        f.get_logger() << format::reset;
+        f << m_param.get_description() << " "
+          << format::black_b << "(shortcut for " << get_param_full_name(m_param) << ")"
+          << format::reset;
     }
 };
 
@@ -238,23 +278,18 @@ public:
 
     void print_left(TextFormatter &f)
     {
-        f.print(m_left);
+        f << "-" << m_param.get_namespace() << "." << format::green << m_param.get_name() << format::reset;
     }
 
     void print_right(TextFormatter &f)
     {
-        string description = m_param.get_description();
+        string description;
 
-        if (description[description.size()-1] == '\n') {
-            description.resize(description.size()-1);
-        }
+        description = strip_last_nl(m_param.get_description());
 
-        f.print(description);
-
-        f.get_logger() << format::cyan;
-        f.print("[" + m_param.to_str() + "]");
-
-        f.get_logger() << format::reset;
+        f << description << " "
+          << format::cyan << "[" << m_param.to_str() << "]"
+          << format::reset;
 
     }
 };
@@ -282,15 +317,10 @@ public:
         l.next_trace(lvl);
 
         for (auto &u : m_entries) {
-            f.set_start_col(0);
-
-            for (int i = 0; i < u->left_indent(); i++) {
-                l << " ";
-            }
-
+            f.set_start_col(u->left_indent());
             u->print_left(f);
 
-            f.set_start_col(m_max_left + 3);
+            f.set_start_col(m_max_left + 5);
             u->print_right(f);
 
             l << "\n";
@@ -298,67 +328,59 @@ public:
     }
 };
 
-static string operator*(const string &s, int i)
-{
-    string ret;
 
-    while(i--) {
-        ret += s;
-    }
-
-    return ret;
-}
-
-const string INDENT = "   ";
-static int indent_step = 0;
-static Logger & cout_indent(int istep = indent_step)
-{
-    LOG(APP, INF) << (INDENT*istep);
-    return get_app_logger();
-}
-
-static void describe_comp_params(const ComponentParameters &p)
+static void describe_comp_params(const ComponentParameters &p, TextFormatter &f)
 {
     ComponentParameters::const_iterator it;
 
     for (it = p.begin(); it != p.end(); it++) {
-        cout_indent()
-            << "- " << it->first
-            << ": " << it->second->get_description() << "\n";
+        f.set_start_col(4);
+        f << format::green << it->first << format::reset;
+
+        f.set_start_col(5 + it->first.size());
+        f << strip_last_nl(it->second->get_description()) << "\n";
     }
 }
 
-static void describe_component(ComponentFactory &c)
+static void describe_component(ComponentFactory &c, TextFormatter &f)
 {
     const ComponentParameters & p = c.get_params();
 
-    cout_indent() << "type: " << c.type() << "\n";
-    cout_indent() << "description: " << c.description() << "\n";
+    f.set_start_col(2);
+    f << format::cyan << "type: " << format::reset << c.type() << "\n";
+    f << format::cyan << "description: " << format::reset << strip_last_nl(c.description()) << "\n";
 
     if (p.empty()) {
         return;
     }
 
-    cout_indent() << "parameters:\n";
-    indent_step++;
-    describe_comp_params(p);
-    indent_step--;
+    f << format::cyan << "parameters:\n" << format::reset;
+    describe_comp_params(p, f);
 }
 
-void enum_components()
+void enum_components(LogLevel::value lvl)
 {
     ComponentManager &cm = ComponentManager::get();
     ComponentManager::iterator it;
 
-    cout_indent() << "\nAvailable components:\n\n";
+    Logger &l = get_app_logger();
+    TextFormatter f(l, lvl);
+
+    bool banner_status = l.enable_banner(false);
+
+    l.next_trace(lvl);
+
+    f << format::white_b << "Available components:\n\n" << format::reset;
 
     for (it = cm.begin(); it != cm.end(); it++) {
-        cout_indent() << "* " << it->first << "\n";
-        indent_step++;
-        describe_component(*(it->second));
-        indent_step--;
-        cout_indent() << "\n";
+        f.set_start_col(0);
+        f << format::cyan_b << "* " << format::white_b << it->first << format::reset << "\n";
+        describe_component(*(it->second), f);
+        f << "\n";
     }
+
+    l << "\n";
+    l.enable_banner(banner_status);
 }
 
 static void add_aliases(ConfigManager &conf, UsageFormatter &usage)

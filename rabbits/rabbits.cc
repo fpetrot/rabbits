@@ -71,6 +71,10 @@ static void declare_global_params(ConfigManager &config)
     config.add_global_param("show-version",
                             Parameter<bool>("Display version information and exit",
                                             false));
+
+    config.add_global_param("color-output",
+                            Parameter<bool>("Allow usage of colors when the output is a terminal",
+                                            true));
 }
 
 static void declare_aliases(ConfigManager &config)
@@ -91,6 +95,8 @@ int sc_main(int argc, char *argv[])
     get_sim_logger().set_log_level(LogLevel::INFO);
 
     ConfigManager config;
+
+    ConfigManager::set_manager(config);
 
     declare_global_params(config);
     declare_aliases(config);
@@ -119,7 +125,7 @@ int sc_main(int argc, char *argv[])
     dyn_loader.search_and_load_rabbits_dynlibs();
 
     if (globals["list-components"].as<bool>()) {
-        enum_components();
+        enum_components(LogLevel::INFO);
         return 0;
     }
 

@@ -25,6 +25,6 @@
 
 void print_version(LogLevel::value);
 void print_usage(const char* arg0, ConfigManager &config, PlatformBuilder &p);
-void enum_components();
+void enum_components(LogLevel::value);
 
 #endif

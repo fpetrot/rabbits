@@ -28,6 +28,8 @@ using std::vector;
 using std::string;
 using namespace boost::filesystem;
 
+ConfigManager* ConfigManager::m_manager = nullptr;
+
 ConfigManager::ConfigManager()
     : m_global_params("global")
 {

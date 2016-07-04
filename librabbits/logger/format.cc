@@ -18,12 +18,19 @@
  */
 
 #include "rabbits/logger/format.h"
+#include "rabbits/config/manager.h"
 
 #include <unistd.h>
 #include <iostream>
 
 #include "rlutil.h"
 
+static inline bool color_enabled()
+{
+    ConfigManager & config = ConfigManager::get_manager();
+
+    return config.get_global_params()["color-output"].as<bool>();
+}
 
 Formatter::Formatter(std::ostream &o) : m_stream(&o)
 {
@@ -61,6 +68,10 @@ void Formatter::set_color(ConsoleColor::value c, ConsoleAttr::value a)
         return;
     }
 
+    if (!color_enabled()) {
+        return;
+    }
+
     int color = int(c) + (8 * int(a));
 
     rlutil::setColor(color);
@@ -68,6 +79,14 @@ void Formatter::set_color(ConsoleColor::value c, ConsoleAttr::value a)
 
 void Formatter::reset()
 {
+    if (!m_is_tty) {
+        return;
+    }
+
+    if (!color_enabled()) {
+        return;
+    }
+
     rlutil::resetColor();
 }
 

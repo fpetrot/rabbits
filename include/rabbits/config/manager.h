@@ -39,6 +39,8 @@ public:
     typedef std::map<std::string, ParameterBase*> ParamAliases;
 
 private:
+    static ConfigManager *m_manager;
+
     PlatformDescription m_root_descr;
     PlatformDescription m_cmdline_descr;
     PlatformDescription m_config_file_descr;
@@ -68,6 +70,9 @@ private:
     void build_cmdline_unaries(std::set<std::string> &unaries) const;
 
 public:
+    static void set_manager(ConfigManager &c) { m_manager = &c; }
+    static ConfigManager & get_manager() { return *m_manager; }
+
     ConfigManager();
     virtual ~ConfigManager();
 
@@ -90,7 +95,6 @@ public:
     PlatformDescription apply_platform(const std::string &name);
 
     PlatformDescription get_root_description() const { return m_root_descr; }
-
 };
 
 #endif
