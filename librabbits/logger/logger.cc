@@ -22,24 +22,29 @@
 #include <cstdarg>
 #include <cstdio>
 const std::string Logger::PREFIXES[] = {
-        [LogLevel::ERROR]   = "[error] ",
-        [LogLevel::WARNING] = "[ warn] ",
-        [LogLevel::INFO]    = "[ info] ",
-        [LogLevel::DEBUG]   = "[debug] ",
+        [LogLevel::ERROR]   = "[error]",
+        [LogLevel::WARNING] = "[ warn]",
+        [LogLevel::INFO]    = "[ info]",
+        [LogLevel::DEBUG]   = "[debug]",
 };
 
-Logger Logger::m_logger;
+Logger Logger::m_root_loggers[LogContext::LASTLOGCONTEXT];
+std::vector<char> Logger::m_format_buf;
 
-int Logger::log_vprintf(LogLevel::value lvl, const std::string fmt, va_list ap) const
+char * Logger::vformat(const char * fmt, va_list ap)
 {
     va_list aq;
 
     va_copy(aq, ap);
 
+    if (m_format_buf.capacity() == 0) {
+        m_format_buf.resize(DEFAULT_BUF_SIZE);
+    }
+
     size_type capa = m_format_buf.capacity();
     size_type written;
 
-    written = vsnprintf(&m_format_buf[0], m_format_buf.capacity(), fmt.c_str(), aq);
+    written = vsnprintf(&m_format_buf[0], m_format_buf.capacity(), fmt, aq);
 
     while (written >= capa) {
         capa *= 2;
@@ -48,39 +53,38 @@ int Logger::log_vprintf(LogLevel::value lvl, const std::string fmt, va_list ap) 
         va_end(aq);
         va_copy(aq, ap);
         
-        written = vsnprintf(&m_format_buf[0], m_format_buf.capacity(), fmt.c_str(), aq);
+        written = vsnprintf(&m_format_buf[0], m_format_buf.capacity(), fmt, aq);
     }
 
     va_end(aq);
-    log_stream(lvl) << std::string(&m_format_buf[0]);
 
-    return written;
+    return &m_format_buf[0];
 }
 
-int Logger::log_printf(LogLevel::value lvl, const std::string fmt, ...) const
+char * Logger::format(const char * fmt, ...)
 {
     va_list ap;
-    size_type written;
+    char *ret;
 
     va_start(ap, fmt);
-    written = log_vprintf(lvl, fmt, ap);
+    ret = vformat(fmt, ap);
     va_end(ap);
 
-    return written;
+    return ret;
 }
 
 
 std::ostream & Logger::log_stream(LogLevel::value lvl) const
 {
-    if ((lvl > m_level) || m_muted) {
-        return m_null_stream;
-    }
+    //if ((lvl > m_level) || m_muted) {
+        //return std::cout;
+    //}
 
-    if (m_banner_enabled) {
-        (*m_streams[lvl]) << PREFIXES[lvl];
-    }
+    //if (m_banner_enabled) {
+        //(*m_streams[lvl]) << PREFIXES[lvl];
+    //}
 
-    return (*m_streams[lvl]);
+    return *m_streams[lvl].sink;
 }
 
 void Logger::save_flags()
@@ -88,7 +92,7 @@ void Logger::save_flags()
     std::vector< std::ios::fmtflags > flags;
 
     for (int i = 0; i < LogLevel::LASTLOGLVL; i++) {
-        flags.push_back(m_streams[i]->flags());
+        flags.push_back(get_sink(LogLevel::value(i)).flags());
     }
 
     m_state_stack.push(flags);
@@ -107,6 +111,6 @@ void Logger::restore_flags()
     m_state_stack.pop();
 
     for (it = flags.begin(), i = 0; it != flags.end(); it++, i++) {
-        m_streams[i]->flags(*it);
+        get_sink(LogLevel::value(i)).flags(*it);
     }
 }

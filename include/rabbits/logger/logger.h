@@ -25,13 +25,59 @@
 #ifndef _RABBITS_LOGGER_LOGGER_H
 #define _RABBITS_LOGGER_LOGGER_H
 
-#include "has_logger_iface.h"
+#include <iostream>
+#include <vector>
+#include <stack>
+#include <ostream>
+
+#include "rabbits/config.h"
+#include "format.h"
+
+/**
+ * @brief Log level.
+ */
+class LogLevel {
+public:
+    enum value {
+        ERROR = 0, WARNING, INFO, DEBUG,
+        LASTLOGLVL
+    };
+};
+
+/**
+ * @brief Log context.
+ */
+class LogContext {
+public:
+    enum value {
+        APP = 0, /**< Log messages related to the application */
+        SIM,     /**< Log messages related to the simulation */
+        LASTLOGCONTEXT
+    };
+};
 
 /**
  * @brief Main logging system.
  */
-class Logger : public HasLoggerIface {
+class Logger {
 public:
+    struct Stream {
+        std::ostream *sink = nullptr;
+        Formatter *formatter = nullptr;
+
+        Stream() {}
+        explicit Stream(std::ostream &sink) : sink(&sink), formatter(new Formatter(sink)) {}
+
+        Stream(const Stream &s) : sink(s.sink), formatter(new Formatter(*s.formatter)) {}
+        Stream(Stream &&s) : sink(s.sink), formatter(s.formatter) { s.sink = nullptr; s.formatter = nullptr; }
+        
+        ~Stream() { delete formatter; }
+
+        Stream & operator= (Stream s) { std::swap(sink, s.sink); std::swap(formatter, s.formatter); return *this; }
+
+        bool is_null() const { return sink == nullptr; }
+    };
+
     static const std::string PREFIXES[];
 
 protected:
@@ -39,49 +85,87 @@ protected:
     static const size_type DEFAULT_BUF_SIZE = 256;
 
 private:
-    static Logger m_logger;
-
-    Logger() : m_level(LogLevel::value(RABBITS_LOGLEVEL)), m_banner_enabled(true), m_muted(false)  {
-        for (int i = 0; i < LogLevel::LASTLOGLVL; i++) {
-            m_streams[i] = &std::cerr;
-        }
-
-        m_format_buf.resize(DEFAULT_BUF_SIZE);
-    }
+    static Logger m_root_loggers[LogContext::LASTLOGCONTEXT];
 
     Logger(const Logger&);
     Logger& operator=(const Logger&);
 
 protected:
-    LogLevel::value m_level;
-    bool m_banner_enabled;
-    bool m_muted;
+    static std::vector<char> m_format_buf;
+    static char * vformat(const char *fmt, va_list ap);
 
-    std::ostream * m_streams[LogLevel::LASTLOGLVL];
-    mutable std::ofstream m_null_stream;
+    Logger *m_parent = nullptr;
+    LogLevel::value m_level = LogLevel::value(RABBITS_LOGLEVEL);
+    LogLevel::value m_next_lvl;
 
-    typedef std::stack<std::vector<std::ios::fmtflags> > StateStack;
+    bool m_new_trace = true;
+    bool m_banner_enabled = true;
+    std::string m_custom_banner;
+    bool m_muted = false;
+    bool m_auto_reset = true;
+
+    Stream m_streams[LogLevel::LASTLOGLVL];
+
+    typedef std::stack< std::vector<std::ios::fmtflags> > StateStack;
     StateStack m_state_stack;
 
-    mutable std::vector<char> m_format_buf;
+
+    void clear_streams()
+    {
+        for (int i = 0; i < LogLevel::LASTLOGLVL; i++) {
+            m_streams[i] = Stream();
+        }
+    }
+
+    Stream & get_stream(LogLevel::value lvl)
+    {
+        if (m_streams[lvl].is_null() && m_parent) {
+            return m_parent->get_stream(lvl);
+        } else {
+            return m_streams[lvl];
+        }
+    }
+
+    const Stream & get_stream(LogLevel::value lvl) const
+    {
+        if (m_streams[lvl].is_null() && m_parent) {
+            return m_parent->get_stream(lvl);
+        } else {
+            return m_streams[lvl];
+        }
+    }
+
+    std::ostream& get_sink(LogLevel::value lvl)
+    {
+        return *(get_stream(lvl).sink);
+    }
 
 public:
+    Logger(std::ostream *default_stream = &std::cerr)
+    {
+        for (int i = 0; i < LogLevel::LASTLOGLVL; i++) {
+            m_streams[i] = Stream(*default_stream);
+        }
+    }
+
     /**
-     * @brief Return the singleton instance of the Logger.
+     * @brief Return the singleton instance of the root Logger.
      *
-     * @return the singleton instance of the Logger.
+     * @return the singleton instance of the root Logger.
      */
-    static Logger & get() { return m_logger; }
+    static Logger & get_root_logger(LogContext::value context) { return m_root_loggers[context]; }
+
+    static char * format(const char *fmt, ...);
 
     /**
      * @brief Set the stream associated with the given log level.
      *
-     * Default stream is std::cout for all log levels.
+     * Default stream is std::cerr for all log levels.
      *
      * @param[in] lvl The log level.
      * @param[in] str The stream to associate to the log level.
      */
-    void set_stream(LogLevel::value lvl, std::ostream *str) { m_streams[lvl] = str; }
+    void set_stream(LogLevel::value lvl, std::ostream *str) { m_streams[lvl] = Stream(*str); }
 
     /**
      * @brief Set the current maximum log level displayed.
@@ -93,6 +177,28 @@ public:
      */
     void set_log_level(LogLevel::value lvl) { m_level = lvl; }
 
+    void set_color(ConsoleColor::value c, ConsoleAttr::value a)
+    {
+        Stream &s = get_stream(m_next_lvl);
+        
+        if (s.is_null()) {
+            return;
+        }
+
+        s.formatter->set_color(c, a);
+    }
+
+    void reset_format()
+    {
+        Stream &s = get_stream(m_next_lvl);
+        
+        if (s.is_null()) {
+            return;
+        }
+
+        s.formatter->reset();
+    }
+
     /**
      * @brief Get the current log level.
      *
@@ -100,9 +206,11 @@ public:
      */
     LogLevel::value get_log_level() { return m_level; }
 
+    /* XXX deprecated */
     int log_printf(LogLevel::value lvl, const std::string fmt, ...) const ;
     int log_vprintf(LogLevel::value lvl, const std::string fmt, va_list ap) const;
     std::ostream & log_stream(LogLevel::value lvl) const;
+
 
     /**
      * @brief Save the current streams flags.
@@ -117,7 +225,7 @@ public:
     /**
      * @brief Enable or disable the banner emitted by the Logger such as "[warn]".
      *
-     * @param enabled the desired banner state (enabled or disabled).
+     * @param[in] enabled the desired banner state (enabled or disabled).
      *
      * @return The previous state.
      */
@@ -125,6 +233,47 @@ public:
         bool save = m_banner_enabled;
         m_banner_enabled = enabled;
         return save;
+    }
+
+    bool is_tty(LogLevel::value lvl) const {
+        return get_stream(lvl).formatter->is_tty();
+    }
+
+    void get_tty_attr(LogLevel::value lvl, int &rows, int &cols) const {
+        return get_stream(lvl).formatter->get_tty_attr(rows, cols);
+    }
+
+    /**
+     * @brief Enable or disable automatic reset of the logger format at the end of a trace.
+     *
+     * When enabled, a format reset is performed at the end of each trace so
+     * that any modification (such as text color) does not impact the next
+     * traces.
+     *
+     * @param[in] enabled Enable or disable auto reset.
+     *
+     * @return The previous state.
+     */
+    bool enable_auto_reset(bool enabled) {
+        bool save = m_auto_reset;
+        m_auto_reset = enabled;
+        return save;
+    }
+
+    /**
+     * @brief Set a custom banner to append to the log level prefix
+     *
+     * @param[in] banner The banner
+     */
+    void set_custom_banner(const std::string &banner) {
+        m_custom_banner = banner;
+    }
+
+    /**
+     * @brief Remove any previously set custom banner
+     */
+    void clear_custom_banner() {
+        m_custom_banner = "";
     }
 
     /**
@@ -138,5 +287,135 @@ public:
      * @brief Unmute the Logger.
      */
     void unmute() { m_muted = false; }
+
+    /**
+     * @brief Set the logger instance given as parameter to be a child of this
+     * logger instance.
+     *
+     * A child logger uses the same output streams as the parent and has the
+     * same log level, until set otherwise.
+     *
+     * @param[in,out] l The instance to set as a child of this instance.
+     */
+    void set_child(Logger &l) 
+    {
+        l.m_level = m_level;
+        l.m_banner_enabled = m_banner_enabled;
+        l.m_custom_banner = m_custom_banner;
+        l.m_muted = m_muted;
+
+        l.clear_streams();
+        
+        l.m_parent = this;
+    }
+
+    /**
+     * @brief Set the log level of the next trace.
+     *
+     * This method must be called before each trace. It returns false if logs
+     * are disabled for the given level. In this case, a new call
+     * to <code>next_trace</code> must be performed before attempting to trace something.
+     *
+     * This method is not supposed to be used alone and is called by the LOG() macros family.
+     *
+     * @param[in] lvl The desired level of the next trace
+     *
+     * @return true if the logger is enabled for the given level lvl, false otherwise.
+     */
+    bool next_trace(LogLevel::value lvl)
+    {
+        if ((lvl > m_level) || m_muted) {
+            return false;
+        }
+
+        m_next_lvl = lvl;
+        m_new_trace = true;
+
+        if (m_auto_reset) {
+            reset_format();
+        }
+
+        return true;
+    }
+
+    template <class T>
+    Logger & operator << (const T& t)
+    {
+        std::ostream &s = get_sink(m_next_lvl);
+
+        if (m_new_trace && m_banner_enabled) {
+            s << PREFIXES[m_next_lvl] << m_custom_banner << " ";
+        }
+
+        s << t;
+
+        m_new_trace = false;
+        return *this;
+    }
+
+    Logger & operator << (std::ostream& (*pf)(std::ostream&))
+    {
+        get_sink(m_next_lvl) << *pf;
+        return *this;
+    }
+
+    Logger & operator << (std::ios& (*pf)(std::ios&))
+    {
+        get_sink(m_next_lvl) << *pf;
+        return *this;
+    }
+
+    Logger & operator << (std::ios_base& (*pf)(std::ios_base&))
+    {
+        get_sink(m_next_lvl) << *pf;
+        return *this;
+    }
+
+    Logger & operator << (Logger & (*pf)(Logger &))
+    {
+        return (*pf)(*this);
+    }
+
+    explicit operator bool() const { return true; }
 };
+
+/**
+ * @brief Logger interface.
+ *
+ * Classes willing to override log traces must implement this interface.
+ */
+class HasLoggerIface {
+    /**
+     * @brief Return the logger associated to the object and the given context.
+     *
+     * @param[in] context The desired log context.
+     *
+     * @return the logger associated to the object and the given context.
+     */
+    virtual Logger & get_logger(LogContext::value context) = 0;
+};
+
+
+namespace format {
+    static inline Logger & reset(Logger &l) { l.reset_format(); return l; }
+
+    static inline Logger & black(Logger &l) { l.set_color(ConsoleColor::BLACK, ConsoleAttr::NORMAL); return l; }
+    static inline Logger & blue(Logger &l) { l.set_color(ConsoleColor::BLUE, ConsoleAttr::NORMAL); return l; }
+    static inline Logger & green(Logger &l) { l.set_color(ConsoleColor::GREEN, ConsoleAttr::NORMAL); return l; }
+    static inline Logger & cyan(Logger &l) { l.set_color(ConsoleColor::CYAN, ConsoleAttr::NORMAL); return l; }
+    static inline Logger & red(Logger &l) { l.set_color(ConsoleColor::RED, ConsoleAttr::NORMAL); return l; }
+    static inline Logger & purple(Logger &l) { l.set_color(ConsoleColor::PURPLE, ConsoleAttr::NORMAL); return l; }
+    static inline Logger & yellow(Logger &l) { l.set_color(ConsoleColor::YELLOW, ConsoleAttr::NORMAL); return l; }
+    static inline Logger & white(Logger &l) { l.set_color(ConsoleColor::WHITE, ConsoleAttr::NORMAL); return l; }
+
+    static inline Logger & black_b(Logger &l) { l.set_color(ConsoleColor::BLACK, ConsoleAttr::BOLD); return l; }
+    static inline Logger & blue_b(Logger &l) { l.set_color(ConsoleColor::BLUE, ConsoleAttr::BOLD); return l; }
+    static inline Logger & green_b(Logger &l) { l.set_color(ConsoleColor::GREEN, ConsoleAttr::BOLD); return l; }
+    static inline Logger & cyan_b(Logger &l) { l.set_color(ConsoleColor::CYAN, ConsoleAttr::BOLD); return l; }
+    static inline Logger & red_b(Logger &l) { l.set_color(ConsoleColor::RED, ConsoleAttr::BOLD); return l; }
+    static inline Logger & purple_b(Logger &l) { l.set_color(ConsoleColor::PURPLE, ConsoleAttr::BOLD); return l; }
+    static inline Logger & yellow_b(Logger &l) { l.set_color(ConsoleColor::YELLOW, ConsoleAttr::BOLD); return l; }
+    static inline Logger & white_b(Logger &l) { l.set_color(ConsoleColor::WHITE, ConsoleAttr::BOLD); return l; }
+}
+
 #endif

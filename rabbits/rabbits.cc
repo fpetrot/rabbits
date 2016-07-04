@@ -31,136 +31,21 @@
 
 #include <rabbits/config/manager.h>
 
-#include <boost/filesystem.hpp>
-
 #include <cstdlib>
-#include <set>
 #include <iostream>
 
 #include "usage.h"
 #include "cmdline.h"
 
-using boost::filesystem::path;
-using boost::filesystem::is_regular_file;
 using std::string;
 using std::vector;
-using std::set;
-
-static void get_yml_from_basename(const char *arg0, vector<string> & files)
-{
-
-    const string basename = path(arg0).filename().string();
-
-    if (basename != RABBITS_APP_NAME) {
-        DBG_STREAM("Trying to deduce config from basename\n");
-        const string search_path(RABBITS_DESCR_SEARCH_PATH);
-        const string prefix(RABBITS_DESCR_SYMLINK_PREFIX);
-
-        if (basename.find(prefix) != 0) {
-            DBG_STREAM("basename seems invalid. Giving up.\n");
-            return;
-        }
-
-        path fp(search_path);
-        fp /= path(basename.substr(prefix.size()) + ".yml");
-
-        const string final_path = fp.string();
-
-        if (is_regular_file(final_path)) {
-            files.push_back(final_path);
-        } else {
-            DBG_STREAM(final_path << " not found.\n");
-        }
-    }
-}
-
-static void get_yml_from_config(PlatformDescription &p, vector<string> & files)
-{
-    if (p.is_scalar()) {
-        files.push_back(p.as<string>());
-    } else if (p.is_map()) {
-        PlatformDescription::iterator it;
-
-        for (it = p.begin(); it != p.end(); it++) {
-            get_yml_from_config(it->second, files);
-        }
-    }
-}
-
-static void get_yml_configs(PlatformDescription &p, const char *arg0, vector<string> & files)
-{
-    get_yml_from_basename(arg0, files);
-    get_yml_from_config(p["config"], files);
-
-    DBG_STREAM("Got " << files.size() << " config file(s) to load\n");
-}
-
-static void build_description(PlatformDescription& p, const char *arg0)
-{
-    vector<string> configs;
-    vector<string>::iterator it;
-
-    get_yml_configs(p, arg0, configs);
-
-    for (it = configs.begin(); it != configs.end(); it++) {
-        PlatformDescription p_yml;
-
-        DBG_STREAM("Loading " << *it << "\n");
-        p_yml.load_file_yaml(*it);
-        p = p.merge(p_yml);
-    }
-}
-
-static void map_to_set(const CmdlineInfo &in, set<string> &out)
-{
-    CmdlineInfo::const_iterator it;
-
-    for (it = in.begin(); it != in.end(); it++) {
-        out.insert(it->first);
-    }
-}
-
-static void parse_cmdline(int argc, char *argv[],
-                          PlatformDescription &p, CmdlineInfo &cmdline)
-{
-    set<string> unaries;
-
-    map_to_set(cmdline, unaries);
-
-    p.parse_cmdline(argc, argv, unaries);
-
-    if (p.is_map()) {
-        CmdlineInfo::iterator it;
-
-        for (it = cmdline.begin(); it != cmdline.end(); it++) {
-            if (p[it->first].is_scalar()) {
-                it->second.value = true;
-            }
-        }
-    }
-}
-
-static void build_cmdline(CmdlineInfo &cmdline)
-{
-    cmdline["help"] = CmdlineEntry("This message");
-    cmdline["list-components"] = CmdlineEntry("List available components with their description");
-    cmdline["debug"] = CmdlineEntry("Enable debug messages");
-    cmdline["version"] = CmdlineEntry("Print the version and exit");
-}
-
-static void print_indent(int indent)
-{
-    for (int i = 0; i < indent; i++) {
-        std::cout << "-- ";
-    }
-}
 
 static void dump_systemc_hierarchy(const sc_core::sc_object &top_level, int indent = 0)
 {
     const vector<sc_core::sc_object*> & children = top_level.get_child_objects();
     vector<sc_core::sc_object*>::const_iterator it;
 
-    print_indent(indent);
+    //print_indent(indent);
     std::cout << top_level.basename() << std::endl;
 
     for (it = children.begin(); it != children.end(); it++) {
@@ -202,7 +87,8 @@ static void declare_aliases(ConfigManager &config)
 extern "C" {
 int sc_main(int argc, char *argv[])
 {
-    Logger::get().set_log_level(LogLevel::INFO);
+    get_app_logger().set_log_level(LogLevel::INFO);
+    get_sim_logger().set_log_level(LogLevel::INFO);
 
     ConfigManager config;
 
@@ -214,11 +100,14 @@ int sc_main(int argc, char *argv[])
     ComponentParameters &globals = config.get_global_params();
 
     if (globals["debug"].as<bool>()) {
-        Logger::get().set_log_level(LogLevel::DEBUG);
-        print_version(Logger::get().log_stream(LogLevel::DEBUG));
+        get_app_logger().set_log_level(LogLevel::DEBUG);
+        get_sim_logger().set_log_level(LogLevel::DEBUG);
+        /* XXX */
+        print_version(std::cerr);
     }
 
     if (globals["show-version"].as<bool>()) {
+        /* XXX */
         print_version(std::cout);
         return 0;
     }
@@ -239,22 +128,27 @@ int sc_main(int argc, char *argv[])
     std::string pname = globals["selected-platform"].as<string>();
 
     if (pname.empty()) {
-        ERR_STREAM("No selected platform. Please select a platform with -platform. Try -help.\n");
+        if (globals["show-help"].as<bool>()) {
+            PlatformBuilder empty("", PlatformDescription::INVALID_DESCRIPTION);
+            print_usage(argv[0], config, empty);
+            return 0;
+        }
+        LOG(APP, ERR) << "No selected platform. Please select a platform with -platform. Try -help.\n";
         return 1;
     }
 
     if (!config.platform_exists(pname)) {
-        ERR_STREAM("Platform " << pname << " not found. Try -help.\n");
+        LOG(APP, ERR) << "Platform " << pname << " not found. Try -help.\n";
         return 1;
     }
 
-    DBG_STREAM("Selected platform is " << pname << "\n");
+    LOG(APP, DBG) << "Selected platform is " << pname << "\n";
 
     PlatformDescription platform = config.apply_platform(pname);
-    PlatformBuilder(pname.c_str(), platform);
+    PlatformBuilder builder(pname.c_str(), platform);
 
     if (globals["show-help"].as<bool>()) {
-        //print_usage(argv[0], cmdline, builder);
+        print_usage(argv[0], config, builder);
         return 0;
     }
 

@@ -30,7 +30,6 @@
 #include "rabbits/rabbits_exception.h"
 #include "rabbits/datatypes/address_range.h"
 #include "rabbits/platform/description.h"
-#include "rabbits/logger/has_logger_iface.h"
 #include "rabbits/logger.h"
 
 /**
@@ -63,35 +62,29 @@ class ComponentBase
 public:
     typedef std::map<std::string, std::string> Attributes;
 
-private:
-    bool m_loglvl_override;
-    LogLevel::value m_loglvl;
-
 protected:
     ComponentParameters m_params;
 
 public:
     ComponentBase(sc_core::sc_module_name name, const ComponentParameters &params)
         : sc_core::sc_module(name)
-        , m_loglvl_override(false)
         , m_params(params)
     {
-        PlatformDescription &d = m_params.get_base_description();
+        //PlatformDescription &d = m_params.get_base_description();
 
-        if (d["debug"].is_scalar()) {
-            bool ov = d["debug"].as<bool>();
+        //if (d["debug"].is_scalar()) {
+            //bool ov = d["debug"].as<bool>();
 
-            m_loglvl_override = ov;
-            m_loglvl = LogLevel::DEBUG;
-        }
+            //m_loglvl_override = ov;
+            //m_loglvl = LogLevel::DEBUG;
+        //}
     }
 
     ComponentBase(sc_core::sc_module_name name)
         : sc_core::sc_module(name)
-        , m_loglvl_override(false)
     {}
 
-    virtual ~ComponentBase() {}
+    virtual ~ComponentBase() { }
 
     /**
      * @brief Return the component parameters.
@@ -100,7 +93,8 @@ public:
      */
     const ComponentParameters & get_params() { return m_params; }
 
-    /* HasLoggerIface */
+
+#if 0
     std::ostream & log_stream(LogLevel::value lvl) const
     {
         LogLevel::value eff = lvl, save;
@@ -153,6 +147,7 @@ public:
 
         return written;
     }
+#endif
 
 };
 #endif

@@ -1,3 +1,0 @@
-obj-y += description.o builder.o
-
-description.o-libs=-lyaml-cpp

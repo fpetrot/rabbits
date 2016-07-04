@@ -24,37 +24,41 @@
 #include <fstream>
 #include <vector>
 #include <stack>
+#include <type_traits>
 
 #include "rabbits/config.h"
 #include "logger/logger.h"
 
-static inline std::ostream & log_stream(LogLevel::value lvl)
-{
-    return Logger::get().log_stream(lvl);
-}
 
-static inline int log_vprintf(LogLevel::value lvl, const std::string fmt,
-                              va_list ap)
-{
-    return Logger::get().log_vprintf(lvl, fmt, ap);
-}
+//[> XXX <]
+//static inline std::ostream & log_stream(LogLevel::value lvl)
+//{
+    //return Logger::get().log_stream(lvl);
+//}
 
-static inline int log_printf(LogLevel::value lvl, const std::string fmt, ...)
-{
-    int ret;
-    va_list ap;
+//static inline int log_vprintf(LogLevel::value lvl, const std::string fmt,
+                              //va_list ap)
+//{
+    //return Logger::get().log_vprintf(lvl, fmt, ap);
+//}
 
-    va_start(ap, fmt);
-    ret = log_vprintf(lvl, fmt, ap);
-    va_end(ap);
+//static inline int log_printf(LogLevel::value lvl, const std::string fmt, ...)
+//{
+    //int ret;
+    //va_list ap;
 
-    return ret;
-}
+    //va_start(ap, fmt);
+    //ret = log_vprintf(lvl, fmt, ap);
+    //va_end(ap);
+
+    //return ret;
+//}
 
 #ifndef RABBITS_LOGLEVEL
 # define RABBITS_LOGLEVEL 0
 #endif
 
+#if 0
 #ifdef VERBOSE_TRACES
 
 # define TRACE_PRINTF(lvl, fmt, ...) \
@@ -99,5 +103,54 @@ static inline int log_printf(LogLevel::value lvl, const std::string fmt, ...)
 # define DBG_PRINTF(fmt, ...) do {} while(0)
 # define DBG_STREAM(...)      do {} while(0)
 #endif
+#else
+# define ERR_PRINTF(fmt, ...) do {} while(0)
+# define ERR_STREAM(...)      do {} while(0)
+# define WRN_PRINTF(fmt, ...) do {} while(0)
+# define WRN_STREAM(...)      do {} while(0)
+# define INF_PRINTF(fmt, ...) do {} while(0)
+# define INF_STREAM(...)      do {} while(0)
+# define DBG_PRINTF(fmt, ...) do {} while(0)
+# define DBG_STREAM(...)      do {} while(0)
+#endif
+
+
+#define LOG_CHECK_ERR(logger) logger.next_trace(LogLevel::ERROR)
+
+
+#if (RABBITS_LOGLEVEL > 0)
+# define LOG_CHECK_WRN(logger) logger.next_trace(LogLevel::WARNING)
+#else
+# define LOG_CHECK_WRN(logger) false
+#endif
+
+#if (RABBITS_LOGLEVEL > 1)
+# define LOG_CHECK_INF(logger) logger.next_trace(LogLevel::INFO)
+#else
+# define LOG_CHECK_INF(logger) false
+#endif
+
+#if (RABBITS_LOGLEVEL > 2)
+# define LOG_CHECK_DBG(logger) logger.next_trace(LogLevel::DEBUG)
+#else
+# define LOG_CHECK_DBG(logger) false
+#endif
+
+#define LOG_CHECK(logger, lvl) LOG_CHECK_ ## lvl (logger)
+
+#define LOG(ctx, lvl) \
+    LOG_CHECK(Logger::get_root_logger(LogContext::ctx), lvl) && Logger::get_root_logger(LogContext::ctx)
+
+#define MLOG(ctx, lvl) \
+    LOG_CHECK(this->get_logger(LogContext::ctx), lvl) && this->get_logger(LogContext::ctx)
+
+#define LOG_F(ctx, lvl, ...) \
+    LOG(ctx, lvl) << Logger::format(__VA_ARGS__)
+
+#define MLOG_F(ctx, lvl, ...) \
+    MLOG(ctx, lvl) << Logger::format(__VA_ARGS__)
+
+static inline Logger & get_app_logger() { return Logger::get_root_logger(LogContext::APP); }
+static inline Logger & get_sim_logger() { return Logger::get_root_logger(LogContext::SIM); }
 
 #endif

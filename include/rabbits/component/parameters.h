@@ -54,9 +54,11 @@ public:
 protected:
     std::map<std::string, ParameterBase*> m_pool;
     PlatformDescription m_descr; /* The associated description */
+    std::string m_namespace;
 
 public:
     ComponentParameters() {}
+    ComponentParameters(const std::string &params_namespace) : m_namespace(params_namespace) {}
     ComponentParameters(const ComponentParameters &);
 
     virtual ~ComponentParameters() {
@@ -75,6 +77,8 @@ public:
      */
     void add(const std::string name, const ParameterBase &p) {
         m_pool[name] = p.clone();
+        m_pool[name]->set_name(name);
+        m_pool[name]->set_namespace(m_namespace);
     }
 
     /**

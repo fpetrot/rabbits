@@ -29,6 +29,7 @@ using std::string;
 using namespace boost::filesystem;
 
 ConfigManager::ConfigManager()
+    : m_global_params("global")
 {
     add_global_param("configuration-directory",
                      Parameter<string>("Where to find configuration files",

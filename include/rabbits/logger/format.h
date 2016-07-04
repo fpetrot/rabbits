@@ -17,14 +17,43 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _RABBITS_RABBITS_USAGE_H
-#define _RABBITS_RABBITS_USAGE_H
+#ifndef _RABBITS_LOGGER_FORMAT_H
+#define _RABBITS_LOGGER_FORMAT_H
 
 #include <ostream>
-#include <rabbits/config/manager.h>
 
-void print_version(std::ostream &);
-void print_usage(const char* arg0, ConfigManager &config, PlatformBuilder &p);
-void enum_components();
+struct ConsoleColor
+{
+    enum value { BLACK = 0, BLUE, GREEN, CYAN, RED, PURPLE, YELLOW, WHITE };
+};
+
+struct ConsoleAttr
+{
+    enum value { NORMAL = 0, BOLD };
+};
+
+class Logger;
+
+class Formatter {
+protected:
+    std::ostream * m_stream;
+    bool m_is_tty;
+
+    void detect_tty();
+
+public:
+    explicit Formatter(std::ostream &);
+
+    Formatter(const Formatter &f);
+
+    virtual ~Formatter();
+
+    void set_color(ConsoleColor::value c, ConsoleAttr::value a);
+    void reset();
+
+    void get_tty_attr(int &rows, int &cols) const;
+
+    bool is_tty() const { return m_is_tty; }
+};
 
 #endif

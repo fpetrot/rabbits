@@ -127,9 +127,9 @@ int sc_main(int argc, char *argv[])
     int result = 0;
 
     if ((argc == 2) && (string(argv[1]) == "-d")) {
-        Logger::get().set_log_level(LogLevel::DEBUG);
+        get_app_logger().set_log_level(LogLevel::DEBUG);
     } else {
-        Logger::get().set_log_level(LogLevel::INFO);
+        get_app_logger().set_log_level(LogLevel::INFO);
     }
 
     env_dynlib_paths = std::getenv("RABBITS_DYNLIB_PATH");

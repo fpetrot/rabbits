@@ -79,6 +79,7 @@ public:
     bool config_file_is_loaded(const std::string &path) const;
 
     void add_param_alias(const std::string &alias_key, ParameterBase &dest);
+    const ParamAliases & get_param_aliases() const { return m_aliases; }
     void add_global_param(const std::string &key, const ParameterBase &param);
     ComponentParameters & get_global_params();
     
@@ -89,6 +90,7 @@ public:
     PlatformDescription apply_platform(const std::string &name);
 
     PlatformDescription get_root_description() const { return m_root_descr; }
+
 };
 
 #endif

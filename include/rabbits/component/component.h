@@ -52,10 +52,11 @@ public:
 
 protected:
     std::map<std::string, Port*> m_ports;
-
     std::vector< std::function<void() > > m_pushed_threads;
 
     Attributes m_attributes;
+
+    Logger m_loggers[LogContext::LASTLOGCONTEXT];
 
     void pushed_threads_entry()
     {
@@ -120,10 +121,21 @@ protected:
     }
 
 public:
-    Component(sc_core::sc_module_name name, const ComponentParameters &params)
-        : ComponentBase(name, params) {}
+    void init()
+    {
+        for (int i = 0; i < LogContext::LASTLOGCONTEXT; i++) {
+            std::stringstream banner;
+            Logger::get_root_logger(LogContext::value(i)).set_child(m_loggers[i]);
 
-    Component(sc_core::sc_module_name name) : ComponentBase(name) {}
+            banner << "[" << name() << "]";
+            m_loggers[i].set_custom_banner(banner.str());
+        }
+    }
+
+    Component(sc_core::sc_module_name name, const ComponentParameters &params)
+        : ComponentBase(name, params) { init(); }
+
+    Component(sc_core::sc_module_name name) : ComponentBase(name) { init(); }
 
     virtual ~Component() {}
 
@@ -167,6 +179,9 @@ public:
 
         return m_attributes[key];
     }
+
+    /* HasLoggerIface */
+    Logger & get_logger(LogContext::value context) { return m_loggers[context]; }
 };
 
 #endif

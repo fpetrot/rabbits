@@ -52,6 +52,8 @@ public:
     };
 
 private:
+    std::string m_name;
+    std::string m_namespace;
     std::string m_description;
 
     ParamDataBase *m_data;
@@ -116,7 +118,31 @@ public:
      *
      * @return a textual description of the parameter.
      */
-    const std::string & get_description() { return m_description; }
+    const std::string & get_description() const { return m_description; }
+
+    /**
+     * @brief Set the paramater name.
+     */
+    void set_name(const std::string &name) { m_name = name; }
+
+    /**
+     * @brief Return the parameter name.
+     *
+     * @return the parameter name.
+     */
+    const std::string & get_name() const { return m_name; }
+
+    /**
+     * @brief Set the paramater namespace.
+     */
+    void set_namespace(const std::string &_namespace) { m_namespace = _namespace; }
+
+    /**
+     * @brief Return the parameter namespace.
+     *
+     * @return the parameter namespace.
+     */
+    const std::string & get_namespace() const { return m_namespace; }
 };
 
 /**

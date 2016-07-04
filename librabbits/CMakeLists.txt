@@ -4,6 +4,7 @@ add_subdirectory(channel)
 add_subdirectory(component)
 add_subdirectory(config)
 add_subdirectory(loader)
+add_subdirectory(logger)
 add_subdirectory(platform)
 add_subdirectory(plugin)
 add_subdirectory(ui)
@@ -12,7 +13,6 @@ add_subdirectory(../components ../components)
 add_subdirectory(../backends ../backends)
 add_subdirectory(../plugins ../plugins)
 rabbits_add_sources(
-	logger.cc
 	simu.cc
 	exception.cc
 )

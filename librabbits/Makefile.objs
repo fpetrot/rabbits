@@ -1,4 +1,0 @@
-obj-y += simu.o
-obj-y += logger.o
-obj-y += platform/ component/ plugin/
-obj-y += loader/
