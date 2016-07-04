@@ -164,7 +164,7 @@ protected:
             unit();
         } catch (TestFailureException e) {
             m_test_result = false;
-            ERR_STREAM(e.what_without_bt() << "\n");
+            LOG(APP, ERR) << e.what_without_bt() << "\n";
         }
     }
 

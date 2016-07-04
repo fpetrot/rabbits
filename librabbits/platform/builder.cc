@@ -38,7 +38,7 @@ using std::vector;
 
 static inline void report_parse_warning(const string &msg, const PlatformDescription &descr)
 {
-    WRN_STREAM(msg << " (at " << descr.origin() << ")\n");
+    LOG(APP, WRN) << msg << " (at " << descr.origin() << ")\n";
 }
 
 static void tokenize(const string s, vector<string>& toks, const char sep = '.')
@@ -89,7 +89,7 @@ void PlatformBuilder::create_dbg_init()
     find_comp_by_attr("tlm-bus", buses);
 
     if (buses.size() > 1) {
-        ERR_STREAM("Multiple buses in platform is not yet correctly handled. Except failures\n");
+        LOG(APP, ERR) << "Multiple buses in platform is not yet correctly handled. Except failures\n";
         return;
     }
 
@@ -102,7 +102,7 @@ void PlatformBuilder::create_dbg_init()
         const string &bus_port_name = bus->get_attr("tlm-bus-port");
         const string &dbg_port_name = m_dbg->get_attr("tlm-initiator-port");
 
-        DBG_STREAM("Connecting the debug initiator to the main system bus\n");
+        LOG(APP, DBG) << "Connecting the debug initiator to the main system bus\n";
         do_binding(bus->get_port(bus_port_name),
                    m_dbg->get_port(dbg_port_name),
                    PlatformDescription::INVALID_DESCRIPTION);
@@ -115,7 +115,7 @@ void PlatformBuilder::create_components(PlatformDescription &descr, CreationStag
     ComponentManager &cm = ComponentManager::get();
 
     if ((!descr.exists("components")) || (descr["components"].type() != PlatformDescription::MAP)) {
-        DBG_STREAM("No component found in description\n");
+        LOG(APP, DBG) << "No component found in description\n";
         return;
     }
 
@@ -125,7 +125,7 @@ void PlatformBuilder::create_components(PlatformDescription &descr, CreationStag
         PlatformDescription &comp = it->second;
 
         if (!comp.exists("type")) {
-            WRN_STREAM("Missing `type` attribute for component `" << name << "`\n");
+            LOG(APP, WRN) << "Missing `type` attribute for component `" << name << "`\n";
             continue;
         }
 
@@ -139,12 +139,12 @@ void PlatformBuilder::create_components(PlatformDescription &descr, CreationStag
                 cf->discover(name, comp);
                 break;
             case CreationStage::CREATE:
-                DBG_STREAM("Creating component " << name << " of type " << type << "\n");
+                LOG(APP, DBG) << "Creating component " << name << " of type " << type << "\n";
                 m_components[name] = cf->create(name, comp);
                 break;
             }
         } else {
-            WRN_STREAM("No component type can provide `" << type << "`\n");
+            LOG(APP, WRN) << "No component type can provide `" << type << "`\n";
         }
     }
 }
@@ -315,7 +315,7 @@ void PlatformBuilder::do_binding(Port &p, PlatformDescription &descr)
 
 void PlatformBuilder::do_binding(Port &p0, Port &p1, PlatformDescription &descr)
 {
-    DBG_STREAM("Binding `" << p0.full_name() << "' to `" << p1.full_name() << "'\n");
+    LOG(APP, DBG) << "Binding `" << p0.full_name() << "' to `" << p1.full_name() << "'\n";
     if (!p0.connect(p1, descr)) {
         report_parse_warning("Cannot bind `" + p0.full_name() + "' to port `" + p1.full_name() + "'", descr);
         return;

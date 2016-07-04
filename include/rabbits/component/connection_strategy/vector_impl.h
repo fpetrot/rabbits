@@ -28,9 +28,9 @@ typename VectorCS<T>::BindingResult VectorCS<T>::bind_peer(VectorCS<T> &cs, Plat
 {
     /* Size compatibility */
     if (m_vec.size() != cs.m_vec.size()) {
-        ERR_STREAM("Vector port size mismatch while binding " 
+        LOG(APP, ERR) << "Vector port size mismatch while binding " 
                    << m_vec.full_name() << " (size: " << m_vec.size() << ") to "
-                   << cs.m_vec.full_name() << " (size: " << cs.m_vec.size() << "\n");
+                   << cs.m_vec.full_name() << " (size: " << cs.m_vec.size() << "\n";
         return BindingResult::BINDING_ERROR;
     }
 
@@ -39,8 +39,8 @@ typename VectorCS<T>::BindingResult VectorCS<T>::bind_peer(VectorCS<T> &cs, Plat
         T & p1 = cs.m_vec[i];
 
         if (!p0.connect(p1, d)) {
-            WRN_STREAM("Vector element " << p0.full_name() 
-                       << " is not connectable to " << p1.full_name());
+            LOG(APP, WRN) << "Vector element " << p0.full_name()
+                << " is not connectable to " << p1.full_name();
         }
     }
 
@@ -52,9 +52,9 @@ typename VectorCS<T>::BindingResult VectorCS<T>::bind_hierarchical(VectorCS<T> &
 {
     /* Size compatibility */
     if (m_vec.size() != cs.m_vec.size()) {
-        ERR_STREAM("Vector port size mismatch while binding " 
-                   << m_vec.full_name() << " (size: " << m_vec.size() << ") to "
-                   << cs.m_vec.full_name() << " (size: " << cs.m_vec.size() << "\n");
+        LOG(APP, ERR) << "Vector port size mismatch while binding "
+            << m_vec.full_name() << " (size: " << m_vec.size() << ") to "
+            << cs.m_vec.full_name() << " (size: " << cs.m_vec.size() << "\n";
         return BindingResult::BINDING_ERROR;
     }
 

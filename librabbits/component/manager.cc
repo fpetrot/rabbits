@@ -31,13 +31,13 @@ ComponentManager::ComponentManager()
 void ComponentManager::register_component(ComponentFactory *f)
 {
     if (find_by_name(f->name()) != NULL) {
-        WRN_STREAM("Component `" << f->name() << "` already exists. Overwriting\n");
+        LOG(APP, WRN) << "Component `" << f->name() << "` already exists. Overwriting\n";
     }
 
     m_pool.push_back(f);
     m_by_name[f->name()] = m_pool.back();
     m_by_type[f->type()].push_back(m_pool.back());
-    DBG_STREAM("Registering component `" << f->name() << "` with type `" << f->type() << "`\n");
+    LOG(APP, DBG) << "Registering component `" << f->name() << "` with type `" << f->type() << "`\n";
 }
 
 ComponentFactory* ComponentManager::find_by_name(const std::string & name)

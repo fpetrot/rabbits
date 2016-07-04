@@ -71,19 +71,19 @@ public:
         if (m_kind == cs.m_kind) {
             const std::string &kind_s = (m_kind == BUS) ? "bus" : "tlm target";
 
-            ERR_STREAM("Cannot bind a " << kind_s << " to a " << kind_s << " (at " << d.origin() << ")\n");
+            LOG(APP, ERR) << "Cannot bind a " << kind_s << " to a " << kind_s << " (at " << d.origin() << ")\n";
             return BindingResult::BINDING_ERROR;
         }
 
         if (!d["address"].is_map()) {
-            ERR_STREAM("Missing address for binding at " + d.origin() + "\n");
+            LOG(APP, ERR) << "Missing address for binding at " << d.origin() << "\n";
             return BindingResult::BINDING_ERROR;
         }
 
         try {
             range = d["address"].as<AddressRange>();
         } catch(PlatformDescription::InvalidConversionException e) {
-            ERR_STREAM("Invalid address for binding at " + d["address"].origin() + " \n");
+            LOG(APP, ERR) << "Invalid address for binding at " << d["address"].origin() << " \n";
             return BindingResult::BINDING_ERROR;
         }
 

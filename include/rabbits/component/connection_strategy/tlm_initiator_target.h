@@ -96,7 +96,7 @@ public:
     {
         if (cs.get_bus_width() != BUSWIDTH) {
             /* XXX Print components name */
-            ERR_STREAM("Unable to connect initiator to target: bus width mismatch.\n");
+            LOG(APP, ERR) << "Unable to connect initiator to target: bus width mismatch.\n";
             return BindingResult::BINDING_ERROR;
         }
 
@@ -110,7 +110,7 @@ public:
     {
         if (parent_cs.get_bus_width() != BUSWIDTH) {
             /* XXX Print components name */
-            ERR_STREAM("Unable to connect initiator to target: bus width mismatch.\n");
+            LOG(APP, ERR) << "Unable to connect initiator to target: bus width mismatch.\n";
             return BindingResult::BINDING_ERROR;
         }
 

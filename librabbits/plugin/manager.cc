@@ -29,7 +29,7 @@ PluginManager* PluginManager::m_inst = NULL;
 
 void PluginManager::register_plugin(PluginFactory *pf)
 {
-    DBG_STREAM("Registering plugin `" << pf->get_name() << "`\n");
+    LOG(APP, DBG) << "Registering plugin `" << pf->get_name() << "`\n";
     m_plugins.push_back(pf->create());
 }
 

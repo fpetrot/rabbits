@@ -47,32 +47,32 @@ static int do_test(TestFactory *tf)
     try {
         t = tf->create();
     } catch (TestFailureException e) {
-        ERR_STREAM(tf->get_name() << ": Failed during elaboration: " << e.what_without_bt() << "\n");
+        LOG(APP, ERR) << tf->get_name() << ": Failed during elaboration: " << e.what_without_bt() << "\n";
         return 1;
     } catch (sc_core::sc_report e) {
-        ERR_STREAM(tf->get_name() << ": SystemC report during elaboration.\n" << e.what() << "\n");
+        LOG(APP, ERR) << tf->get_name() << ": SystemC report during elaboration.\n" << e.what() << "\n";
         return 1;
     } catch (std::exception e) {
-        ERR_STREAM(tf->get_name() << ": Unknown exception during elaboration.\n" << e.what() << "\n");
+        LOG(APP, ERR) << tf->get_name() << ": Unknown exception during elaboration.\n" << e.what() << "\n";
         return 1;
     } catch (...) {
-        ERR_STREAM(tf->get_name() << ": Unknown exception during elaboration.\n");
+        LOG(APP, ERR) << tf->get_name() << ": Unknown exception during elaboration.\n";
         return 1;
     }
 
     try {
         sc_core::sc_start();
     } catch (TestFailureException e) {
-        ERR_STREAM(tf->get_name() << ": Failed during test: " << e.what_without_bt() << "\n");
+        LOG(APP, ERR) << tf->get_name() << ": Failed during test: " << e.what_without_bt() << "\n";
         return 1;
     } catch (sc_core::sc_report e) {
-        ERR_STREAM(tf->get_name() << ": SystemC report during test.\n" << e.what() << "\n");
+        LOG(APP, ERR) << tf->get_name() << ": SystemC report during test.\n" << e.what() << "\n";
         return 1;
     } catch (std::exception e) {
-        ERR_STREAM(tf->get_name() << ": Unknown exception during test.\n" << e.what() << "\n");
+        LOG(APP, ERR) << tf->get_name() << ": Unknown exception during test.\n" << e.what() << "\n";
         return 1;
     } catch (...) {
-        ERR_STREAM(tf->get_name() << ": Unknown exception during test.\n");
+        LOG(APP, ERR) << tf->get_name() << ": Unknown exception during test.\n";
         return 1;
     }
 
@@ -100,7 +100,7 @@ static int report_result(const string &name, int status)
         ret = 1;
     }
 
-    INF_STREAM(name << "\r\t\t\t\t\t\t" << res << "\n");
+    LOG(APP, INF) << name << "\r\t\t\t\t\t\t" << res << "\n";
 
     return ret;
 }
@@ -115,7 +115,7 @@ static void load_test_module()
     DynLib *tst = DynamicLoader::get().load_library(test::test_payload);
 
     if (tst == NULL) {
-        ERR_STREAM("Unable to load test module\n");
+        LOG(APP, ERR) << "Unable to load test module\n";
     }
 }
 

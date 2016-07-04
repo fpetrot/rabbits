@@ -64,11 +64,11 @@ void ConfigManager::compute_platform(const string &name, const PlatformDescripti
         const string parent_name = platform["inherit"].as<string>();
 
         if (!platform_exists(parent_name)) {
-            ERR_STREAM("Platform " << name << " inherits from unknown platform " << parent_name << "\n");
+            LOG(APP, ERR) << "Platform " << name << " inherits from unknown platform " << parent_name << "\n";
             return;
         }
 
-        DBG_STREAM("Platform " << name << " inherits from " << parent_name << "\n");
+        LOG(APP, DBG) << "Platform " << name << " inherits from " << parent_name << "\n";
 
         PlatformDescription parent = get_platform(parent_name);
         
@@ -83,12 +83,12 @@ void ConfigManager::recompute_platforms()
     m_platforms.clear();
 
     if (!m_root_descr["platforms"].is_map()) {
-        DBG_STREAM("No platform found.\n");
+        LOG(APP, DBG) << "No platform found.\n";
         return;
     }
 
     for (auto &p : m_root_descr["platforms"]) {
-        DBG_STREAM("Found platform " << p.first << "\n");
+        LOG(APP, DBG) << "Found platform " << p.first << "\n";
         compute_platform(p.first, p.second);
     }
 }
@@ -153,11 +153,11 @@ void ConfigManager::parse_basename(const char *arg0)
     const string basename = path(arg0).filename().string();
 
     if (basename != RABBITS_APP_NAME) {
-        DBG_STREAM("Trying to deduce selected platform from basename\n");
+        LOG(APP, DBG) << "Trying to deduce selected platform from basename\n";
         const string prefix(RABBITS_DESCR_SYMLINK_PREFIX);
 
         if (basename.find(prefix) != 0) {
-            DBG_STREAM("basename seems invalid. Giving up.\n");
+            LOG(APP, DBG) << "basename seems invalid. Giving up.\n";
         } else {
             m_platform_basename = basename.substr(prefix.size());
         }
@@ -168,15 +168,15 @@ void ConfigManager::load_config_directory(path p)
 {
     directory_iterator d;
 
-    DBG_STREAM("Loading configuration files from " << p << "\n");
+    LOG(APP, DBG) << "Loading configuration files from " << p << "\n";
 
     if (!exists(p)) {
-        DBG_STREAM("Directory " << p << " not found.\n");
+        LOG(APP, DBG) << "Directory " << p << " not found.\n";
         return;
     }
 
     if (!is_directory(p)) {
-        DBG_STREAM(p << " is not a directory.\n");
+        LOG(APP, DBG) << p << " is not a directory.\n";
         return;
     }
 
@@ -188,7 +188,7 @@ void ConfigManager::load_config_directory(path p)
         } else if (is_regular_file(dd)) {
             add_config_file(dd.path().string());
         } else {
-            DBG_STREAM("Skipping non-regular file " << dd.path() << "\n");
+            LOG(APP, DBG) << "Skipping non-regular file " << dd.path() << "\n";
         }
 
     }
@@ -231,17 +231,17 @@ void ConfigManager::add_yml_file(const string &filename)
 {
     PlatformDescription d;
 
-    DBG_STREAM("Loading YAML config file " << filename << "\n");
+    LOG(APP, DBG) << "Loading YAML config file " << filename << "\n";
 
     if (config_file_is_loaded(filename)) {
-        DBG_STREAM(filename << " is already loaded. Skipping.\n");
+        LOG(APP, DBG) << filename << " is already loaded. Skipping.\n";
         return;
     }
 
     try {
         d.load_file_yaml(filename);
     } catch (std::exception e) {
-        ERR_STREAM("Failed to load YAML config file " << filename << ": " << e.what() << "\n");
+        LOG(APP, ERR) << "Failed to load YAML config file " << filename << ": " << e.what() << "\n";
         return;
     }
 
@@ -269,7 +269,7 @@ void ConfigManager::add_config_file(const std::string &path_s)
     if ((ext == ".yml") || (ext == ".yaml")) {
         add_yml_file(path_s);
     } else {
-        DBG_STREAM("Ignoring unknown file " << p << "\n");
+        LOG(APP, DBG) << "Ignoring unknown file " << p << "\n";
     }
 }
 

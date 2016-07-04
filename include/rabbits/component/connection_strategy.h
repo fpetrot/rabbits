@@ -57,7 +57,7 @@ public:
                        PlatformDescription &d = PlatformDescription::INVALID_DESCRIPTION)
     { 
         if (!is_compatible_with(cs)) {
-            ERR_STREAM("Incompatible strategies bind attempt\n");
+            LOG(APP, ERR) << "Incompatible strategies bind attempt\n";
             abort();
         }
 

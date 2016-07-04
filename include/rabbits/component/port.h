@@ -151,8 +151,8 @@ public:
                 abort();
 
             case ConnectionStrategyBase::BINDING_ERROR:
-                WRN_STREAM("Error while binding " << full_name()
-                           << " to " << p.full_name() << "\n");
+                LOG(APP, WRN) << "Error while binding " << full_name()
+                              << " to " << p.full_name() << "\n";
                 break;
 
             case ConnectionStrategyBase::BINDING_TRY_NEXT:
@@ -181,7 +181,7 @@ public:
         CSPairs pairs;
 
         if (!is_connectable_to(parent, pairs)) {
-            WRN_STREAM(full_name() << " is not connectable to " << parent.full_name() << "\n");
+            LOG(APP, WRN) << full_name() << " is not connectable to " << parent.full_name() << "\n";
             return;
         }
 
@@ -199,13 +199,13 @@ public:
                 return;
 
             case ConnectionStrategyBase::BINDING_HIERARCHICAL_TYPE_MISMATCH:
-                WRN_STREAM(full_name() << " is not hierarchically connectable to "
-                           << parent.full_name() << "\n");
+                LOG(APP, WRN) << full_name() << " is not hierarchically connectable to "
+                              << parent.full_name() << "\n";
                 return;
 
             case ConnectionStrategyBase::BINDING_ERROR:
-                WRN_STREAM("Error while hierarchical binding of " << full_name()
-                           << " with " << parent.full_name() << "\n");
+                LOG(APP, WRN) << "Error while hierarchical binding of " << full_name()
+                              << " with " << parent.full_name() << "\n";
                 break;
 
             case ConnectionStrategyBase::BINDING_TRY_NEXT:

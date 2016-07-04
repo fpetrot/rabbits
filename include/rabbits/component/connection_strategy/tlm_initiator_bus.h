@@ -61,7 +61,7 @@ public:
         if (m_kind == cs.m_kind) {
             const std::string &kind_s = (m_kind == BUS) ? "bus" : "tlm initiator";
 
-            ERR_STREAM("Cannot bind a " << kind_s << " to a " << kind_s << "\n");
+            LOG(APP, ERR) << "Cannot bind a " << kind_s << " to a " << kind_s << "\n";
             return BindingResult::BINDING_ERROR;
         }
 
