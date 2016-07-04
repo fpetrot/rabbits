@@ -26,6 +26,7 @@ ComponentParameters::ComponentParameters(const ComponentParameters &p)
     const_iterator it;
     
     m_descr = p.m_descr;
+    m_namespace = p.m_namespace;
 
     for(it = p.m_pool.begin(); it != p.m_pool.end(); it++) {
         add(it->first, *(it->second));

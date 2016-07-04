@@ -81,6 +81,9 @@ public:
     {
         m_logger << "\r" << tabs(m_start_at);
         m_cur = m_start_at * 8;
+
+        m_logger << "\r" << tabs(m_start_at);
+        m_cur = m_start_at * 8;
     }
 
     void set_start_col(int col)
@@ -98,7 +101,7 @@ public:
             m_start_at++;
         }
 
-        m_max_len = cols - m_start_at * 8;
+        m_max_len = cols;
 
         /* XXX m_max_len <= 0 */
         reset_pos();
@@ -121,28 +124,38 @@ public:
         boost::char_separator<char> line_sep("\n");
         boost::char_separator<char> word_sep(" \t");
 
-        Tokenizer lines(s, line_sep);
+        Tokenizer lines_toks(s, line_sep);
+
+        std::vector<string> lines;
+        std::copy(lines_toks.begin(), lines_toks.end(), std::back_inserter(lines));
+
+        int nl_count = lines.size();
+        if (s[s.size()-1] != '\n') {
+            nl_count--;
+        }
 
         for (auto line : lines) {
             Tokenizer words(line, word_sep);
 
             for (auto word : words) {
-                if (word.size() > m_max_len) {
+                if (int(word.size()) > m_max_len) {
                     l << word << " ";
-                    wrap(); /* XXX */
+                    wrap();
                     continue;
                 }
 
-                if (m_cur + word.size() >= m_max_len) {
+                if (m_cur + int(word.size()) >= m_max_len) {
                     wrap();
-                }
+                } 
 
                 l << word << " ";
-                m_cur += word.size();
+                m_cur += word.size() + 1;
             }
 
-            //l << "\n";
-            //reset_pos();
+            if (nl_count--) {
+                l << "\n";
+                reset_pos();
+            }
         }
     }
 
@@ -153,7 +166,6 @@ class UsageEntry {
 public:
     virtual int left_indent() const = 0;
     virtual int left_length() const = 0;
-    virtual int right_length() const = 0;
     virtual void print_left(TextFormatter &f) = 0;
     virtual void print_right(TextFormatter &f) = 0;
 };
@@ -166,12 +178,15 @@ public:
     UsageEntrySection(const string & name) : m_name(name) {}
     int left_indent() const { return 0; }
     int left_length() const { return m_name.size() + 1; }
-    int right_length() const { return 0; }
 
     void print_left(TextFormatter &f)
     {
         f.wrap();
+
+        f.get_logger() << format::white_b;
         f.print(m_name + ":");
+
+        f.get_logger() << format::reset;
     }
 
     void print_right(TextFormatter &f)
@@ -181,19 +196,16 @@ public:
 
 class UsageEntryAlias : public UsageEntry {
 private:
-    string m_name, m_right;
+    string m_name;
     const ParameterBase &m_param;
 public:
     UsageEntryAlias(const string &name, const ParameterBase &param) 
         : m_name(name), m_param(param)
     {
-        m_right = m_param.get_description() 
-            + " (shortcut for " + get_param_full_name(param) + ")";
     }
 
     int left_indent() const { return 2; }
     int left_length() const { return m_name.size() + 1; }
-    int right_length() const { return m_right.size(); }
 
     void print_left(TextFormatter &f)
     {
@@ -213,18 +225,16 @@ public:
 
 class UsageEntryParam : public UsageEntry {
     const ParameterBase &m_param;
-    string m_left, m_right;
+    string m_left;
 
 public:
     UsageEntryParam(const ParameterBase &param) : m_param(param)
     {
         m_left = get_param_full_name(param);
-        m_right = param.get_description() + " [" + param.to_str() + "]";
     }
 
     int left_indent() const { return 2; }
     int left_length() const { return m_left.size(); }
-    int right_length() const { return m_right.size(); }
 
     void print_left(TextFormatter &f)
     {
@@ -233,7 +243,13 @@ public:
 
     void print_right(TextFormatter &f)
     {
-        f.print(m_param.get_description());
+        string description = m_param.get_description();
+
+        if (description[description.size()-1] == '\n') {
+            description.resize(description.size()-1);
+        }
+
+        f.print(description);
 
         f.get_logger() << format::cyan;
         f.print("[" + m_param.to_str() + "]");
@@ -244,9 +260,6 @@ public:
 };
 
 class UsageFormatter {
-public:
-    const string LEFT_PREFIX = "  ";
-
 private:
     list< unique_ptr<UsageEntry> > m_entries;
     int m_max_left = 0;
@@ -348,39 +361,6 @@ void enum_components()
     }
 }
 
-static void print_option(const string &opt, const string& help)
-{
-    cout_indent(1) << "-" << opt << "\r\t\t\t\t\t" << help << "\n";
-}
-
-static void print_option_with_val(const string &opt, const string& help, const string &value)
-{
-    cout_indent(1) << "-" << opt << "\r\t\t\t\t\t" << help << " [" << value << "]\n";
-}
-
-static void print_option_with_alias(const string &opt, const string &help, const string &alias)
-{
-    cout_indent(1) << "-" << opt << "\r\t\t\t\t\t" << help << " (shortcut for -" << alias << ")\n";
-}
-
-
-static void print_param(const ParameterBase &param)
-{
-    const string n = param.get_namespace() + "." + param.get_name();
-    print_option_with_val(n, param.get_description(), param.to_str());
-}
-
-
-static void print_comp_usage(const string &comp, const ComponentParameters &p)
-{
-    ComponentParameters::const_iterator it;
-
-    for (it = p.begin(); it != p.end(); it++) {
-        print_option_with_val("components." + comp + "." + it->first,
-                              it->second->get_description(), it->second->to_str());
-    }
-}
-
 static void add_aliases(ConfigManager &conf, UsageFormatter &usage)
 {
     const ConfigManager::ParamAliases &aliases = conf.get_param_aliases();
@@ -421,7 +401,7 @@ void print_usage(const char* arg0, ConfigManager &conf, PlatformBuilder &p)
 
     bool banner_status = get_app_logger().enable_banner(false);
 
-    LOG(APP, INF) << "Usage: " << arg0 << " [...]\n";
+    LOG(APP, INF) << format::white_b << "Usage: " << arg0 << " [...]\n";
 
     add_aliases(conf, usage);
     add_global_parameters(conf, usage);
@@ -432,9 +412,16 @@ void print_usage(const char* arg0, ConfigManager &conf, PlatformBuilder &p)
     get_app_logger().enable_banner(banner_status);
 }
 
-void print_version(ostream &s)
+void print_version(LogLevel::value lvl)
 {
-    s << RABBITS_APP_NAME
+    Logger &l = get_app_logger();
+    bool banner_status = l.enable_banner(false);
+
+    l.next_trace(lvl);
+
+    l << RABBITS_APP_NAME
         << " version " << RABBITS_VERSION
         << " api version " << RABBITS_API_VERSION << "\n";
+
+    l.enable_banner(banner_status);
 }

@@ -23,7 +23,7 @@
 #include <ostream>
 #include <rabbits/config/manager.h>
 
-void print_version(std::ostream &);
+void print_version(LogLevel::value);
 void print_usage(const char* arg0, ConfigManager &config, PlatformBuilder &p);
 void enum_components();
 

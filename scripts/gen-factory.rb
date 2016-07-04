@@ -68,6 +68,7 @@ public:
     ComponentBase * create(const std::string & name, const PlatformDescription &params) {
         ComponentParameters cp = get_params();
         cp.fill_from_description(params);
+        cp.set_namespace("components." + name);
         
         return new %{class}(name.c_str(), cp);
     }

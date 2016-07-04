@@ -102,13 +102,11 @@ int sc_main(int argc, char *argv[])
     if (globals["debug"].as<bool>()) {
         get_app_logger().set_log_level(LogLevel::DEBUG);
         get_sim_logger().set_log_level(LogLevel::DEBUG);
-        /* XXX */
-        print_version(std::cerr);
+        print_version(LogLevel::DEBUG);
     }
 
     if (globals["show-version"].as<bool>()) {
-        /* XXX */
-        print_version(std::cout);
+        print_version(LogLevel::INFO);
         return 0;
     }
 

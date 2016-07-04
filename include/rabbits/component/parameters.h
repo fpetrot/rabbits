@@ -81,6 +81,14 @@ public:
         m_pool[name]->set_namespace(m_namespace);
     }
 
+    void set_namespace(const std::string &_namespace) {
+        m_namespace = _namespace;
+
+        for (auto c: *this) {
+            c.second->set_namespace(m_namespace);
+        }
+    }
+
     /**
      * @brief Fill the collection from the given PlatformDescription.
      *
