@@ -54,7 +54,7 @@ int ArmBootloader::PatchBlob::load(uint32_t addr, DebugInitiator *bus)
     
     for (it = m_blob.begin(); it != m_blob.end(); it++) {
         if(bus->debug_write(addr, &(it->insn), 4) < 4) {
-            ERR_PRINTF("Unable to write entry blob. Trying to write outside ram?\n");
+            LOG_F(APP, ERR, "Unable to write entry blob. Trying to write outside ram?\n");
             return 1;
         }
         addr += 4;
@@ -86,7 +86,7 @@ int ArmBootloader::boot()
 
     /* Device tree */
     if (!m_dtb_path.empty()) {
-        DBG_PRINTF("Loading dtb %s\n", m_dtb_path.c_str());
+        LOG_F(APP, DBG, "Loading dtb %s\n", m_dtb_path.c_str());
 
         if (m_dtb_load_addr != (uint32_t) -1) {
             dtb_load_addr = m_dtb_load_addr;
@@ -95,7 +95,7 @@ int ArmBootloader::boot()
         }
 
         if (Loader::load_image(m_dtb_path, m_bus, dtb_load_addr, &dtb_size)) {
-            ERR_PRINTF("Unable to load dtb %s\n", m_dtb_path.c_str());
+            LOG_F(APP, ERR, "Unable to load dtb %s\n", m_dtb_path.c_str());
             return 1;
         }
         have_dtb = true;
@@ -103,7 +103,7 @@ int ArmBootloader::boot()
 
     /* Initramfs */
     if (!m_initramfs_path.empty()) {
-        DBG_PRINTF("Loading initramfs %s\n", m_initramfs_path.c_str());
+        LOG_F(APP, DBG, "Loading initramfs %s\n", m_initramfs_path.c_str());
 
         if (m_initramfs_load_addr != (uint32_t) -1) {
             initramfs_load_addr = m_initramfs_load_addr;
@@ -115,18 +115,18 @@ int ArmBootloader::boot()
         }
 
         if (Loader::load_image(m_initramfs_path, m_bus, initramfs_load_addr, NULL)) {
-            ERR_PRINTF("Unable to load initramfs %s\n", m_initramfs_path.c_str());
+            LOG_F(APP, ERR, "Unable to load initramfs %s\n", m_initramfs_path.c_str());
             return 1;
         }
     }
 
     /* Kernel */
     if (!m_kernel_path.empty()) {
-        DBG_PRINTF("Loading kernel %s\n", m_kernel_path.c_str());
+        LOG_F(APP, DBG, "Loading kernel %s\n", m_kernel_path.c_str());
 
         struct stat buf;
         if(stat(m_kernel_path.c_str(), &buf) != 0) {
-            ERR_PRINTF("kernel image file not found : %s\n", m_kernel_path.c_str());
+            LOG_F(APP, ERR, "kernel image file not found : %s\n", m_kernel_path.c_str());
             exit(1);
         }
 
@@ -134,11 +134,11 @@ int ArmBootloader::boot()
          * In this case, the load address is contained in the image */
         uint64_t kernel_entry64;
 
-        DBG_PRINTF("Trying ELF...\n");
+        LOG_F(APP, DBG, "Trying ELF...\n");
         int is_not_elf = Loader::load_elf(m_kernel_path, m_bus, &kernel_entry64);
 
         if(is_not_elf) {
-            DBG_PRINTF("ELF failed, loading as binary image\n");
+            LOG_F(APP, DBG, "ELF failed, loading as binary image\n");
 
             if (m_kernel_load_addr != (uint32_t) -1) {
                 kernel_load_addr = m_kernel_load_addr;
@@ -149,7 +149,7 @@ int ArmBootloader::boot()
             kernel_entry = kernel_load_addr;
 
             if(Loader::load_image(m_kernel_path, m_bus, kernel_load_addr, NULL)) {
-                ERR_PRINTF("Unable to load kernel %s\n", m_kernel_path.c_str());
+                LOG_F(APP, ERR, "Unable to load kernel %s\n", m_kernel_path.c_str());
                 return 1;
             }
         } else {
@@ -169,13 +169,13 @@ int ArmBootloader::boot()
     patch_ctx[FIXUP_SECONDARY_ENTRY] = m_entry.size();
 
     if (!m_secondary_entry.empty()) {
-        DBG_PRINTF("Loading secondary entry blob\n");
+        LOG_F(APP, DBG, "Loading secondary entry blob\n");
         m_secondary_entry.patch(patch_ctx);
         m_secondary_entry.load(m_entry.size(), m_bus);
     }
 
     if (!m_entry.empty()) {
-        DBG_PRINTF("Loading entry blob\n");
+        LOG_F(APP, DBG, "Loading entry blob\n");
         m_entry.patch(patch_ctx);
         m_entry.load(0, m_bus);
     }

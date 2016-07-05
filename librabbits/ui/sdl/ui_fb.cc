@@ -78,11 +78,11 @@ void sdl_ui_fb::set_info(const ui_fb_info & info)
                 bmask, amask);
 
         if (m_fb_surface == NULL) {
-            ERR_PRINTF("Unable to create fb SDL surface\n");
+            LOG_F(APP, ERR, "Unable to create fb SDL surface\n");
             goto create_surf_err;
         }
 
-        DBG_PRINTF("Created SDL surface: bpp:%u, (%d,%d)\n",
+        LOG_F(APP, DBG, "Created SDL surface: bpp:%u, (%d,%d)\n",
                 m_fb_surface->format->BitsPerPixel,
                 m_fb_surface->w, m_fb_surface->h);
 

@@ -392,7 +392,7 @@ class HasLoggerIface {
      *
      * @return the logger associated to the object and the given context.
      */
-    virtual Logger & get_logger(LogContext::value context) = 0;
+    virtual Logger & get_logger(LogContext::value context) const = 0;
 };
 
 

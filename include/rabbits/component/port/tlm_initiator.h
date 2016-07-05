@@ -102,8 +102,8 @@ public:
     {
         tlm::tlm_generic_payload trans;
 
-        DBG_PRINTF("bus access: addr=%p, data=%p, len=%d\n",
-                   (void *) addr, data, len);
+        LOG_F(SIM, DBG, "bus access: addr=%p, data=%p, len=%d\n",
+	      (void *) addr, data, len);
 
         assert(data);
 
@@ -121,9 +121,9 @@ public:
         socket->b_transport(trans, delay);
 
         if (trans.is_response_error()) {
-            ERR_PRINTF("Bus %s error at address 0x%.8" PRIx64 ", lenght access: %u byte(s)\n",
-                       (cmd == tlm::TLM_READ_COMMAND) ? "read" : "write",
-                       addr, len);
+            LOG_F(SIM, ERR, "Bus %s error at address 0x%.8" PRIx64 ", lenght access: %u byte(s)\n",
+		  (cmd == tlm::TLM_READ_COMMAND) ? "read" : "write",
+		  addr, len);
         }
 
         m_last_access = trans.get_response_status();
@@ -133,8 +133,8 @@ public:
     {
         tlm::tlm_generic_payload trans;
 
-        DBG_PRINTF("debug access: addr=%p, data=%p, len=%d\n",
-                   (void *) addr, data, len);
+        LOG_F(SIM, DBG, "debug access: addr=%p, data=%p, len=%d\n",
+	      (void *) addr, data, len);
 
         assert(data);
 

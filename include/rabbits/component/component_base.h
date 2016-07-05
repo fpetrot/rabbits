@@ -69,16 +69,7 @@ public:
     ComponentBase(sc_core::sc_module_name name, const ComponentParameters &params)
         : sc_core::sc_module(name)
         , m_params(params)
-    {
-        //PlatformDescription &d = m_params.get_base_description();
-
-        //if (d["debug"].is_scalar()) {
-            //bool ov = d["debug"].as<bool>();
-
-            //m_loglvl_override = ov;
-            //m_loglvl = LogLevel::DEBUG;
-        //}
-    }
+    {}
 
     ComponentBase(sc_core::sc_module_name name)
         : sc_core::sc_module(name)
@@ -92,62 +83,5 @@ public:
      * @return the component parameters.
      */
     const ComponentParameters & get_params() { return m_params; }
-
-
-#if 0
-    std::ostream & log_stream(LogLevel::value lvl) const
-    {
-        LogLevel::value eff = lvl, save;
-
-        if (m_loglvl_override) {
-            save = Logger::get().get_log_level();
-            eff = m_loglvl;
-            Logger::get().set_log_level(eff);
-        }
-
-        std::ostream & ret = ::log_stream(lvl);
-
-        if (m_loglvl_override) {
-            Logger::get().set_log_level(save);
-        }
-
-        return ret << "[" << name() << "] ";
-    }
-
-    int log_vprintf(LogLevel::value lvl, const std::string fmt, va_list ap) const
-    {
-        LogLevel::value eff = lvl, save;
-
-        if (m_loglvl_override) {
-            save = Logger::get().get_log_level();
-            eff = m_loglvl;
-            Logger::get().set_log_level(eff);
-        }
-
-        ::log_printf(eff, "[%s] ", name());
-        bool banner = Logger::get().enable_banner(false);
-        int ret = ::log_vprintf(lvl, fmt, ap);
-        Logger::get().enable_banner(banner);
-
-        if (m_loglvl_override) {
-            Logger::get().set_log_level(save);
-        }
-
-        return ret;
-    }
-
-    int log_printf(LogLevel::value lvl, const std::string fmt, ...) const
-    {
-        va_list ap;
-        int written;
-
-        va_start(ap, fmt);
-        written = log_vprintf(lvl, fmt, ap);
-        va_end(ap);
-
-        return written;
-    }
-#endif
-
 };
 #endif

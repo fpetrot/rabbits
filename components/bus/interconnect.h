@@ -140,7 +140,7 @@ public:
                                                tlm::tlm_phase& phase,
                                                sc_core::sc_time& t)
     {
-        ERR_PRINTF("Non-blocking transport not implemented\n");
+        LOG_F(SIM, ERR, "Non-blocking transport not implemented\n");
         abort();
         return tlm::TLM_COMPLETED;
     }
@@ -154,8 +154,8 @@ public:
 
         int target_index = decode_address(trans.get_address(), offset);
         if (target_index == -1) {
-            ERR_PRINTF("Cannot find slave at address %" PRIx64 "\n",
-                       static_cast<uint64_t>(trans.get_address()));
+            LOG_F(APP, ERR, "Cannot find slave at address %" PRIx64 "\n",
+		  static_cast<uint64_t>(trans.get_address()));
             trans.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
         }
 
@@ -185,7 +185,7 @@ public:
                                                tlm::tlm_phase& phase,
                                                sc_core::sc_time& t)
     {
-        ERR_PRINTF("Non-blocking transport not implemented\n");
+        LOG_F(SIM, ERR, "Non-blocking transport not implemented\n");
         abort();
         return tlm::TLM_COMPLETED;
     }
@@ -193,7 +193,7 @@ public:
     virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range,
                                            sc_dt::uint64 end_range)
     {
-        ERR_PRINTF("DMI memory invalidation not implemented\n");
+        LOG_F(SIM, ERR, "DMI memory invalidation not implemented\n");
         abort();
     }
 

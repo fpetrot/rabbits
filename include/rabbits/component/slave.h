@@ -279,7 +279,7 @@ public:
                                                tlm::tlm_phase& phase,
                                                sc_core::sc_time& t)
     {
-        ERR_PRINTF("Non-blocking transport not implemented\n");
+        LOG(SIM, ERR) << "Non-blocking transport not implemented\n";
         abort();
         return tlm::TLM_COMPLETED;
     }
@@ -306,7 +306,7 @@ void SlaveTraits<BUSWIDTH>::b_transport(tlm::tlm_generic_payload& trans, sc_core
         bus_cb_read(addr, buf, size, bErr);
         break;
     default:
-        ERR_PRINTF("Unknown bus access command\n");
+        LOG(SIM, ERR) << "Unknown bus access command\n";
         trans.set_response_status(tlm::TLM_COMMAND_ERROR_RESPONSE);
         return;
     }
@@ -328,7 +328,7 @@ unsigned int SlaveTraits<BUSWIDTH>::transport_dbg(tlm::tlm_generic_payload& tran
     case tlm::TLM_WRITE_COMMAND:
         return debug_write(addr, buf, size);
     default:
-        ERR_PRINTF("Unsupported transport debug command\n");
+        LOG(SIM, ERR) << "Unsupported transport debug command\n";
         return 0;
     }
 }

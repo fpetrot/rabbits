@@ -50,11 +50,11 @@ private:
         long ps = sysconf(_SC_PAGESIZE);
         uint64_t offset;
 
-        DBG_PRINTF("align: %08" PRIx64 "\n", addr);
+        LOG_F(APP, DBG, "align: %08" PRIx64 "\n", addr);
         offset = addr & (ps - 1);
         addr &= ~(ps - 1);
 
-        DBG_PRINTF("aligned: %08" PRIx64 ", off:%08" PRIx64 "\n", addr, offset);
+        LOG_F(APP, DBG, "aligned: %08" PRIx64 ", off:%08" PRIx64 "\n", addr, offset);
 
         return offset;
     }
@@ -85,15 +85,15 @@ private:
             *entry = static_cast<uint64_t>(hdr.e_entry);
         }
 
-        DBG_PRINTF("Loading elf with %d sections\n", hdr.e_phnum);
+        LOG_F(APP, DBG, "Loading elf with %d sections\n", hdr.e_phnum);
 
         for (i = 0; i < hdr.e_phnum; i++) {
             T_phdr *ph = &phdr[i];
 
             if (ph->p_type == PT_LOAD) {
-                DBG_PRINTF("Loading elf segment, start:%08" PRIx64 ", size:%08" PRIx64 "\n",
-                        static_cast<uint64_t>(ph->p_paddr),
-                        static_cast<uint64_t>(ph->p_filesz));
+                LOG_F(APP, DBG, "Loading elf segment, start:%08" PRIx64 ", size:%08" PRIx64 "\n",
+		      static_cast<uint64_t>(ph->p_paddr),
+		      static_cast<uint64_t>(ph->p_filesz));
 
                 uint64_t offset = ph->p_offset;
                 uint64_t rem;
@@ -109,8 +109,8 @@ private:
 
                 written = bus->debug_write(ph->p_paddr, ((char*)elf_data)+rem, ph->p_filesz);
                 if (written < ph->p_filesz) {
-                    ERR_PRINTF("Only %" PRIu64 " bytes were written over %" PRIu64 ". Trying to write outside ram?\n", 
-                            written, static_cast<uint64_t>(ph->p_filesz));
+                    LOG_F(APP, ERR, "Only %" PRIu64 " bytes were written over %" PRIu64 ". Trying to write outside ram?\n", 
+			  written, static_cast<uint64_t>(ph->p_filesz));
                     munmap(elf_data, ph->p_filesz);
                     elf_data = NULL;
                     goto fail;
@@ -202,7 +202,7 @@ open_fail:
         void *data = NULL;
         uint64_t written;
 
-        DBG_PRINTF("Loading image %s at 0x%" PRIx64 "\n", img_fn.c_str(), load_addr);
+        LOG_F(APP, DBG, "Loading image %s at 0x%" PRIx64 "\n", img_fn.c_str(), load_addr);
 
         fd = open(img_fn.c_str(), O_RDONLY);
         if (fd < 0) {
@@ -228,8 +228,8 @@ open_fail:
 
         written = bus->debug_write(load_addr, data, fsize);
         if(written < static_cast<uint64_t>(fsize)) {
-            ERR_PRINTF("Only %" PRIu64 " bytes were written over %" PRIu64 ". Trying to write outside ram?\n", 
-                    written, static_cast<uint64_t>(fsize));
+            LOG_F(APP, ERR, "Only %" PRIu64 " bytes were written over %" PRIu64 ". Trying to write outside ram?\n", 
+		  written, static_cast<uint64_t>(fsize));
             goto fail;
         }
 

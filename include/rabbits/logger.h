@@ -30,90 +30,10 @@
 #include "logger/logger.h"
 
 
-//[> XXX <]
-//static inline std::ostream & log_stream(LogLevel::value lvl)
-//{
-    //return Logger::get().log_stream(lvl);
-//}
-
-//static inline int log_vprintf(LogLevel::value lvl, const std::string fmt,
-                              //va_list ap)
-//{
-    //return Logger::get().log_vprintf(lvl, fmt, ap);
-//}
-
-//static inline int log_printf(LogLevel::value lvl, const std::string fmt, ...)
-//{
-    //int ret;
-    //va_list ap;
-
-    //va_start(ap, fmt);
-    //ret = log_vprintf(lvl, fmt, ap);
-    //va_end(ap);
-
-    //return ret;
-//}
 
 #ifndef RABBITS_LOGLEVEL
 # define RABBITS_LOGLEVEL 0
 #endif
-
-#if 0
-#ifdef VERBOSE_TRACES
-
-# define TRACE_PRINTF(lvl, fmt, ...) \
-    log_printf(lvl, "|%s| " fmt, __PRETTY_FUNCTION__, ##__VA_ARGS__)
-# define TRACE_STREAM(lvl, ...) \
-    log_stream(lvl) << "|" << __PRETTY_FUNCTION__ << "| " << __VA_ARGS__
-
-#else
-
-# define TRACE_PRINTF(lvl, fmt, ...) \
-    log_printf(lvl, fmt, ##__VA_ARGS__)
-# define TRACE_STREAM(lvl, ...) \
-    log_stream(lvl) << __VA_ARGS__
-
-#endif
-
-
-
-#define ERR_PRINTF(fmt, ...) TRACE_PRINTF(LogLevel::ERROR, fmt, ##__VA_ARGS__)
-#define ERR_STREAM(...)      TRACE_STREAM(LogLevel::ERROR, ##__VA_ARGS__)
-
-#if (RABBITS_LOGLEVEL > 0)
-# define WRN_PRINTF(fmt, ...) TRACE_PRINTF(LogLevel::WARNING, fmt, ##__VA_ARGS__)
-# define WRN_STREAM(...)      TRACE_STREAM(LogLevel::WARNING, ##__VA_ARGS__)
-#else
-# define WRN_PRINTF(fmt, ...) do {} while(0)
-# define WRN_STREAM(...)      do {} while(0)
-#endif
-
-#if (RABBITS_LOGLEVEL > 1)
-# define INF_PRINTF(fmt, ...) TRACE_PRINTF(LogLevel::INFO, fmt, ##__VA_ARGS__)
-# define INF_STREAM(...)      TRACE_STREAM(LogLevel::INFO, ##__VA_ARGS__)
-#else
-# define INF_PRINTF(fmt, ...) do {} while(0)
-# define INF_STREAM(...)      do {} while(0)
-#endif
-
-#if (RABBITS_LOGLEVEL > 2)
-# define DBG_PRINTF(fmt, ...) TRACE_PRINTF(LogLevel::DEBUG, fmt, ##__VA_ARGS__)
-# define DBG_STREAM(...)      TRACE_STREAM(LogLevel::DEBUG, ##__VA_ARGS__)
-#else
-# define DBG_PRINTF(fmt, ...) do {} while(0)
-# define DBG_STREAM(...)      do {} while(0)
-#endif
-#else
-# define ERR_PRINTF(fmt, ...) do {} while(0)
-# define ERR_STREAM(...)      do {} while(0)
-# define WRN_PRINTF(fmt, ...) do {} while(0)
-# define WRN_STREAM(...)      do {} while(0)
-# define INF_PRINTF(fmt, ...) do {} while(0)
-# define INF_STREAM(...)      do {} while(0)
-# define DBG_PRINTF(fmt, ...) do {} while(0)
-# define DBG_STREAM(...)      do {} while(0)
-#endif
-
 
 #define LOG_CHECK_ERR(logger) logger.next_trace(LogLevel::ERROR)
 

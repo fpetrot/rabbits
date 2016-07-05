@@ -75,7 +75,7 @@ public:
                                                tlm::tlm_phase& phase,
                                                sc_core::sc_time& t)
     {
-        ERR_PRINTF("Non-blocking transport not implemented\n");
+        LOG(SIM, ERR) << "Non-blocking transport not implemented\n";
         abort();
         return tlm::TLM_COMPLETED;
     }
@@ -83,7 +83,7 @@ public:
     virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range,
                                            sc_dt::uint64 end_range)
     {
-        ERR_PRINTF("DMI memory invalidation not implemented\n");
+        LOG(SIM, ERR) << "DMI memory invalidation not implemented\n";
         abort();
     }
 };

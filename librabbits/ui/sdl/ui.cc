@@ -46,14 +46,14 @@ void sdl_ui::sdl_init()
     }
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_NOPARACHUTE) == -1) {
-        ERR_PRINTF("SDL_Init failed\n");
+        LOG(APP, ERR) << "SDL_Init failed\n";
         goto sdl_init_err;
     }
 
     m_screen = SDL_SetVideoMode(DEFAULT_W, DEFAULT_H, 0, 0);
 
     if (m_screen == NULL) {
-        ERR_PRINTF("SDL_SetVideoMode failed\n");
+        LOG(APP, ERR) << "SDL_SetVideoMode failed\n";
         goto sdl_screen_err;
     }
 
@@ -94,7 +94,7 @@ void sdl_ui::update()
     if (active_fb) {
         if (SDL_BlitSurface(active_fb->get_surface(), NULL, m_screen, NULL)
                 == -1) {
-            ERR_PRINTF("blit failed: %s\n", SDL_GetError());
+            LOG(APP, ERR) << "blit failed: " << SDL_GetError() << "\n";
         }
         SDL_Flip(m_screen);
     }

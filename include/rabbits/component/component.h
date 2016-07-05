@@ -56,7 +56,7 @@ protected:
 
     Attributes m_attributes;
 
-    Logger m_loggers[LogContext::LASTLOGCONTEXT];
+    mutable Logger m_loggers[LogContext::LASTLOGCONTEXT];
 
     void pushed_threads_entry()
     {
@@ -181,7 +181,7 @@ public:
     }
 
     /* HasLoggerIface */
-    Logger & get_logger(LogContext::value context) { return m_loggers[context]; }
+    Logger & get_logger(LogContext::value context) const { return m_loggers[context]; }
 };
 
 #endif
