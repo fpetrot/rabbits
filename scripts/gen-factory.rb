@@ -16,6 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 require 'psych'
+require 'pry'
 
 PLUGIN_HEADER_TPL='
 #include <rabbits/plugin/factory.h>
@@ -40,11 +41,11 @@ public:
 
 PARAM_TPL=(' ' * 8) + 'add_param("%{name}", Parameter<%{type}>("%{description}", %{default}));'
 
-DISCOVER_TPL=(' ' * 4) + 
+DISCOVER_TPL=(' ' * 4) +
    'virtual void discover(const std::string &name, const PlatformDescription &params) {
         ComponentParameters cp = get_params();
         cp.fill_from_description(params);
-        
+
         %{class}::discover(name, cp);
     }
 '
@@ -69,7 +70,7 @@ public:
         ComponentParameters cp = get_params();
         cp.fill_from_description(params);
         cp.set_namespace("components." + name);
-        
+
         return new %{class}(name.c_str(), cp);
     }
 
@@ -111,7 +112,7 @@ protected:
     std::vector<ComponentFactory*> m_comp_insts;
     std::vector<PluginFactory*> m_plugin_insts;
 
-    void create_insts() { 
+    void create_insts() {
 %{create_insts}
     }
 
@@ -171,7 +172,7 @@ def cc_ify(str)
 end
 
 class DescrType
-  @@descr_types = {} 
+  @@descr_types = {}
 
   attr_reader :cc_type
   def initialize(type_name)
@@ -299,12 +300,12 @@ end
 
 class Component
   attr_accessor :fn, :name, :type, :description, :parameters, :class, :include, :discover
-  
+
   def initialize(fn, descr)
     required = ['name', 'type', 'description', 'class', 'include']
 
     raise StandardError.new("Missing attribute(s): " + (required - descr.keys).join(",")) if (descr.keys & required).sort != required.sort
-    
+
     @fn = fn
     @name = descr['name']
     @type = descr['type']
@@ -350,8 +351,8 @@ class Component
   end
 
   def get_print_args
-    { 
-      :name => @name, 
+    {
+      :name => @name,
       :type => @type,
       :description => @description,
       :class => @class,
@@ -379,12 +380,12 @@ end
 
 class Plugin
   attr_accessor :fn, :name, :class, :include
-  
+
   def initialize(fn, descr)
     required = ['name', 'class', 'include']
 
     raise StandardError.new("Missing attribute(s): " + (required - descr.keys).join(",")) if (descr.keys & required).sort != required.sort
- 
+
     @fn = fn
     @name = descr['name']
     @class = descr['class']
@@ -556,7 +557,29 @@ def hash_merge(h0, h1)
   h0.merge(h1, &merger)
 end
 
-def load_yml(f)
+GENERIC_COMPONENT_YML='
+component:
+  name: generic-component
+  description: Generic Rabbits component
+  parameters:
+    log-target:
+      type: string
+      description: Specify the log target for this component (valid options are `stdout\', `stderr\' and `file\')
+      default: stderr
+      advanced: true
+    log-level:
+      type: string
+      description: Specify the log level for this component (valid options are `debug\', `info\', `warning\', `error\')
+      default: info
+      advanced: true
+    log-file:
+      type: string
+      description: Specify the log file for this component
+      default: component.log
+      advanced: true
+'
+
+def load_yml(f, generic_component)
   yml = Psych.load_file(f)
 
   case yml['include']
@@ -574,7 +597,7 @@ def load_yml(f)
 
   inc.each do |inc_f|
     abs_inc_f = File::join(File::dirname(f), inc_f)
-    incs_yml = hash_merge(incs_yml, load_yml(abs_inc_f))
+    incs_yml = hash_merge(incs_yml, load_yml(abs_inc_f, generic_component))
   end
 
   yml = hash_merge(incs_yml, yml)
@@ -584,13 +607,15 @@ def load_yml(f)
   yml
 end
 
-begin 
+begin
   mode, out, in_files = parse_args
+  generic_component = Psych.load(GENERIC_COMPONENT_YML)
 
   comps = in_files.collect do |f|
-    yml = load_yml(f)
+    yml = load_yml(f, generic_component)
     case yml.keys.first
     when "component"
+      yml = hash_merge(generic_component, yml)
       Component.new(f, yml['component'])
     when "plugin"
       Plugin.new(f, yml['plugin'])
@@ -618,7 +643,7 @@ begin
       includes += c.get_print_args[:self_include] + "\n"
     end
 
-    out.puts DYNAMIC_LOADER_TPL % { 
+    out.puts DYNAMIC_LOADER_TPL % {
       :includes => includes,
       :create_insts => insts,
       :module_name => cc_ify($modname),

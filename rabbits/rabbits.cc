@@ -34,14 +34,17 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#include <map>
+#include <memory>
 
 #include "usage.h"
 #include "cmdline.h"
 
 using std::string;
 using std::vector;
+using std::map;
 using std::fstream;
-
+using std::unique_ptr;
 
 static void dump_systemc_hierarchy(const sc_core::sc_object &top_level, int indent = 0)
 {
@@ -115,6 +118,9 @@ enum LogTarget {
     LT_STDOUT, LT_STDERR, LT_FILE
 };
 
+typedef unique_ptr<fstream> LogFile;
+typedef map<string, LogFile> LogFiles;
+
 static LogTarget get_log_target(const string target_s)
 {
     if (target_s == "stdout") {
@@ -145,9 +151,26 @@ static LogLevel::value get_log_level(const string level_s)
     return LogLevel::INFO;
 }
 
+static fstream* open_file(const string &fn, LogFiles &files)
+{
+    fstream* ret = nullptr;
+
+    if (files.find(fn) != files.end()) {
+        if (!files[fn]) {
+            return nullptr;
+        }
+        return files[fn].get();
+    }
+
+    ret = new fstream(fn, fstream::out | fstream::trunc);
+
+    files[fn].reset(ret);
+
+    return ret;
+}
 
 static void setup_logger(Logger &l, LogTarget target, LogLevel::value lvl,
-                         const string log_file, vector<fstream> &files)
+                         const string log_file, LogFiles &files)
 {
     switch (target) {
     case LT_STDOUT:
@@ -156,14 +179,12 @@ static void setup_logger(Logger &l, LogTarget target, LogLevel::value lvl,
 
     case LT_FILE:
         {
-            fstream file(log_file, fstream::out | fstream::trunc);
+            fstream* file = open_file(log_file, files);
 
-            if (!file) {
+            if (!*file) {
                 LOG(APP, ERR) << "Unable to open log file " << log_file << ". Falling back to stderr\n";
             } else {
-                files.resize(files.size()+1);
-                files.back() = std::move(file);
-                l.set_streams(&(files.back()));
+                l.set_streams(file);
             }
         }
         break;
@@ -183,7 +204,7 @@ static inline bool sim_logger_is_custom(ComponentParameters &g)
         || (!g["log-sim-file"].is_default());
 }
 
-static void setup_loggers(ConfigManager &config, vector<fstream> &files)
+static void setup_loggers(ConfigManager &config, LogFiles &files)
 {
     ComponentParameters &p = config.get_global_params();
     Logger &app = get_app_logger();
@@ -233,7 +254,7 @@ int sc_main(int argc, char *argv[])
 
     ComponentParameters &globals = config.get_global_params();
 
-    vector<fstream> log_files;
+    LogFiles log_files;
 
     setup_loggers(config, log_files);
 
