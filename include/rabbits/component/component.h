@@ -129,6 +129,10 @@ public:
 
             banner << "[" << name() << "]";
             m_loggers[i].set_custom_banner(banner.str());
+
+            m_loggers[i].set_custom_banner([] (Logger &l, const std::string &banner) {
+                                              l << format::cyan << banner << format::reset;
+                                           });
         }
     }
 
@@ -156,6 +160,9 @@ public:
     virtual const_port_iterator port_begin() const { return m_ports.begin(); }
     virtual const_port_iterator port_end() const { return m_ports.end(); }
     virtual std::string hasport_name() const { return name(); }
+    virtual Logger & hasport_getlogger(LogContext::value context) const {
+        return get_logger(context);
+    }
     virtual void push_sc_thread(std::function<void()> cb) {
         m_pushed_threads.push_back(cb);
     }

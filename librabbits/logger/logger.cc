@@ -28,6 +28,13 @@ const std::string Logger::PREFIXES[] = {
         [LogLevel::DEBUG]   = "[debug]",
 };
 
+const Logger::formater_fn Logger::PREFIX_COLORS[] = {
+        [LogLevel::ERROR]   = format::red,
+        [LogLevel::WARNING] = format::yellow,
+        [LogLevel::INFO]    = format::white,
+        [LogLevel::DEBUG]   = format::black,
+};
+
 Logger Logger::m_root_loggers[LogContext::LASTLOGCONTEXT];
 std::vector<char> Logger::m_format_buf;
 

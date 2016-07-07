@@ -70,6 +70,7 @@
 #define MLOG_F(ctx, lvl, ...) \
     MLOG(ctx, lvl) << Logger::format(__VA_ARGS__)
 
+static inline Logger & get_logger(LogContext::value ctx) { return Logger::get_root_logger(ctx); }
 static inline Logger & get_app_logger() { return Logger::get_root_logger(LogContext::APP); }
 static inline Logger & get_sim_logger() { return Logger::get_root_logger(LogContext::SIM); }
 

@@ -33,12 +33,15 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
 
 #include "usage.h"
 #include "cmdline.h"
 
 using std::string;
 using std::vector;
+using std::fstream;
+
 
 static void dump_systemc_hierarchy(const sc_core::sc_object &top_level, int indent = 0)
 {
@@ -65,7 +68,7 @@ static void declare_global_params(ConfigManager &config)
                                             false));
 
     config.add_global_param("debug",
-                            Parameter<bool>("Enable debug messages",
+                            Parameter<bool>("Set log level to `debug' (equivalent to `-log-level debug')",
                                             false));
 
     config.add_global_param("show-version",
@@ -75,6 +78,26 @@ static void declare_global_params(ConfigManager &config)
     config.add_global_param("color-output",
                             Parameter<bool>("Allow usage of colors when the output is a terminal",
                                             true));
+
+    /* Logger stuff */
+    config.add_global_param("log-target",
+                            Parameter<string>("Specify the log target (valid options are `stdout', `stderr' and `file')",
+                                              "stderr"));
+    config.add_global_param("log-file",
+                            Parameter<string>("Specify the log file",
+                                              "rabbits.log"));
+    config.add_global_param("log-level",
+                            Parameter<string>("Specify the log level (valid options are `debug', `info', `warning', `error')",
+                                              "info"));
+    config.add_global_param("log-sim-target",
+                            Parameter<string>("Specify simulation related log target (valid options are `stdout', `stderr' and `file')",
+                                              "stderr"));
+    config.add_global_param("log-sim-file",
+                            Parameter<string>("Specify simulation related log file",
+                                              "rabbits.log"));
+    config.add_global_param("log-sim-level",
+                            Parameter<string>("Specify simulation related log level (valid options are `debug', `info', `warning', `error')",
+                                              "info"));
 }
 
 static void declare_aliases(ConfigManager &config)
@@ -86,6 +109,111 @@ static void declare_aliases(ConfigManager &config)
     config.add_param_alias("debug",           p["debug"]);
     config.add_param_alias("version",         p["show-version"]);
     config.add_param_alias("platform",        p["selected-platform"]);
+}
+
+enum LogTarget {
+    LT_STDOUT, LT_STDERR, LT_FILE
+};
+
+static LogTarget get_log_target(const string target_s)
+{
+    if (target_s == "stdout") {
+        return LT_STDOUT;
+    } else if (target_s == "stderr") {
+        return LT_STDERR;
+    } else if (target_s == "file") {
+        return LT_FILE;
+    }
+
+    LOG(APP, ERR) << "Ignoring invalid log target " << target_s << "\n";
+    return LT_STDERR;
+}
+
+static LogLevel::value get_log_level(const string level_s)
+{
+    if (level_s == "debug") {
+        return LogLevel::DEBUG;
+    } else if (level_s == "info") {
+        return LogLevel::INFO;
+    } else if (level_s == "warning") {
+        return LogLevel::WARNING;
+    } else if (level_s == "error") {
+        return LogLevel::ERROR;
+    }
+
+    LOG(APP, ERR) << "Ignoring invalid log level " << level_s << "\n";
+    return LogLevel::INFO;
+}
+
+
+static void setup_logger(Logger &l, LogTarget target, LogLevel::value lvl,
+                         const string log_file, vector<fstream> &files)
+{
+    switch (target) {
+    case LT_STDOUT:
+        l.set_streams(&std::cout);
+        break;
+
+    case LT_FILE:
+        {
+            fstream file(log_file, fstream::out | fstream::trunc);
+
+            if (!file) {
+                LOG(APP, ERR) << "Unable to open log file " << log_file << ". Falling back to stderr\n";
+            } else {
+                files.resize(files.size()+1);
+                files.back() = std::move(file);
+                l.set_streams(&(files.back()));
+            }
+        }
+        break;
+
+    case LT_STDERR:
+        /* Default */
+        break;
+    }
+
+    l.set_log_level(lvl);
+}
+
+static inline bool sim_logger_is_custom(ComponentParameters &g)
+{
+    return (!g["log-sim-target"].is_default())
+        || (!g["log-sim-level"].is_default())
+        || (!g["log-sim-file"].is_default());
+}
+
+static void setup_loggers(ConfigManager &config, vector<fstream> &files)
+{
+    ComponentParameters &p = config.get_global_params();
+    Logger &app = get_app_logger();
+    Logger &sim = get_sim_logger();
+
+    const LogTarget log_target = get_log_target(p["log-target"].as<string>());
+    const LogLevel::value log_level = get_log_level(p["log-level"].as<string>());
+    const string log_file = p["log-file"].as<string>();
+
+    const LogTarget log_sim_target = get_log_target(p["log-sim-target"].as<string>());
+    const LogLevel::value log_sim_level = get_log_level(p["log-sim-level"].as<string>());
+    const string log_sim_file = p["log-sim-file"].as<string>();
+
+    setup_logger(app, log_target, log_level, log_file, files);
+
+    if (sim_logger_is_custom(p)) {
+        setup_logger(sim, log_sim_target, log_sim_level, log_sim_file, files);
+    } else {
+        setup_logger(sim, log_target, log_level, log_file, files);
+    }
+
+    sim.set_custom_banner([] (Logger &l, const std::string &banner)
+    {
+            l << format::purple << "[sim]";
+        if (sc_core::sc_get_status() == sc_core::SC_ELABORATION) {
+            l << format::green << "[elaboration]" << format::reset;
+        } else {
+            l << format::green << "[" << sc_core::sc_time_stamp() << "]" << format::reset;
+        }
+    });
 }
 
 extern "C" {
@@ -104,6 +232,10 @@ int sc_main(int argc, char *argv[])
     config.add_cmdline(argc, argv);
 
     ComponentParameters &globals = config.get_global_params();
+
+    vector<fstream> log_files;
+
+    setup_loggers(config, log_files);
 
     if (globals["debug"].as<bool>()) {
         get_app_logger().set_log_level(LogLevel::DEBUG);

@@ -51,10 +51,12 @@ public:
     virtual const_port_iterator port_end() const = 0;
 
     virtual std::string hasport_name() const = 0;
+    virtual Logger & hasport_getlogger(LogContext::value) const = 0;
+
     virtual void push_sc_thread(std::function<void()> thread_callback) = 0;
 };
 
-class Port {
+class Port : public HasLoggerIface {
 public:
     typedef std::pair<ConnectionStrategyBase*, ConnectionStrategyBase*> CSPair;
     typedef std::list< CSPair > CSPairs;
@@ -151,7 +153,7 @@ public:
                 abort();
 
             case ConnectionStrategyBase::BINDING_ERROR:
-                LOG(APP, WRN) << "Error while binding " << full_name()
+                MLOG(APP, WRN) << "Error while binding " << full_name()
                               << " to " << p.full_name() << "\n";
                 break;
 
@@ -164,7 +166,7 @@ public:
     }
 
     virtual bool connect(Port &p,
-			 PlatformDescription &d = PlatformDescription::INVALID_DESCRIPTION)
+                         PlatformDescription &d = PlatformDescription::INVALID_DESCRIPTION)
     {
         CSPairs pairs;
 
@@ -181,7 +183,7 @@ public:
         CSPairs pairs;
 
         if (!is_connectable_to(parent, pairs)) {
-            LOG(APP, WRN) << full_name() << " is not connectable to " << parent.full_name() << "\n";
+            MLOG(APP, WRN) << full_name() << " is not connectable to " << parent.full_name() << "\n";
             return;
         }
 
@@ -199,12 +201,12 @@ public:
                 return;
 
             case ConnectionStrategyBase::BINDING_HIERARCHICAL_TYPE_MISMATCH:
-                LOG(APP, WRN) << full_name() << " is not hierarchically connectable to "
+                MLOG(APP, WRN) << full_name() << " is not hierarchically connectable to "
                               << parent.full_name() << "\n";
                 return;
 
             case ConnectionStrategyBase::BINDING_ERROR:
-                LOG(APP, WRN) << "Error while hierarchical binding of " << full_name()
+                MLOG(APP, WRN) << "Error while hierarchical binding of " << full_name()
                               << " with " << parent.full_name() << "\n";
                 break;
 
@@ -230,6 +232,15 @@ public:
     }
 
     HasPortIface* get_parent() { return m_parent; }
+
+    /* HasLoggerIface */
+    Logger & get_logger(LogContext::value context) const {
+        if (m_parent) {
+            return m_parent->hasport_getlogger(context);
+        } else {
+            return get_logger(context);
+        }
+    }
 
     virtual void before_end_of_elaboration() {}
     virtual void end_of_elaboration() {}

@@ -29,6 +29,7 @@
 #include <vector>
 #include <stack>
 #include <ostream>
+#include <functional>
 
 #include "rabbits/config.h"
 #include "format.h"
@@ -78,7 +79,10 @@ public:
         bool is_null() const { return sink == nullptr; }
     };
 
+    typedef Logger & (*formater_fn)(Logger &);
+
     static const std::string PREFIXES[];
+    static const formater_fn PREFIX_COLORS[];
 
 protected:
     typedef std::vector<char>::size_type size_type;
@@ -99,8 +103,11 @@ protected:
     LogLevel::value m_next_lvl;
 
     bool m_new_trace = true;
+
     bool m_banner_enabled = true;
     std::string m_custom_banner;
+    std::function<void(Logger&, const std::string&)> m_banner_cb;
+
     bool m_muted = false;
     bool m_auto_reset = true;
 
@@ -140,6 +147,33 @@ protected:
         return *(get_stream(lvl).sink);
     }
 
+    void _emit_banner(Logger &l, LogLevel::value lvl, std::ostream &s) {
+        if (m_parent) {
+            m_parent->_emit_banner(l, lvl, s);
+        } else {
+            PREFIX_COLORS[lvl](l);
+            s << PREFIXES[lvl];
+            l.reset_format();
+        }
+
+        if (m_banner_cb) {
+            m_banner_cb(l, m_custom_banner);
+        } else {
+            s << m_custom_banner;
+        }
+    }
+
+    void emit_banner(std::ostream &s)
+    {
+        if (m_new_trace && m_banner_enabled) {
+            m_new_trace = false;
+
+            _emit_banner(*this, m_next_lvl, s);
+
+            s << " ";
+        }
+    }
+
 public:
     Logger(std::ostream *default_stream = &std::cerr)
     {
@@ -166,6 +200,20 @@ public:
      * @param[in] str The stream to associate to the log level.
      */
     void set_stream(LogLevel::value lvl, std::ostream *str) { m_streams[lvl] = Stream(*str); }
+
+    /**
+     * @brief Set the stream for all log levels.
+     *
+     * Default stream is std::cerr.
+     *
+     * @param[in] str The stream to set for all log levels.
+     */
+    void set_streams(std::ostream *str)
+    {
+        for (int i = 0; i < int(LogLevel::LASTLOGLVL); i++) {
+            m_streams[i] = Stream(*str);
+        }
+    }
 
     /**
      * @brief Set the current maximum log level displayed.
@@ -270,6 +318,26 @@ public:
     }
 
     /**
+     * @brief Set a callback used to emit the banner for each trace
+     *
+     * @param[in] f The banner emitter that takes as parameter the current
+     *              logger and the text banner.
+     */
+    void set_custom_banner(const std::function<void(Logger&, const std::string&)> &f)
+    {
+        m_banner_cb = f;
+    }
+
+    /**
+     * @brief Append a string to the custom banner
+     *
+     * @param[in] suffix The string to append
+     */
+    void append_to_custom_banner(const std::string &suffix) {
+        m_custom_banner += suffix;
+    }
+
+    /**
      * @brief Remove any previously set custom banner
      */
     void clear_custom_banner() {
@@ -301,7 +369,7 @@ public:
     {
         l.m_level = m_level;
         l.m_banner_enabled = m_banner_enabled;
-        l.m_custom_banner = m_custom_banner;
+        l.m_custom_banner = "";
         l.m_muted = m_muted;
 
         l.clear_streams();
@@ -343,13 +411,10 @@ public:
     {
         std::ostream &s = get_sink(m_next_lvl);
 
-        if (m_new_trace && m_banner_enabled) {
-            s << PREFIXES[m_next_lvl] << m_custom_banner << " ";
-        }
+        emit_banner(s);
 
         s << t;
 
-        m_new_trace = false;
         return *this;
     }
 

@@ -113,6 +113,15 @@ public:
      */
     virtual std::string to_str() const = 0;
 
+    /* @brief Return true if parameter has its default value.
+     *
+     * @return true if parameter has its default value.
+     *
+     */
+    bool is_default() const {
+        return !m_data->is_inited();
+    }
+
     /**
      * @brief Return a textual description of the parameter.
      *
