@@ -83,6 +83,7 @@ public:
     TextFormatter(Logger &l, LogLevel::value lvl) : m_logger(l), m_lvl(lvl)
     {
         m_is_tty = l.is_tty(m_lvl);
+        m_logger.next_trace(m_lvl);
         set_start_col(0);
     }
 
@@ -261,7 +262,9 @@ public:
 
     void print_left(TextFormatter &f)
     {
-        f << "-" << m_name;
+        f << "-" 
+          << (m_param.is_advanced() ? format::yellow : format::white) 
+          << m_name << format::reset;
     }
 
     void print_right(TextFormatter &f)
@@ -287,7 +290,9 @@ public:
 
     void print_left(TextFormatter &f)
     {
-        f << "-" << m_param.get_namespace() << "." << format::green << m_param.get_name() << format::reset;
+        f << "-" << m_param.get_namespace() 
+          << "." << (m_param.is_advanced() ? format::yellow : format::green) << m_param.get_name() 
+          << format::reset;
     }
 
     void print_right(TextFormatter &f)
@@ -323,8 +328,6 @@ public:
         Logger &l = get_app_logger();
         TextFormatter f(l, lvl);
 
-        l.next_trace(lvl);
-
         for (auto &u : m_entries) {
             f.set_start_col(u->left_indent());
             u->print_left(f);
@@ -337,25 +340,83 @@ public:
     }
 };
 
-
-static void _dump_systemc_hierarchy(const sc_core::sc_object &top_level, TextFormatter &f)
+static void print_tree(std::vector<bool> lvls, TextFormatter &f, bool separator)
 {
-    const vector<sc_core::sc_object*> & children = top_level.get_child_objects();
-    vector<sc_core::sc_object*>::const_iterator it;
+    f.set_start_col(1);
+    int i = 0;
 
-    f << top_level.basename() << "\n";
+    for (bool lvl : lvls) {
 
-    f.inc_start_col(2);
-    for (it = children.begin(); it != children.end(); it++) {
-        _dump_systemc_hierarchy(**it, f);
+        switch (i) {
+        case 0:
+            f << format::red;
+            break;
+        case 1:
+            f << format::cyan;
+            break;
+        default:
+            f << format::white;
+        }
+
+        if (i == int(lvls.size() - 1) && !separator) {
+            if (lvl) {
+                f << "\\__ ";
+            } else {
+                f << "|-- ";
+            }
+        } else {
+            if (!lvl) {
+                f << "|";
+            }
+        }
+
+        f << format::reset;
+        i++;
+        f.inc_start_col(4);
     }
-    f.dec_start_col(2);
 }
 
-void dump_systemc_hierarchy(PlatformBuilder &p, Logger &l, LogLevel::value lvl)
+static void _dump_systemc_hierarchy(const sc_core::sc_object &top_level, TextFormatter &f, vector<bool> &lvls)
 {
+    const vector<sc_core::sc_object*> & children = top_level.get_child_objects();
+
+    f << (lvls.size() ? ((lvls.size() > 1) ? format::white : format::cyan) : format::red) << top_level.basename() 
+      << format::reset << ":" 
+      << format::black << top_level.kind() 
+      << format::reset << "\n";
+
+    for (auto &c : children) {
+        const bool last = (&c == &(children[children.size()-1]));
+
+        lvls.push_back(last);
+
+        print_tree(lvls, f, false);
+
+        _dump_systemc_hierarchy(*c, f, lvls);
+
+        lvls.pop_back();
+
+        if (last) {
+            print_tree(lvls, f, true);
+            f << "\n";
+        }
+    }
+}
+
+void dump_systemc_hierarchy(PlatformBuilder &p, LogLevel::value lvl)
+{
+    Logger &l = get_app_logger();
+    vector<bool> lvls;
+
+    bool banner_status = l.enable_banner(false);
+    l << format::white_b << "SystemC hierarchy:\n\n" << format::reset;
+
     TextFormatter f(l, lvl);
-    _dump_systemc_hierarchy(p, f);
+
+    _dump_systemc_hierarchy(p, f, lvls);
+
+    l << "\n";
+    l.enable_banner(banner_status);
 }
 
 static void describe_comp_params(const ComponentParameters &p, TextFormatter &f)
@@ -393,11 +454,10 @@ void enum_components(LogLevel::value lvl)
     ComponentManager::iterator it;
 
     Logger &l = get_app_logger();
-    TextFormatter f(l, lvl);
 
     bool banner_status = l.enable_banner(false);
 
-    l.next_trace(lvl);
+    TextFormatter f(l, lvl);
 
     f << format::white_b << "Available components:\n\n" << format::reset;
 
@@ -459,7 +519,11 @@ void print_usage(const char* arg0, ConfigManager &conf, PlatformBuilder &p)
     bool banner_status = get_app_logger().enable_banner(false);
     bool advanced = conf.get_global_params()["show-advanced-params"].as<bool>();
 
-    LOG(APP, INF) << format::white_b << "Usage: " << arg0 << " [...]\n";
+    LOG(APP, INF) << format::white_b << "Usage: " << arg0 << " [...]\n\n";
+
+    if (advanced) {
+        LOG(APP, INF) << format::yellow << "Displaying advanced parameters\n" << format::reset;
+    }
 
     add_aliases(conf, usage, advanced);
     add_global_parameters(conf, usage, advanced);

@@ -165,7 +165,7 @@ public:
      *
      * @return true if the parameter is marked as advanced, false otherwise.
      */
-    bool is_advanced() { return m_advanced; }
+    bool is_advanced() const { return m_advanced; }
 };
 
 /**

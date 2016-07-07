@@ -28,6 +28,6 @@
 void print_version(LogLevel::value);
 void print_usage(const char* arg0, ConfigManager &config, PlatformBuilder &p);
 void enum_components(LogLevel::value);
-void dump_systemc_hierarchy(PlatformBuilder &p, Logger &l, LogLevel::value lvl);
+void dump_systemc_hierarchy(PlatformBuilder &p, LogLevel::value lvl);
 
 #endif

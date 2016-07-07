@@ -104,12 +104,13 @@ static void declare_aliases(ConfigManager &config)
 {
     ComponentParameters &p = config.get_global_params();
 
-    config.add_param_alias("help",            p["show-help"]);
-    config.add_param_alias("help-advanced",   p["show-advanced-params"]);
-    config.add_param_alias("list-components", p["list-components"]);
-    config.add_param_alias("debug",           p["debug"]);
-    config.add_param_alias("version",         p["show-version"]);
-    config.add_param_alias("platform",        p["selected-platform"]);
+    config.add_param_alias("help",              p["show-help"]);
+    config.add_param_alias("help-advanced",     p["show-advanced-params"]);
+    config.add_param_alias("list-components",   p["list-components"]);
+    config.add_param_alias("systemc-hierarchy", p["show-systemc-hierarchy"]);
+    config.add_param_alias("debug",             p["debug"]);
+    config.add_param_alias("version",           p["show-version"]);
+    config.add_param_alias("platform",          p["selected-platform"]);
 }
 
 enum LogTarget {
@@ -307,6 +308,11 @@ int sc_main(int argc, char *argv[])
 
     if (globals["show-help"].as<bool>() || globals["show-advanced-params"].as<bool>()) {
         print_usage(argv[0], config, builder);
+        return 0;
+    }
+
+    if (globals["show-systemc-hierarchy"].as<bool>()) {
+        dump_systemc_hierarchy(builder, LogLevel::INFO);
         return 0;
     }
 
