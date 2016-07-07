@@ -46,29 +46,26 @@ using std::map;
 using std::fstream;
 using std::unique_ptr;
 
-static void dump_systemc_hierarchy(const sc_core::sc_object &top_level, int indent = 0)
-{
-    const vector<sc_core::sc_object*> & children = top_level.get_child_objects();
-    vector<sc_core::sc_object*>::const_iterator it;
-
-    //print_indent(indent);
-    std::cout << top_level.basename() << std::endl;
-
-    for (it = children.begin(); it != children.end(); it++) {
-        dump_systemc_hierarchy(**it, indent+1);
-    }
-}
-
 static void declare_global_params(ConfigManager &config)
 {
     config.add_global_param("show-help",
                             Parameter<bool>("Display this help text and exit",
                                             false));
 
+    config.add_global_param("show-advanced-params",
+                            Parameter<bool>("Display the advanced parameters",
+                                            false));
+
     config.add_global_param("list-components",
                             Parameter<bool>("List available components "
                                             "with their description",
                                             false));
+
+    config.add_global_param("show-systemc-hierarchy",
+                            Parameter<bool>("Display the SystemC hierarchy "
+                                            "at the end of elaboration and exit",
+                                            false, 
+                                            true));
 
     config.add_global_param("debug",
                             Parameter<bool>("Set log level to `debug' (equivalent to `-log-level debug')",
@@ -108,6 +105,7 @@ static void declare_aliases(ConfigManager &config)
     ComponentParameters &p = config.get_global_params();
 
     config.add_param_alias("help",            p["show-help"]);
+    config.add_param_alias("help-advanced",   p["show-advanced-params"]);
     config.add_param_alias("list-components", p["list-components"]);
     config.add_param_alias("debug",           p["debug"]);
     config.add_param_alias("version",         p["show-version"]);
@@ -256,11 +254,14 @@ int sc_main(int argc, char *argv[])
 
     LogFiles log_files;
 
+    if (globals["debug"].as<bool>()) {
+        globals["log-level"] = string("debug");
+        globals["log-sim-level"] = string("debug");
+    }
+
     setup_loggers(config, log_files);
 
     if (globals["debug"].as<bool>()) {
-        get_app_logger().set_log_level(LogLevel::DEBUG);
-        get_sim_logger().set_log_level(LogLevel::DEBUG);
         print_version(LogLevel::DEBUG);
     }
 
@@ -285,7 +286,7 @@ int sc_main(int argc, char *argv[])
     std::string pname = globals["selected-platform"].as<string>();
 
     if (pname.empty()) {
-        if (globals["show-help"].as<bool>()) {
+        if (globals["show-help"].as<bool>() || globals["show-advanced-params"].as<bool>()) {
             PlatformBuilder empty("", PlatformDescription::INVALID_DESCRIPTION);
             print_usage(argv[0], config, empty);
             return 0;
@@ -304,7 +305,7 @@ int sc_main(int argc, char *argv[])
     PlatformDescription platform = config.apply_platform(pname);
     PlatformBuilder builder(pname.c_str(), platform);
 
-    if (globals["show-help"].as<bool>()) {
+    if (globals["show-help"].as<bool>() || globals["show-advanced-params"].as<bool>()) {
         print_usage(argv[0], config, builder);
         return 0;
     }

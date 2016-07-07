@@ -55,15 +55,16 @@ private:
     std::string m_name;
     std::string m_namespace;
     std::string m_description;
+    bool m_advanced = false;
 
     ParamDataBase *m_data;
     ParamDataBase *m_default;
 
 protected:
-    ParameterBase(const std::string & descr, ParamDataBase *data, ParamDataBase *default_value)
-        : m_description(descr), m_data(data), m_default(default_value) {}
+    ParameterBase(const std::string & descr, ParamDataBase *data, ParamDataBase *default_value, bool advanced = false)
+        : m_description(descr), m_advanced(advanced), m_data(data), m_default(default_value) {}
     ParameterBase(const ParameterBase &p, ParamDataBase *data, ParamDataBase *default_value)
-        : m_description(p.m_description), m_data(data), m_default(default_value) {}
+        : m_description(p.m_description), m_advanced(p.m_advanced), m_data(data), m_default(default_value) {}
 
 public:
     virtual ~ParameterBase() {}
@@ -80,6 +81,7 @@ public:
     template <typename T> T as() const;
 
     template <typename T> void set(const T& v);
+    template <typename T> void set_default(const T& v);
 
     template <typename T> ParameterBase& operator= (const T& v) { set(v); return *this; }
 
@@ -152,6 +154,18 @@ public:
      * @return the parameter namespace.
      */
     const std::string & get_namespace() const { return m_namespace; }
+
+    /**
+     * @brief Set this parameter as advanced
+     */
+    void set_advanced() { m_advanced = true; }
+
+    /**
+     * @brief Return true if the parameter is marked as advanced.
+     *
+     * @return true if the parameter is marked as advanced, false otherwise.
+     */
+    bool is_advanced() { return m_advanced; }
 };
 
 /**
@@ -169,8 +183,8 @@ protected:
     ParamData<T> m_default_storage;
 
 public:
-    Parameter(const std::string & description, const T &default_value)
-        : ParameterBase(description, &m_data_storage, &m_default_storage)
+    Parameter(const std::string & description, const T &default_value, bool advanced = false)
+        : ParameterBase(description, &m_data_storage, &m_default_storage, advanced)
         , m_default_storage(default_value) {}
     Parameter(const Parameter &p)
         : ParameterBase(p, &m_data_storage, &m_default_storage)
@@ -200,6 +214,10 @@ public:
      */
     void set(const T& d) {
         m_data_storage.set(d);
+    }
+
+    void set_default(const T& d) {
+        m_default_storage.set(d);
     }
 
     virtual void set(const PlatformDescription &p) {
@@ -233,6 +251,16 @@ inline void ParameterBase::set(const T& v)
         throw InvalidParameterTypeException("Parameter type mismatch");
     }
     p->set(v);
+}
+
+template <typename T>
+inline void ParameterBase::set_default(const T& v)
+{
+    Parameter<T> *p = dynamic_cast<Parameter<T>*>(this);
+    if (p == nullptr) {
+        throw InvalidParameterTypeException("Parameter type mismatch");
+    }
+    p->set_default(v);
 }
 
 template <typename T>

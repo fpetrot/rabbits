@@ -39,7 +39,7 @@ public:
 }; /* namespace autogen */
 '
 
-PARAM_TPL=(' ' * 8) + 'add_param("%{name}", Parameter<%{type}>("%{description}", %{default}));'
+PARAM_TPL=(' ' * 8) + 'add_param("%{name}", Parameter<%{type}>("%{description}", %{default}, %{advanced}));'
 
 DISCOVER_TPL=(' ' * 4) +
    'virtual void discover(const std::string &name, const PlatformDescription &params) {
@@ -271,7 +271,7 @@ DescrTypeBoolean.new('boolean')
 DescrTypeTime.new('time')
 
 class Parameter
-  attr_accessor :name, :type, :default, :description
+  attr_accessor :name, :type, :default, :description, :advanced
 
   def initialize(name, descr)
     required = ['type', 'default', 'description']
@@ -286,6 +286,8 @@ class Parameter
     @type = converter.cc_type
     @default = converter.convert(descr['default'])
     @description = descr['description'].gsub("\n", '\n')
+    @advanced = descr['advanced']
+    @advanced = false unless @advanced
   end
 
   def get_print_args
@@ -293,7 +295,8 @@ class Parameter
       :name => @name,
       :description => @description,
       :type => @type,
-      :default => @default
+      :default => @default,
+      :advanced => @advanced
     }
   end
 end
@@ -562,6 +565,11 @@ component:
   name: generic-component
   description: Generic Rabbits component
   parameters:
+    debug:
+      type: boolean
+      description: Set log level to `debug\' for this component
+      default: false
+      advanced: true
     log-target:
       type: string
       description: Specify the log target for this component (valid options are `stdout\', `stderr\' and `file\')

@@ -30,6 +30,8 @@
 #include <vector>
 #include <sstream>
 #include <systemc>
+#include <memory>
+#include <fstream>
 
 #include "component_base.h"
 #include "rabbits/rabbits_exception.h"
@@ -48,11 +50,19 @@
  */
 class Component : public ComponentBase {
 public:
+    enum LogTarget {
+        LT_STDOUT, LT_STDERR, LT_FILE
+    };
+
+    typedef std::unique_ptr<std::fstream> LogFile;
+    typedef std::map<std::string, LogFile> LogFiles;
+
     SC_HAS_PROCESS(Component);
 
 protected:
     std::map<std::string, Port*> m_ports;
     std::vector< std::function<void() > > m_pushed_threads;
+    LogFiles m_log_files;
 
     Attributes m_attributes;
 
@@ -86,7 +96,7 @@ protected:
     {
         ComponentBase::before_end_of_elaboration();
 
-        create_pushed_threads(); 
+        create_pushed_threads();
 
         for (const auto & p : m_ports) {
             p.second->before_end_of_elaboration();
@@ -120,22 +130,149 @@ protected:
         }
     }
 
-public:
-    void init()
+    LogTarget get_log_target(const std::string target_s)
     {
+        if (target_s == "stdout") {
+            return LT_STDOUT;
+        } else if (target_s == "stderr") {
+            return LT_STDERR;
+        } else if (target_s == "file") {
+            return LT_FILE;
+        }
+
+        LOG(APP, ERR) << "Ignoring invalid log target " << target_s << "\n";
+        return LT_STDERR;
+    }
+
+    LogLevel::value get_log_level(const std::string level_s)
+    {
+        if (level_s == "debug") {
+            return LogLevel::DEBUG;
+        } else if (level_s == "info") {
+            return LogLevel::INFO;
+        } else if (level_s == "warning") {
+            return LogLevel::WARNING;
+        } else if (level_s == "error") {
+            return LogLevel::ERROR;
+        }
+
+        LOG(APP, ERR) << "Ignoring invalid log level " << level_s << "\n";
+        return LogLevel::INFO;
+    }
+
+    std::fstream* open_file(const std::string &fn)
+    {
+        std::fstream* ret = nullptr;
+
+        if (m_log_files.find(fn) != m_log_files.end()) {
+            if (!m_log_files[fn]) {
+                return nullptr;
+            }
+            return m_log_files[fn].get();
+        }
+
+        ret = new std::fstream(fn, std::fstream::out | std::fstream::trunc);
+
+        m_log_files[fn].reset(ret);
+
+        return ret;
+    }
+
+    void setup_logger_banner(Logger &l)
+    {
+        std::stringstream banner;
+        banner << "[" << name() << "]";
+        l.set_custom_banner(banner.str());
+
+        l.set_custom_banner([] (Logger &l, const std::string &banner)
+        {
+            l << format::cyan << banner << format::reset;
+        });
+    }
+
+    void setup_logger(Logger &l, LogTarget target, LogLevel::value lvl,
+                      const std::string log_file)
+    {
+        setup_logger_banner(l);
+
+        switch (target) {
+        case LT_STDOUT:
+            l.set_streams(&std::cout);
+            break;
+
+        case LT_FILE:
+            {
+                std::fstream* file = open_file(log_file);
+
+                if (!*file) {
+                    LOG(APP, ERR) << "Unable to open log file "
+                        << log_file << ". Falling back to stderr\n";
+                } else {
+                    l.set_streams(file);
+                }
+            }
+            break;
+
+        case LT_STDERR:
+            /* Default */
+            break;
+        }
+
+        l.set_log_level(lvl);
+    }
+
+    bool logger_is_custom()
+    {
+        return (!m_params["log-target"].is_default())
+            || (!m_params["log-level"].is_default())
+            || (!m_params["log-file"].is_default());
+    }
+
+    void setup_loggers()
+    {
+        LogTarget log_target;
+        LogLevel::value log_level;
+        std::string log_file;
+        bool debug = false;
+        bool no_custom = false;
+
+        if (m_params.exists("log-file")) {
+            no_custom = !logger_is_custom();
+            log_target = get_log_target(m_params["log-target"].as<std::string>());
+            log_level = get_log_level(m_params["log-level"].as<std::string>());
+            log_file = m_params["log-file"].as<std::string>();
+            debug = m_params["debug"].as<bool>();
+        } else {
+            log_target = LT_STDERR;
+            log_level = LogLevel::INFO;
+            log_file = "";
+        }
+
+        if (debug) {
+            log_level = LogLevel::DEBUG;
+        }
+
         for (int i = 0; i < LogContext::LASTLOGCONTEXT; i++) {
-            std::stringstream banner;
             Logger::get_root_logger(LogContext::value(i)).set_child(m_loggers[i]);
 
-            banner << "[" << name() << "]";
-            m_loggers[i].set_custom_banner(banner.str());
-
-            m_loggers[i].set_custom_banner([] (Logger &l, const std::string &banner) {
-                                              l << format::cyan << banner << format::reset;
-                                           });
+            if (no_custom) {
+                setup_logger_banner(m_loggers[i]);
+            } else {
+                setup_logger(m_loggers[i], log_target, log_level, log_file);
+            }
         }
     }
 
+    void init()
+    {
+        if (m_params.exists("log-file")) {
+            m_params["log-file"].set_default(std::string(name()) + ".log");
+        }
+
+        setup_loggers();
+    }
+
+public:
     Component(sc_core::sc_module_name name, const ComponentParameters &params)
         : ComponentBase(name, params) { init(); }
 
@@ -166,7 +303,7 @@ public:
     virtual void push_sc_thread(std::function<void()> cb) {
         m_pushed_threads.push_back(cb);
     }
-    
+
     /* HasAttributesIface */
     void add_attr(const std::string & key, const std::string & value)
     {

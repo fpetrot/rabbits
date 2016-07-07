@@ -22,9 +22,12 @@
 
 #include <ostream>
 #include <rabbits/config/manager.h>
+#include <rabbits/platform/builder.h>
+#include <rabbits/logger.h>
 
 void print_version(LogLevel::value);
 void print_usage(const char* arg0, ConfigManager &config, PlatformBuilder &p);
 void enum_components(LogLevel::value);
+void dump_systemc_hierarchy(PlatformBuilder &p, Logger &l, LogLevel::value lvl);
 
 #endif

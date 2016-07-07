@@ -114,6 +114,16 @@ public:
         reset_pos();
     }
 
+    void inc_start_col(int inc)
+    {
+        set_start_col(m_start_at + inc);
+    }
+
+    void dec_start_col(int dec)
+    {
+        set_start_col(m_start_at - dec);
+    }
+
     void wrap() {
         m_logger << "\n";
         m_cur = 0;
@@ -167,7 +177,7 @@ public:
                 if (m_cur + int(word.size()) >= m_max_len) {
                     wrap();
                     first = true;
-                } 
+                }
 
                 if (!first) {
                     l << " ";
@@ -242,10 +252,9 @@ private:
     string m_name;
     const ParameterBase &m_param;
 public:
-    UsageEntryAlias(const string &name, const ParameterBase &param) 
+    UsageEntryAlias(const string &name, const ParameterBase &param)
         : m_name(name), m_param(param)
-    {
-    }
+    {}
 
     int left_indent() const { return 2; }
     int left_length() const { return m_name.size() + 1; }
@@ -329,6 +338,26 @@ public:
 };
 
 
+static void _dump_systemc_hierarchy(const sc_core::sc_object &top_level, TextFormatter &f)
+{
+    const vector<sc_core::sc_object*> & children = top_level.get_child_objects();
+    vector<sc_core::sc_object*>::const_iterator it;
+
+    f << top_level.basename() << "\n";
+
+    f.inc_start_col(2);
+    for (it = children.begin(); it != children.end(); it++) {
+        _dump_systemc_hierarchy(**it, f);
+    }
+    f.dec_start_col(2);
+}
+
+void dump_systemc_hierarchy(PlatformBuilder &p, Logger &l, LogLevel::value lvl)
+{
+    TextFormatter f(l, lvl);
+    _dump_systemc_hierarchy(p, f);
+}
+
 static void describe_comp_params(const ComponentParameters &p, TextFormatter &f)
 {
     ComponentParameters::const_iterator it;
@@ -383,27 +412,31 @@ void enum_components(LogLevel::value lvl)
     l.enable_banner(banner_status);
 }
 
-static void add_aliases(ConfigManager &conf, UsageFormatter &usage)
+static void add_aliases(ConfigManager &conf, UsageFormatter &usage, bool advanced)
 {
     const ConfigManager::ParamAliases &aliases = conf.get_param_aliases();
     usage.add_section("Shortcuts");
 
     for (const auto alias : aliases) {
-        usage.add_alias(alias.first, *alias.second);
+        if (advanced || !alias.second->is_advanced()) {
+            usage.add_alias(alias.first, *alias.second);
+        }
     }
 }
 
-static void add_global_parameters(ConfigManager &conf, UsageFormatter &usage)
+static void add_global_parameters(ConfigManager &conf, UsageFormatter &usage, bool advanced)
 {
     const ComponentParameters & globals = conf.get_global_params();
     usage.add_section("Rabbits global parameters");
 
     for (const auto param : globals) {
-        usage.add_param(*param.second);
+        if (advanced || !param.second->is_advanced()) {
+            usage.add_param(*param.second);
+        }
     }
 }
 
-static void add_platform_parameters(PlatformBuilder &p, UsageFormatter &usage)
+static void add_platform_parameters(PlatformBuilder &p, UsageFormatter &usage, bool advanced)
 {
     if (p.is_empty()) {
         return;
@@ -412,7 +445,9 @@ static void add_platform_parameters(PlatformBuilder &p, UsageFormatter &usage)
     usage.add_section("Platform parameters");
     for (auto it = p.comp_begin(); it != p.comp_end(); it++) {
         for (auto param : it->second->get_params()) {
-            usage.add_param(*param.second);
+            if (advanced || !param.second->is_advanced()) {
+                usage.add_param(*param.second);
+            }
         }
     }
 }
@@ -422,12 +457,13 @@ void print_usage(const char* arg0, ConfigManager &conf, PlatformBuilder &p)
     UsageFormatter usage;
 
     bool banner_status = get_app_logger().enable_banner(false);
+    bool advanced = conf.get_global_params()["show-advanced-params"].as<bool>();
 
     LOG(APP, INF) << format::white_b << "Usage: " << arg0 << " [...]\n";
 
-    add_aliases(conf, usage);
-    add_global_parameters(conf, usage);
-    add_platform_parameters(p, usage);
+    add_aliases(conf, usage, advanced);
+    add_global_parameters(conf, usage, advanced);
+    add_platform_parameters(p, usage, advanced);
 
     usage.dump(LogLevel::INFO);
 
