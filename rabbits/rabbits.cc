@@ -64,11 +64,12 @@ static void declare_global_params(ConfigManager &config)
     config.add_global_param("show-systemc-hierarchy",
                             Parameter<bool>("Display the SystemC hierarchy "
                                             "at the end of elaboration and exit",
-                                            false, 
+                                            false,
                                             true));
 
     config.add_global_param("debug",
-                            Parameter<bool>("Set log level to `debug' (equivalent to `-log-level debug')",
+                            Parameter<bool>("Set log level to `debug' "
+                                            "(equivalent to `-log-level debug')",
                                             false));
 
     config.add_global_param("show-version",
@@ -76,27 +77,37 @@ static void declare_global_params(ConfigManager &config)
                                             false));
 
     config.add_global_param("color-output",
-                            Parameter<bool>("Allow usage of colors when the output is a terminal",
+                            Parameter<bool>("Allow usage of colors when the "
+                                            "output is a terminal",
                                             true));
 
+    config.add_global_param("report-non-mapped-access",
+                            Parameter<bool>("Report a simulation error when an initiator tries "
+                                            "to access a memory address that lead to a "
+                                            "non-mapped area on a bus.",
+                                            true));
     /* Logger stuff */
     config.add_global_param("log-target",
-                            Parameter<string>("Specify the log target (valid options are `stdout', `stderr' and `file')",
+                            Parameter<string>("Specify the log target (valid options "
+                                              "are `stdout', `stderr' and `file')",
                                               "stderr"));
     config.add_global_param("log-file",
                             Parameter<string>("Specify the log file",
                                               "rabbits.log"));
     config.add_global_param("log-level",
-                            Parameter<string>("Specify the log level (valid options are `debug', `info', `warning', `error')",
+                            Parameter<string>("Specify the log level (valid options "
+                                              "are `debug', `info', `warning', `error')",
                                               "info"));
     config.add_global_param("log-sim-target",
-                            Parameter<string>("Specify simulation related log target (valid options are `stdout', `stderr' and `file')",
+                            Parameter<string>("Specify simulation related log target "
+                                              "(valid options are `stdout', `stderr' and `file')",
                                               "stderr"));
     config.add_global_param("log-sim-file",
                             Parameter<string>("Specify simulation related log file",
                                               "rabbits.log"));
     config.add_global_param("log-sim-level",
-                            Parameter<string>("Specify simulation related log level (valid options are `debug', `info', `warning', `error')",
+                            Parameter<string>("Specify simulation related log level "
+                                              "(valid options are `debug', `info', `warning', `error')",
                                               "info"));
 }
 

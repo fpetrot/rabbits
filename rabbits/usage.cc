@@ -258,13 +258,28 @@ public:
     {}
 
     int left_indent() const { return 2; }
-    int left_length() const { return m_name.size() + 1; }
+    int left_length() const
+    {
+        int ret = m_name.size() + 1;
+
+        if (!m_param.is_convertible_to<bool>()) {
+            ret += 3 + m_param.get_typeid().size();
+        }
+
+        return ret;
+    }
 
     void print_left(TextFormatter &f)
     {
-        f << "-" 
-          << (m_param.is_advanced() ? format::yellow : format::white) 
-          << m_name << format::reset;
+        f << "-"
+          << (m_param.is_advanced() ? format::yellow : format::white)
+          << m_name;
+
+        if (!m_param.is_convertible_to<bool>()) {
+            f << " " << format::cyan << "<" << m_param.get_typeid() << ">";
+        }
+
+        f << format::reset;
     }
 
     void print_right(TextFormatter &f)
@@ -282,7 +297,7 @@ class UsageEntryParam : public UsageEntry {
 public:
     UsageEntryParam(const ParameterBase &param) : m_param(param)
     {
-        m_left = get_param_full_name(param);
+        m_left = get_param_full_name(param) + " <>" + m_param.get_typeid();
     }
 
     int left_indent() const { return 2; }
@@ -290,8 +305,9 @@ public:
 
     void print_left(TextFormatter &f)
     {
-        f << "-" << m_param.get_namespace() 
-          << "." << (m_param.is_advanced() ? format::yellow : format::green) << m_param.get_name() 
+        f << "-" << m_param.get_namespace()
+          << "." << (m_param.is_advanced() ? format::yellow : format::green) << m_param.get_name() << " "
+          << format::cyan << "<" << m_param.get_typeid() << ">"
           << format::reset;
     }
 
@@ -380,9 +396,9 @@ static void _dump_systemc_hierarchy(const sc_core::sc_object &top_level, TextFor
 {
     const vector<sc_core::sc_object*> & children = top_level.get_child_objects();
 
-    f << (lvls.size() ? ((lvls.size() > 1) ? format::white : format::cyan) : format::red) << top_level.basename() 
-      << format::reset << ":" 
-      << format::black << top_level.kind() 
+    f << (lvls.size() ? ((lvls.size() > 1) ? format::white : format::cyan) : format::red) << top_level.basename()
+      << format::reset << ":"
+      << format::black << top_level.kind()
       << format::reset << "\n";
 
     for (auto &c : children) {

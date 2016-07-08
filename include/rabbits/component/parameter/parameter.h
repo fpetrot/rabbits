@@ -27,6 +27,7 @@
 
 #include <string>
 #include <sstream>
+#include <typeindex>
 
 #include "param_data.h"
 
@@ -166,6 +167,11 @@ public:
      * @return true if the parameter is marked as advanced, false otherwise.
      */
     bool is_advanced() const { return m_advanced; }
+
+    /**
+     * @brief Get the type ID associated to the data of this paramater
+     */
+    std::string get_typeid() const { return m_data->get_typeid(); }
 };
 
 /**
