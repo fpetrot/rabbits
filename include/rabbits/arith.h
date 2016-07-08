@@ -26,6 +26,11 @@
  */
 
 #include <inttypes.h>
+#include <set>
+#include <vector>
+#include <iterator>
+
+#include "rabbits/datatypes/address_range.h"
 
 /**
  * @brief Arithmetic and logic helpers class.
@@ -33,7 +38,7 @@
 class Arith {
 public:
     /**
-     * @brief Find the last set bit in a 32-bit word. 
+     * @brief Find the last set bit in a 32-bit word.
      *
      * Find the last set bit in a 32-bit word.
      * The result is undefined if w equals 0.
@@ -44,6 +49,35 @@ public:
      */
     static int fls32(uint32_t w) {
         return (sizeof(w) << 3) - __builtin_clz(w) - 1;
+    }
+
+private:
+    class AddressRangeOrder {
+    public:
+        bool operator() (const AddressRange &a, const AddressRange &b) const {
+            return a.begin() < b.begin();
+        }
+    };
+
+public:
+    static void neg_memmap32(const std::vector<AddressRange> &map,
+                             std::vector<AddressRange> &out)
+    {
+        std::set<AddressRange, AddressRangeOrder> in;
+        uint64_t cur = 0;
+
+        std::copy(map.begin(), map.end(), std::inserter(in, in.begin()));
+
+        for (const AddressRange &r : in) {
+            if (r.begin() > cur) {
+                out.push_back(AddressRange(cur, r.begin() - cur));
+            }
+            cur = r.end() + 1;
+        }
+
+        if (cur < 0xffffffff) {
+            out.push_back(AddressRange(cur, 0xffffffff - cur + 1));
+        }
     }
 };
 #endif
