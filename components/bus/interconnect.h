@@ -25,11 +25,12 @@
 #include <systemc>
 #include <tlm>
 
+#include <rabbits/component/component.h>
 #include <rabbits/logger.h>
 
 template <unsigned int BUSWIDTH = 32>
 class Interconnect
-    : public sc_core::sc_module
+    : public Component
     , public tlm::tlm_fw_transport_if<>
     , public tlm::tlm_bw_transport_if<>
 {
@@ -73,8 +74,8 @@ protected:
 
 public:
     SC_HAS_PROCESS(Interconnect);
-    Interconnect(sc_core::sc_module_name name) 
-        : sc_core::sc_module(name)
+    Interconnect(sc_core::sc_module_name name)
+        : Component(name)
         , m_target("bus_target_socket")
         , m_initiator("bus_initiator_socket")
     {
@@ -140,7 +141,7 @@ public:
                                                tlm::tlm_phase& phase,
                                                sc_core::sc_time& t)
     {
-        LOG_F(SIM, ERR, "Non-blocking transport not implemented\n");
+        MLOG_F(SIM, ERR, "Non-blocking transport not implemented\n");
         abort();
         return tlm::TLM_COMPLETED;
     }
@@ -154,9 +155,10 @@ public:
 
         int target_index = decode_address(trans.get_address(), offset);
         if (target_index == -1) {
-            LOG_F(APP, ERR, "Cannot find slave at address %" PRIx64 "\n",
-		  static_cast<uint64_t>(trans.get_address()));
+            MLOG_F(SIM, ERR, "Cannot find target at address 0x%" PRIx64 "\n",
+                   static_cast<uint64_t>(trans.get_address()));
             trans.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
+            return;
         }
 
         trans.set_address(trans.get_address() - offset);
@@ -185,7 +187,7 @@ public:
                                                tlm::tlm_phase& phase,
                                                sc_core::sc_time& t)
     {
-        LOG_F(SIM, ERR, "Non-blocking transport not implemented\n");
+        MLOG_F(SIM, ERR, "Non-blocking transport not implemented\n");
         abort();
         return tlm::TLM_COMPLETED;
     }
@@ -193,7 +195,7 @@ public:
     virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range,
                                            sc_dt::uint64 end_range)
     {
-        LOG_F(SIM, ERR, "DMI memory invalidation not implemented\n");
+        MLOG_F(SIM, ERR, "DMI memory invalidation not implemented\n");
         abort();
     }
 
