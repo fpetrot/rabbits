@@ -26,6 +26,7 @@
 #include <tlm>
 
 #include <rabbits/component/component.h>
+#include <rabbits/config/manager.h>
 #include <rabbits/logger.h>
 
 template <unsigned int BUSWIDTH = 32>
@@ -155,8 +156,11 @@ public:
 
         int target_index = decode_address(trans.get_address(), offset);
         if (target_index == -1) {
-            MLOG_F(SIM, ERR, "Cannot find target at address 0x%" PRIx64 "\n",
-                   static_cast<uint64_t>(trans.get_address()));
+            ComponentParameters & globals = ConfigManager::get_manager().get_global_params();
+            if (globals["report-non-mapped-access"].as<bool>()) {
+                MLOG_F(SIM, ERR, "Cannot find target at address 0x%" PRIx64 "\n",
+                       static_cast<uint64_t>(trans.get_address()));
+            }
             trans.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
             return;
         }

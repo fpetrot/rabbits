@@ -85,6 +85,7 @@ static void declare_global_params(ConfigManager &config)
                             Parameter<bool>("Report a simulation error when an initiator tries "
                                             "to access a memory address that lead to a "
                                             "non-mapped area on a bus.",
+                                            true,
                                             true));
     /* Logger stuff */
     config.add_global_param("log-target",
