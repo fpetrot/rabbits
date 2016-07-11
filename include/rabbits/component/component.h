@@ -225,7 +225,8 @@ protected:
     {
         return (!m_params["log-target"].is_default())
             || (!m_params["log-level"].is_default())
-            || (!m_params["log-file"].is_default());
+            || (!m_params["log-file"].is_default())
+            || (!m_params["debug"].is_default());
     }
 
     void setup_loggers()
