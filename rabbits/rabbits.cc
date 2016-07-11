@@ -114,7 +114,7 @@ static void declare_global_params(ConfigManager &config)
 
 static void declare_aliases(ConfigManager &config)
 {
-    ComponentParameters &p = config.get_global_params();
+    Parameters &p = config.get_global_params();
 
     config.add_param_alias("help",              p["show-help"]);
     config.add_param_alias("help-advanced",     p["show-advanced-params"]);
@@ -208,7 +208,7 @@ static void setup_logger(Logger &l, LogTarget target, LogLevel::value lvl,
     l.set_log_level(lvl);
 }
 
-static inline bool sim_logger_is_custom(ComponentParameters &g)
+static inline bool sim_logger_is_custom(Parameters &g)
 {
     return (!g["log-sim-target"].is_default())
         || (!g["log-sim-level"].is_default())
@@ -217,7 +217,7 @@ static inline bool sim_logger_is_custom(ComponentParameters &g)
 
 static void setup_loggers(ConfigManager &config, LogFiles &files)
 {
-    ComponentParameters &p = config.get_global_params();
+    Parameters &p = config.get_global_params();
     Logger &app = get_app_logger();
     Logger &sim = get_sim_logger();
 
@@ -263,7 +263,7 @@ int sc_main(int argc, char *argv[])
 
     config.add_cmdline(argc, argv);
 
-    ComponentParameters &globals = config.get_global_params();
+    Parameters &globals = config.get_global_params();
 
     LogFiles log_files;
 

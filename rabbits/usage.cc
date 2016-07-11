@@ -435,9 +435,9 @@ void dump_systemc_hierarchy(PlatformBuilder &p, LogLevel::value lvl)
     l.enable_banner(banner_status);
 }
 
-static void describe_comp_params(const ComponentParameters &p, TextFormatter &f)
+static void describe_comp_params(const Parameters &p, TextFormatter &f)
 {
-    ComponentParameters::const_iterator it;
+    Parameters::const_iterator it;
 
     for (it = p.begin(); it != p.end(); it++) {
         f.set_start_col(4);
@@ -450,7 +450,7 @@ static void describe_comp_params(const ComponentParameters &p, TextFormatter &f)
 
 static void describe_component(ComponentFactory &c, TextFormatter &f)
 {
-    const ComponentParameters & p = c.get_params();
+    const Parameters & p = c.get_params();
 
     f.set_start_col(2);
     f << format::cyan << "type: " << format::reset << c.type() << "\n";
@@ -502,7 +502,7 @@ static void add_aliases(ConfigManager &conf, UsageFormatter &usage, bool advance
 
 static void add_global_parameters(ConfigManager &conf, UsageFormatter &usage, bool advanced)
 {
-    const ComponentParameters & globals = conf.get_global_params();
+    const Parameters & globals = conf.get_global_params();
     usage.add_section("Rabbits global parameters");
 
     for (const auto param : globals) {

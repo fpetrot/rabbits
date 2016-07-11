@@ -41,7 +41,7 @@ private:
 
 public:
     SC_HAS_PROCESS(NullCharDevice);
-    NullCharDevice(sc_core::sc_module_name n, ComponentParameters &p) 
+    NullCharDevice(sc_core::sc_module_name n, Parameters &p) 
         : Component(n, p), m_port("uart")
     {
         SC_THREAD(recv_thread);

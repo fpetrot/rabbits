@@ -338,7 +338,7 @@ template <unsigned int BUSWIDTH = 32>
 class Slave : public Component, public SlaveTraits<BUSWIDTH> {
 public:
     explicit Slave(sc_core::sc_module_name name) : Component(name) {}
-    Slave(sc_core::sc_module_name name, ComponentParameters &params) : Component(name, params) {}
+    Slave(sc_core::sc_module_name name, Parameters &params) : Component(name, params) {}
 
     virtual ~Slave() {}
 };

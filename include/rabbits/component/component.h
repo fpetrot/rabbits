@@ -274,7 +274,7 @@ protected:
     }
 
 public:
-    Component(sc_core::sc_module_name name, const ComponentParameters &params)
+    Component(sc_core::sc_module_name name, const Parameters &params)
         : ComponentBase(name, params) { init(); }
 
     Component(sc_core::sc_module_name name) : ComponentBase(name) { init(); }

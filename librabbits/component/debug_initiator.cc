@@ -24,7 +24,7 @@ DebugInitiator::DebugInitiator(sc_core::sc_module_name n) : Master(n)
 {
 }
 
-DebugInitiator::DebugInitiator(sc_core::sc_module_name n, ComponentParameters &cp) : Master(n, cp)
+DebugInitiator::DebugInitiator(sc_core::sc_module_name n, Parameters &cp) : Master(n, cp)
 {
 }
 

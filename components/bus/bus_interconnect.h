@@ -38,7 +38,7 @@ protected:
 public:
     TlmBusPort<> bus;
 
-    BusInterconnect(sc_core::sc_module_name name, ComponentParameters &params)
+    BusInterconnect(sc_core::sc_module_name name, Parameters &params)
         : Component(name, params)
         , m_interco("interco")
         , bus("bus", *this) {}

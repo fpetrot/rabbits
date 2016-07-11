@@ -156,7 +156,7 @@ public:
 
         int target_index = decode_address(trans.get_address(), offset);
         if (target_index == -1) {
-            ComponentParameters & globals = ConfigManager::get_manager().get_global_params();
+            Parameters & globals = ConfigManager::get_manager().get_global_params();
             if (globals["report-non-mapped-access"].as<bool>()) {
                 MLOG_F(SIM, ERR, "Cannot find target at address 0x%" PRIx64 "\n",
                        static_cast<uint64_t>(trans.get_address()));

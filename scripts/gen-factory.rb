@@ -43,7 +43,7 @@ PARAM_TPL=(' ' * 8) + 'add_param("%{name}", Parameter<%{type}>("%{description}",
 
 DISCOVER_TPL=(' ' * 4) +
    'virtual void discover(const std::string &name, const PlatformDescription &params) {
-        ComponentParameters cp = get_params();
+        Parameters cp = get_params();
         cp.fill_from_description(params);
 
         %{class}::discover(name, cp);
@@ -67,7 +67,7 @@ public:
 
 %{discover}
     ComponentBase * create(const std::string & name, const PlatformDescription &params) {
-        ComponentParameters cp = get_params();
+        Parameters cp = get_params();
         cp.fill_from_description(params);
         cp.set_namespace("components." + name);
 

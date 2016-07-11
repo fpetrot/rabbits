@@ -28,7 +28,7 @@
 #include <string>
 #include <vector>
 
-#include "parameters.h"
+#include "rabbits/module/parameters.h"
 #include "manager.h"
 
 class ComponentBase;
@@ -41,7 +41,7 @@ class ComponentBase;
  */
 class ComponentFactory {
 private:
-    ComponentParameters m_params;
+    Parameters m_params;
 
     ComponentFactory(const ComponentFactory&);
     ComponentFactory & operator=(const ComponentFactory&);
@@ -140,7 +140,7 @@ public:
      *
      * @return the components parameters and default values.
      */
-    ComponentParameters get_params() { return m_params; }
+    Parameters get_params() { return m_params; }
 };
 
 #endif

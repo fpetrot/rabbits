@@ -24,7 +24,7 @@
 #include <vector>
 #include <map>
 
-#include "rabbits/component/parameters.h"
+#include "rabbits/module/parameters.h"
 #include "rabbits/platform/description.h"
 
 namespace boost {
@@ -47,7 +47,7 @@ private:
 
     Platforms m_platforms;
 
-    ComponentParameters m_global_params;
+    Parameters m_global_params;
 
     std::vector<std::string> m_dynlibs_to_load;
     std::set<std::string> m_loaded_config_files;
@@ -86,7 +86,7 @@ public:
     void add_param_alias(const std::string &alias_key, ParameterBase &dest);
     const ParamAliases & get_param_aliases() const { return m_aliases; }
     void add_global_param(const std::string &key, const ParameterBase &param);
-    ComponentParameters & get_global_params();
+    Parameters & get_global_params();
     
     void get_dynlibs_to_load(std::vector<std::string> &dynlibs) const;
 

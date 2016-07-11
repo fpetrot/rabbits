@@ -17,11 +17,11 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "rabbits/component/parameters.h"
+#include "rabbits/module/parameters.h"
 
-ComponentParameters ComponentParameters::EMPTY;
+Parameters Parameters::EMPTY;
 
-ComponentParameters::ComponentParameters(const ComponentParameters &p)
+Parameters::Parameters(const Parameters &p)
 {
     const_iterator it;
     
@@ -33,7 +33,7 @@ ComponentParameters::ComponentParameters(const ComponentParameters &p)
     }
 }
 
-void ComponentParameters::fill_from_description(const PlatformDescription &p)
+void Parameters::fill_from_description(const PlatformDescription &p)
 {
     PlatformDescription::const_iterator it;
     m_descr = p;

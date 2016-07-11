@@ -25,7 +25,7 @@
 #include <systemc>
 #include <tlm>
 
-#include "parameters.h"
+#include "rabbits/module/parameters.h"
 #include "port.h"
 #include "rabbits/rabbits_exception.h"
 #include "rabbits/datatypes/address_range.h"
@@ -63,10 +63,10 @@ public:
     typedef std::map<std::string, std::string> Attributes;
 
 protected:
-    ComponentParameters m_params;
+    Parameters m_params;
 
 public:
-    ComponentBase(sc_core::sc_module_name name, const ComponentParameters &params)
+    ComponentBase(sc_core::sc_module_name name, const Parameters &params)
         : sc_core::sc_module(name)
         , m_params(params)
     {}
@@ -82,6 +82,6 @@ public:
      *
      * @return the component parameters.
      */
-    const ComponentParameters & get_params() { return m_params; }
+    const Parameters & get_params() { return m_params; }
 };
 #endif

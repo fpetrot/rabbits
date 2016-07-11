@@ -19,7 +19,7 @@
 
 /**
  * @file parameters.h
- * @brief ComponentParameters class declaration.
+ * @brief Parameters class declaration.
  */
 
 #ifndef _UTILS_COMPONENT_PARAMETERS_H
@@ -32,7 +32,7 @@
 /**
  * @brief Component parameters collection.
  */
-class ComponentParameters {
+class Parameters {
 public:
     typedef std::map<std::string, ParameterBase*>::iterator iterator;
     typedef std::map<std::string, ParameterBase*>::const_iterator const_iterator;
@@ -57,11 +57,11 @@ protected:
     std::string m_namespace;
 
 public:
-    ComponentParameters() {}
-    ComponentParameters(const std::string &params_namespace) : m_namespace(params_namespace) {}
-    ComponentParameters(const ComponentParameters &);
+    Parameters() {}
+    Parameters(const std::string &params_namespace) : m_namespace(params_namespace) {}
+    Parameters(const Parameters &);
 
-    virtual ~ComponentParameters() {
+    virtual ~Parameters() {
         iterator it;
 
         for (it = m_pool.begin(); it != m_pool.end(); it++) {
@@ -179,7 +179,7 @@ public:
     /**
      * @brief The empty parameters collection.
      */
-    static ComponentParameters EMPTY;
+    static Parameters EMPTY;
 };
 
 #endif

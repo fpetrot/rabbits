@@ -285,7 +285,7 @@ void ConfigManager::add_global_param(const string &key, const ParameterBase &par
     m_global_params.add(key, param);
 }
 
-ComponentParameters & ConfigManager::get_global_params()
+Parameters & ConfigManager::get_global_params()
 {
     return m_global_params;
 }
