@@ -27,7 +27,7 @@
 #include <systemc>
 
 #include "rabbits/test/comparator.h"
-#include "rabbits/component/component_base.h"
+#include "rabbits/component/component.h"
 #include "rabbits/rabbits_exception.h"
 #include "rabbits/logger.h"
 

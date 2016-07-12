@@ -29,7 +29,9 @@
 #include <map>
 #include <string>
 
-class ComponentFactory;
+#include "rabbits/module/manager.h"
+
+#include "factory.h"
 
 /**
  * @brief Component manager
@@ -37,49 +39,29 @@ class ComponentFactory;
  * Handles the components collection. Allows for searching a component by type
  * or by name and returns the corresponding component factory.
  */
-class ComponentManager {
-public:
-    typedef std::map<std::string, ComponentFactory*>::iterator iterator;
-    typedef std::map<std::string, ComponentFactory*>::const_iterator const_iterator;
-
-private:
-    static ComponentManager *m_inst;
-    ComponentManager();
-
-    /* Non-copyable */
-    ComponentManager(const ComponentManager&);
-    ComponentManager & operator=(const ComponentManager&);
-
+class ComponentManager : public ModuleManager<ComponentFactoryBase> {
 protected:
-    std::vector<ComponentFactory*> m_pool;
-    std::map<std::string, ComponentFactory*> m_by_name;
-    std::map<std::string, std::vector<ComponentFactory*> > m_by_type;
+    Factories m_by_type;
 
 public:
+    ComponentManager() {};
     virtual ~ComponentManager() {}
 
-    /**
-     * @brief Return the singleton instance of the component manager.
-     *
-     * @return the component manager.
-     */
-    static ComponentManager & get();
+    void register_factory(Factory f)
+    {
+        ModuleManager<ComponentFactoryBase>::register_factory(f);
 
-    /**
-     * @brief Called by the factories to register themselves.
-     *
-     * @param ComponentFactory the factory tho register.
-     */
-    void register_component(ComponentFactory*);
+        if (type_exists(f->get_type())) {
+            LOG(APP, WRN) << "Two components with the same type, priority not yet implemented.\n";
+        }
 
-    /**
-     * @brief Find a component given its name
-     *
-     * @param name The component name.
-     *
-     * @return the component factory associated to the name, NULL if not found.
-     */
-    ComponentFactory* find_by_name(const std::string & name);
+        m_by_type[f->get_type()] = f;
+    }
+
+    bool type_exists(const std::string &type) const
+    {
+        return m_by_type.find(type) != m_by_type.end();
+    }
 
     /**
      * @brief Find a component given its type
@@ -88,35 +70,14 @@ public:
      *
      * @return the component factory associated to the type, NULL if not found.
      */
-    ComponentFactory* find_by_type(const std::string & type);
+    Factory find_by_type(const std::string & type)
+    {
+        if (!type_exists(type)) {
+            throw FactoryNotFoundException(type);
+        }
 
-    /**
-     * @brief Return an iterator to the first registered component factory.
-     *
-     * @return an iterator to the first registered component factory.
-     */
-    iterator begin() { return m_by_name.begin(); }
-
-    /**
-     * @brief Return an iterator to the <i>past-the-end</i> registered component factory.
-     *
-     * @return an iterator to the <i>past-the-end</i> registered component factory.
-     */
-    iterator end() {  return m_by_name.end(); } 
-
-    /**
-     * @brief Return an constant iterator to the first registered component factory.
-     *
-     * @return an iterator to the first registered component factory.
-     */
-    const_iterator begin() const { return m_by_name.begin(); }
-
-    /**
-     * @brief Return an constant iterator to the <i>past-the-end</i> registered component factory.
-     *
-     * @return an iterator to the <i>past-the-end</i> registered component factory.
-     */
-    const_iterator end() const { return m_by_name.end(); }
+        return m_by_type[type];
+    }
 };
 
 #endif

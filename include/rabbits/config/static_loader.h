@@ -17,6 +17,14 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "rabbits/component/factory.h"
+#ifndef _RABBITS_CONFIG_STATIC_LOADER_H
+#define _RABBITS_CONFIG_STATIC_LOADER_H
 
-//std::vector<ComponentFactory *> * ComponentFactory::m_insts = NULL;
+class ConfigManager;
+
+class StaticLoader {
+public:
+    static void load(ConfigManager &config);
+};
+
+#endif

@@ -25,8 +25,9 @@ std::set<TestFactory*> * TestFactory::m_insts = NULL;
 ComponentBase * Test::create_component_by_name(const string name,
                                                const string yml_params)
 {
-    ComponentManager &cm = ComponentManager::get();
-    ComponentFactory *cf = cm.find_by_name(name);
+    //ComponentManager &cm = ComponentManager::get();
+    ComponentManager cm;
+    ComponentManager::Factory cf = cm.find_by_name(name);
     PlatformDescription descr;
 
     if (cf == NULL) {
@@ -138,8 +139,8 @@ int sc_main(int argc, char *argv[])
     }
 
     dyn_loader.search_and_load_rabbits_dynlibs();
-    ComponentManager::get(); /* Force instantiation of ComponentManager
-                                and registration of components before forking */
+    //ComponentManager::get(); [> Force instantiation of ComponentManager
+                                //and registration of components before forking */
 
     load_test_module();
 

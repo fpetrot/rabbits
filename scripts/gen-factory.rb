@@ -16,6 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 require 'psych'
+require 'optparse'
 
 PLUGIN_HEADER_TPL='
 #include <rabbits/plugin/factory.h>
@@ -56,26 +57,16 @@ COMPONENT_HEADER_TPL='
 namespace autogen {
 namespace component {
 
-class %{factory_class} : public ComponentFactory {
+class %{factory_class} : public ComponentFactory<%{class}> {
 public:
-    %{factory_class}() {
+    %{factory_class}() : ComponentFactory<%{class}>("%{name}", "%{description}", "%{type}") {
 %{parameters}
     }
 
     virtual ~%{factory_class}() {}
 
 %{discover}
-    ComponentBase * create(const std::string & name, const PlatformDescription &params) {
-        Parameters cp = get_params();
-        cp.fill_from_description(params);
-        cp.set_namespace("components." + name);
 
-        return new %{class}(name.c_str(), cp);
-    }
-
-    virtual std::string name() { return "%{name}"; }
-    virtual std::string type() { return "%{type}"; }
-    virtual std::string description() { return "%{description}"; }
 };
 
 }; /* namespace component */
@@ -90,6 +81,18 @@ static autogen::%{kind}::%{factory_class} %{factory_class}_inst;
 
 DYNAMIC_COMP_INST_TPL=(' ' * 8) + 'm_comp_insts.push_back(new autogen::component::%{factory_class});'
 DYNAMIC_PLUGIN_INST_TPL=(' ' * 8) + 'm_plugin_insts.push_back(new autogen::plugin::%{factory_class});'
+
+STATIC_LOADER_TPL='
+#include "rabbits/config/static_loader.h"
+#include "rabbits/config/manager.h"
+
+%{includes}
+
+void StaticLoader::load(ConfigManager &c)
+{
+%{create_insts}
+}
+'
 
 DYNAMIC_LOADER_TPL='
 #include <vector>
@@ -108,7 +111,7 @@ static RabbitsDynLoader *inst = NULL;
 
 class RabbitsDynLoader {
 protected:
-    std::vector<ComponentFactory*> m_comp_insts;
+    std::vector<ComponentFactoryBase*> m_comp_insts;
     std::vector<PluginFactory*> m_plugin_insts;
 
     void create_insts() {
@@ -116,7 +119,7 @@ protected:
     }
 
     void destroy_insts() {
-        std::vector<ComponentFactory*>::iterator cit;
+        std::vector<ComponentFactoryBase*>::iterator cit;
         for (cit = m_comp_insts.begin(); cit != m_comp_insts.end(); cit++) {
             delete *cit;
         }
@@ -440,6 +443,67 @@ def usage
   exit 1
 end
 
+class ParseArgs
+  attr_accessor :mode, :out, :source_dir, :build_dir, :in_files, :modname, :modver
+  
+  def initialize
+    out_file = nil
+
+    OptionParser.new do |parser|
+      parser.banner = "gen-factory [options] in.yml [...]"
+
+      parser.separator("")
+      parser.separator("Mode selection:")
+
+      parser.on("--factory", "Factory generation mode") do
+        @mode = :factory
+      end
+
+      parser.on("--static-loader", "Static loader generation mode") do
+        @mode = :static
+      end
+
+      parser.on("--dyn-loader", "Dynamic loader generation mode") do
+        @mode = :dynamic
+      end
+
+      parser.separator("")
+      parser.separator("Static and dynamic loader mode options:")
+
+      parser.on("-s SOURCE_DIR", "Source directory") do |dir|
+        @source_dir = dir
+      end
+
+      parser.on("-b BUILD_DIR", "Build directory") do |dir|
+        @build_dir = dir
+      end
+
+      parser.on("-m MODULE_NAME", "Module name") do |name|
+        @modname = name
+      end
+
+      parser.on("-m MODULE_VERSION", "Module version") do |ver|
+        @modver = ver
+      end
+
+      parser.on("-o OUTPUT", "Output file") do |out|
+        @out = out
+      end
+
+    end.parse!
+
+    @in_files = ARGV
+
+    raise StandardError.new("Missing input file(s)") if @in_files.empty?
+
+    if out_file
+      @out = File.open(out_file, "w")
+    else
+      @out = STDOUT
+    end
+  end
+end
+
 def parse_args
   mode = :factory
   state = :mode
@@ -615,10 +679,17 @@ def load_yml(f, generic_component)
 end
 
 begin
-  mode, out, in_files = parse_args
+  #mode, out, in_files = parse_args
+  args = ParseArgs.new
+
+  puts args.mode
+  puts args.out
+  puts ARGV
+  exit
+
   generic_component = Psych.load(GENERIC_COMPONENT_YML)
 
-  comps = in_files.collect do |f|
+  comps = args.in_files.collect do |f|
     yml = load_yml(f, generic_component)
     case yml.keys.first
     when "component"
@@ -631,15 +702,15 @@ begin
     end
   end
 
-  out.puts '/* Auto-generated. Modifications will be overwritten */'
+  args.out.puts '/* Auto-generated. Modifications will be overwritten */'
 
-  case mode
+  case args.mode
   when :factory
-    out.puts comps.first.gen_factory
+    args.out.puts comps.first.gen_factory
 
   when :static
     comps.each do |c|
-      out.puts c.gen_static_inst
+      args.out.puts c.gen_static_inst
     end
 
   when :dynamic
@@ -650,15 +721,15 @@ begin
       includes += c.get_print_args[:self_include] + "\n"
     end
 
-    out.puts DYNAMIC_LOADER_TPL % {
+    args.out.puts DYNAMIC_LOADER_TPL % {
       :includes => includes,
       :create_insts => insts,
-      :module_name => cc_ify($modname),
-      :module_version => $modver
+      :module_name => cc_ify(args.modname),
+      :module_version => args.modver
     }
   end
 
-  out.close if out != STDOUT
+  args.out.close if args.out != STDOUT
 
 #rescue Exception => e
   #STDERR.puts e.message

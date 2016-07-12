@@ -182,4 +182,15 @@ public:
     static Parameters EMPTY;
 };
 
+
+class HasParametersIface {
+public:
+    /**
+     * @brief Return the component parameters.
+     *
+     * @return the component parameters.
+     */
+    virtual const Parameters & get_params() const = 0;
+};
+
 #endif

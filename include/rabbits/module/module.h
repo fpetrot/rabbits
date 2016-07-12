@@ -17,6 +17,14 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "rabbits/component/factory.h"
+#ifndef _RABBITS_MODULE_MODULE_H
+#define _RABBITS_MODULE_MODULE_H
 
-//std::vector<ComponentFactory *> * ComponentFactory::m_insts = NULL;
+#include "rabbits/logger.h"
+#include "parameters.h"
+
+class ModuleIface
+    : public HasParametersIface
+    , public HasLoggerIface {};
+
+#endif

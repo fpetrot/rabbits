@@ -18,7 +18,7 @@
  */
 
 #include "rabbits/component/port.h"
-#include "rabbits/component/component_base.h"
+#include "rabbits/component/component.h"
 
 using namespace sc_core;
 

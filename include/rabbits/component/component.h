@@ -29,12 +29,52 @@
 #include <utility>
 #include <vector>
 #include <sstream>
-#include <systemc>
 #include <memory>
 #include <fstream>
 
-#include "component_base.h"
+#include <systemc>
+
+#include "rabbits/module/module.h"
+
+#include "port.h"
 #include "rabbits/rabbits_exception.h"
+#include "rabbits/datatypes/address_range.h"
+#include "rabbits/platform/description.h"
+
+
+/**
+ * @brief Exception raised when a named component has not been found.
+ */
+class ComponentNotFoundException : public RabbitsException {
+protected:
+    std::string make_what(std::string comp) { return "Component `" + comp + "` not found."; }
+public:
+    explicit ComponentNotFoundException(const std::string & comp) : RabbitsException(make_what(comp)) {}
+    virtual ~ComponentNotFoundException() throw() {}
+};
+
+
+class HasAttributesIface
+{
+public:
+    virtual void add_attr(const std::string & key, const std::string & value) = 0;
+    virtual bool has_attr(const std::string & key) = 0;
+    virtual std::string get_attr(const std::string & key) = 0;
+};
+
+
+/**
+ * @brief Component base class.
+ */
+class ComponentBase
+    : public sc_core::sc_module
+    , public ModuleIface
+    , public HasPortIface
+    , public HasAttributesIface {
+public:
+    ComponentBase(sc_core::sc_module_name name) : sc_core::sc_module(name) {}
+};
+
 
 /**
  * @brief A rabbits component.
@@ -56,10 +96,13 @@ public:
 
     typedef std::unique_ptr<std::fstream> LogFile;
     typedef std::map<std::string, LogFile> LogFiles;
+    typedef std::map<std::string, std::string> Attributes;
 
     SC_HAS_PROCESS(Component);
 
 protected:
+    Parameters m_params;
+
     std::map<std::string, Port*> m_ports;
     std::vector< std::function<void() > > m_pushed_threads;
     LogFiles m_log_files;
@@ -275,7 +318,7 @@ protected:
 
 public:
     Component(sc_core::sc_module_name name, const Parameters &params)
-        : ComponentBase(name, params) { init(); }
+        : ComponentBase(name) { init(); }
 
     Component(sc_core::sc_module_name name) : ComponentBase(name) { init(); }
 
@@ -304,6 +347,10 @@ public:
     virtual void push_sc_thread(std::function<void()> cb) {
         m_pushed_threads.push_back(cb);
     }
+
+
+    /* HasParametersIface */
+    const Parameters & get_params() const { return m_params; }
 
     /* HasAttributesIface */
     void add_attr(const std::string & key, const std::string & value)

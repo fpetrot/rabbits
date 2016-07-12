@@ -17,6 +17,11 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "rabbits/component/factory.h"
+#include "rabbits/module/namespace.h"
 
-//std::vector<ComponentFactory *> * ComponentFactory::m_insts = NULL;
+const Namespace Namespace::namespaces[] {
+    [COMPONENT] = Namespace(COMPONENT, "components"),
+    [PLUGIN] = Namespace(PLUGIN, "plugins"),
+    [BACKEND] = Namespace(BACKEND, "backends"),
+};
+

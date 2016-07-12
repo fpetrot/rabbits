@@ -28,8 +28,7 @@
 #include <string>
 #include <vector>
 
-#include "rabbits/module/parameters.h"
-#include "manager.h"
+#include "rabbits/module/factory.h"
 
 class ComponentBase;
 
@@ -39,55 +38,18 @@ class ComponentBase;
  * Note that component factories are automatically generated from the component
  * YAML description.
  */
-class ComponentFactory {
+class ComponentFactoryBase : public ModuleFactory<ComponentBase> {
 private:
-    Parameters m_params;
-
-    ComponentFactory(const ComponentFactory&);
-    ComponentFactory & operator=(const ComponentFactory&);
-
-    static std::vector<ComponentFactory *> *m_insts;
+    std::string m_type;
 
 protected:
-    ComponentFactory() {
-        if (m_insts == NULL) {
-            m_insts = new std::vector<ComponentFactory*>;
-        }
-        m_insts->push_back(this);
-    }
-
-    template <typename T>
-    void add_param(const std::string &name, const T &p) {
-        m_params.add(name, p);
-    }
-
+    ComponentFactoryBase(const std::string & name, const std::string & description, const std::string & type) 
+        : ModuleFactory<ComponentBase>(name, description, Namespace::get(Namespace::COMPONENT))
+        , m_type(type)
+    {}
 
 public:
-    /**
-     * @brief Called by the ComponentManager to register the components at runtime.
-     */
-    static void register_components() {
-        std::vector<ComponentFactory*>::iterator it;
-
-        if (m_insts == NULL) {
-            return;
-        }
-
-        for (it = m_insts->begin(); it != m_insts->end(); it++) {
-            ComponentManager::get().register_component(*it);
-        }
-    }
-
-    virtual ~ComponentFactory() {}
-
-    /**
-     * @brief Return the name of the component.
-     *
-     * Return the name of the component associated to this factory.
-     *
-     * @return the name of the component.
-     */
-    virtual std::string name() = 0;
+    virtual ~ComponentFactoryBase() {}
 
     /**
      * @brief Return the type of the component.
@@ -96,16 +58,7 @@ public:
      *
      * @return the type of the component.
      */
-    virtual std::string type() = 0;
-
-    /**
-     * @brief Return the description of the component.
-     *
-     * Return the description of the component associated to this factory.
-     *
-     * @return the description of the component.
-     */
-    virtual std::string description() = 0;
+    std::string get_type() const { return m_type; }
 
     /**
      * @brief Called during the PlatformBuilder discovery phase.
@@ -121,26 +74,23 @@ public:
      * @param params The parameters of the future component.
      */
     virtual void discover(const std::string &name, const PlatformDescription &params) {}
-
-    /**
-     * @brief Creates a component associated to this factory and returns it.
-     *
-     * @param name The component name.
-     * @param params The component parameter.
-     *
-     * @return The newly created component.
-     */
-    virtual ComponentBase* create(const std::string &name, const PlatformDescription &params) = 0;
-
-    /**
-     * @brief Return the parameters of the components associated to this factory.
-     *
-     * This method allows to discover the parameters of a component associated
-     * to this factory, and their default values.
-     *
-     * @return the components parameters and default values.
-     */
-    Parameters get_params() { return m_params; }
 };
 
+
+template <class TComponent>
+class ComponentFactory : public ComponentFactoryBase {
+protected:
+    virtual TComponent * create(const std::string & name, Parameters & params) 
+    {
+        return new TComponent(name.c_str(), params);
+    }
+
+    ComponentFactory(const std::string & name, const std::string & description,
+                     const std::string & type)
+        : ComponentFactoryBase(name, description, type)
+    {}
+
+public:
+    virtual ~ComponentFactory() {}
+};
 #endif

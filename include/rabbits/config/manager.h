@@ -26,6 +26,8 @@
 
 #include "rabbits/module/parameters.h"
 #include "rabbits/platform/description.h"
+#include "rabbits/component/manager.h"
+#include "rabbits/plugin/manager.h"
 
 namespace boost {
     namespace filesystem {
@@ -40,6 +42,9 @@ public:
 
 private:
     static ConfigManager *m_manager;
+
+    ComponentManager m_components;
+    //PluginManager m_plugins;
 
     PlatformDescription m_root_descr;
     PlatformDescription m_cmdline_descr;
@@ -95,6 +100,9 @@ public:
     PlatformDescription apply_platform(const std::string &name);
 
     PlatformDescription get_root_description() const { return m_root_descr; }
+
+    ComponentManager & get_component_manager() { return m_components; }
+    //PluginManager & get_plugin_manager() { return m_plugins; }
 };
 
 #endif

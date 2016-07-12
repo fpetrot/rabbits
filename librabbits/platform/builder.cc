@@ -112,7 +112,8 @@ void PlatformBuilder::create_dbg_init()
 void PlatformBuilder::create_components(PlatformDescription &descr, CreationStage::value stage)
 {
     PlatformDescription::iterator it;
-    ComponentManager &cm = ComponentManager::get();
+    //ComponentManager &cm = ComponentManager::get();
+    ComponentManager cm;// = ComponentManager::get();
 
     if ((!descr.exists("components")) || (descr["components"].type() != PlatformDescription::MAP)) {
         LOG(APP, DBG) << "No component found in description\n";
@@ -120,7 +121,7 @@ void PlatformBuilder::create_components(PlatformDescription &descr, CreationStag
     }
 
     for (it = descr["components"].begin(); it != descr["components"].end(); it++) {
-        ComponentFactory *cf = NULL;
+        ComponentManager::Factory cf;
         const string &name = it->first;
         PlatformDescription &comp = it->second;
 

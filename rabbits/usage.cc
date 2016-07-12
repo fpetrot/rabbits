@@ -448,13 +448,13 @@ static void describe_comp_params(const Parameters &p, TextFormatter &f)
     }
 }
 
-static void describe_component(ComponentFactory &c, TextFormatter &f)
+static void describe_component(ComponentFactoryBase &c, TextFormatter &f)
 {
     const Parameters & p = c.get_params();
 
     f.set_start_col(2);
-    f << format::cyan << "type: " << format::reset << c.type() << "\n";
-    f << format::cyan << "description: " << format::reset << strip_last_nl(c.description()) << "\n";
+    f << format::cyan << "type: " << format::reset << c.get_type() << "\n";
+    f << format::cyan << "description: " << format::reset << strip_last_nl(c.get_description()) << "\n";
 
     if (p.empty()) {
         return;
@@ -466,7 +466,7 @@ static void describe_component(ComponentFactory &c, TextFormatter &f)
 
 void enum_components(LogLevel::value lvl)
 {
-    ComponentManager &cm = ComponentManager::get();
+    ComponentManager cm;// = ComponentManager::get();
     ComponentManager::iterator it;
 
     Logger &l = get_app_logger();

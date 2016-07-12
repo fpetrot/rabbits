@@ -17,6 +17,30 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "rabbits/component/factory.h"
+#ifndef _RABBITS_MODULE_NAMESPACE_H
+#define _RABBITS_MODULE_NAMESPACE_H
 
-//std::vector<ComponentFactory *> * ComponentFactory::m_insts = NULL;
+#include <string>
+
+class Namespace {
+public:
+    enum eNamespace {
+        COMPONENT, PLUGIN, BACKEND
+    };
+
+private:
+    eNamespace m_id;
+    std::string m_name;
+
+    Namespace(eNamespace id, const std::string &name) : m_id(id), m_name(name) {}
+
+    static const Namespace namespaces[];
+
+public:
+    eNamespace get_id() const {return m_id; }
+    std::string get_name() const {return m_name; }
+
+    static const Namespace & get(eNamespace id) { return namespaces[id]; }
+};
+
+#endif
