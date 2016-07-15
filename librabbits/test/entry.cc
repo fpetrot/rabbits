@@ -50,6 +50,9 @@ static int do_test(TestFactory *tf, ConfigManager &config)
     } catch (TestFailureException e) {
         LOG(APP, ERR) << tf->get_name() << ": Failed during elaboration: " << e.what_without_bt() << "\n";
         return 1;
+    } catch (RabbitsException e) {
+        LOG(APP, ERR) << tf->get_name() << ": Rabbits exception during elaboration.\n" << e.what_without_bt() << "\n";
+        return 1;
     } catch (sc_core::sc_report e) {
         LOG(APP, ERR) << tf->get_name() << ": SystemC report during elaboration.\n" << e.what() << "\n";
         return 1;
@@ -65,6 +68,9 @@ static int do_test(TestFactory *tf, ConfigManager &config)
         sc_core::sc_start();
     } catch (TestFailureException e) {
         LOG(APP, ERR) << tf->get_name() << ": Failed during test: " << e.what_without_bt() << "\n";
+        return 1;
+    } catch (RabbitsException e) {
+        LOG(APP, ERR) << tf->get_name() << ": Rabbits exception during test.\n" << e.what_without_bt() << "\n";
         return 1;
     } catch (sc_core::sc_report e) {
         LOG(APP, ERR) << tf->get_name() << ": SystemC report during test.\n" << e.what() << "\n";
@@ -123,15 +129,21 @@ static void load_test_module(DynamicLoader &dyn_loader)
 int sc_main(int argc, char *argv[])
 {
     char *env_dynlib_paths;
+
     ConfigManager config;
+    ConfigManager::set_config_manager(config);
+
     DynamicLoader &dyn_loader = config.get_dynloader();
+
     TestFactory::const_iterator it;
     int result = 0;
 
     if ((argc == 2) && (string(argv[1]) == "-d")) {
         get_app_logger().set_log_level(LogLevel::DEBUG);
+        get_sim_logger().set_log_level(LogLevel::DEBUG);
     } else {
         get_app_logger().set_log_level(LogLevel::INFO);
+        get_sim_logger().set_log_level(LogLevel::INFO);
     }
 
     env_dynlib_paths = std::getenv("RABBITS_DYNLIB_PATH");
@@ -140,8 +152,6 @@ int sc_main(int argc, char *argv[])
     }
 
     dyn_loader.search_and_load_rabbits_dynlibs();
-    //ComponentManager::get(); [> Force instantiation of ComponentManager
-                                //and registration of components before forking */
 
     load_test_module(dyn_loader);
 

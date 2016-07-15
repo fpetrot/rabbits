@@ -91,6 +91,7 @@ void DynamicLoader::add_colon_sep_search_paths(const string &paths)
     string p;
 
     while (std::getline(ss, p, ':')) {
+        LOG(APP, DBG) << "Adding dynamic library search path " << p << "\n";
         add_search_path(p);
     }
 }
