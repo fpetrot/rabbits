@@ -92,8 +92,10 @@ public:
 template <unsigned int BUSWIDTH = 32>
 class Master : public Component, public MasterTraits<BUSWIDTH> {
 public:
-    explicit Master(sc_core::sc_module_name name) : Component(name, Parameters()) {}
-    Master(sc_core::sc_module_name name, Parameters &params) : Component(name, params) {}
+    Master(sc_core::sc_module_name name, ConfigManager &config)
+        : Component(name, Parameters(), config) {}
+    Master(sc_core::sc_module_name name, const Parameters &params, ConfigManager &config)
+        : Component(name, params, config) {}
 
     virtual ~Master() {}
 };

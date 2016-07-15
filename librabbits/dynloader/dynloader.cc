@@ -21,6 +21,7 @@
 #include "rabbits/dynloader/dynlib.h"
 #include "rabbits/config.h"
 #include "rabbits/logger.h"
+#include "rabbits/config/manager.h"
 
 
 #include <sstream>
@@ -29,8 +30,6 @@
 using namespace boost::filesystem;
 using std::string;
 using std::vector;
-
-DynamicLoader* DynamicLoader::m_inst = NULL;
 
 class DynamicLoaderVisitor {
 public:
@@ -59,7 +58,7 @@ public:
 };
 
 
-DynamicLoader::DynamicLoader()
+DynamicLoader::DynamicLoader(ConfigManager &config) : m_config(config)
 {
 #ifdef RABBITS_DYNLIB_SEARCH_PATH
     add_search_path(RABBITS_DYNLIB_SEARCH_PATH);
@@ -244,7 +243,7 @@ bool DynamicLoader::load_rabbits_dynlib(const string &filename)
                   << "' ver. " << info->version_str << "\n";
 
     lib_load = (rabbits_dynamic_load_fn) l->get_symbol(RABBITS_DYN_LOAD_SYM);
-    lib_load();
+    lib_load(m_config);
 
     LOG(APP, DBG) << "Loaded dynamic library " << filename << "\n";
 

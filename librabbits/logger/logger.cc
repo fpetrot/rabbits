@@ -17,10 +17,12 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "rabbits/logger.h"
-
 #include <cstdarg>
 #include <cstdio>
+
+#include "rabbits/logger.h"
+#include "rabbits/config/manager.h"
+
 const std::string Logger::PREFIXES[] = {
         [LogLevel::ERROR]   = "[error]",
         [LogLevel::WARNING] = "[ warn]",
@@ -35,7 +37,6 @@ const Logger::formater_fn Logger::PREFIX_COLORS[] = {
         [LogLevel::DEBUG]   = format::black,
 };
 
-Logger Logger::m_root_loggers[LogContext::LASTLOGCONTEXT];
 std::vector<char> Logger::m_format_buf;
 
 char * Logger::vformat(const char * fmt, va_list ap)
@@ -59,7 +60,7 @@ char * Logger::vformat(const char * fmt, va_list ap)
 
         va_end(aq);
         va_copy(aq, ap);
-        
+
         written = vsnprintf(&m_format_buf[0], m_format_buf.capacity(), fmt, aq);
     }
 
@@ -120,4 +121,20 @@ void Logger::restore_flags()
     for (it = flags.begin(), i = 0; it != flags.end(); it++, i++) {
         get_sink(LogLevel::value(i)).flags(*it);
     }
+}
+
+
+Logger & get_logger(LogContext::value ctx)
+{
+    return ConfigManager::get().get_logger(ctx);
+}
+
+Logger & get_app_logger()
+{
+    return ConfigManager::get().get_logger(LogContext::APP);
+}
+
+Logger & get_sim_logger()
+{
+    return ConfigManager::get().get_logger(LogContext::SIM);
 }

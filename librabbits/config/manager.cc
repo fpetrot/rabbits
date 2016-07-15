@@ -17,21 +17,27 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/filesystem.hpp>
+#include <set>
+#include <string>
+#include <vector>
+
 #include "rabbits/config.h"
 #include "rabbits/config/manager.h"
 #include "rabbits/logger.h"
-
-#include <boost/filesystem.hpp>
 
 using std::set;
 using std::vector;
 using std::string;
 using namespace boost::filesystem;
 
-ConfigManager* ConfigManager::m_manager = nullptr;
+ConfigManager * ConfigManager::m_config = nullptr;
 
 ConfigManager::ConfigManager()
-    : m_global_params("global")
+    : m_logger_app(*this)
+    , m_logger_sim(*this)
+    , m_global_params(Namespace::get(Namespace::GLOBAL))
+    , m_dynloader(*this)
 {
     add_global_param("configuration-directory",
                      Parameter<string>("Where to find configuration files",
@@ -51,7 +57,7 @@ void ConfigManager::apply_aliases()
     for (auto alias : m_aliases) {
         const string &key = alias.first;
         ParameterBase &param = *alias.second;
-        
+
         if (m_root_descr[key].is_scalar()) {
             param.set(m_root_descr[key]);
         }
@@ -73,7 +79,7 @@ void ConfigManager::compute_platform(const string &name, const PlatformDescripti
         LOG(APP, DBG) << "Platform " << name << " inherits from " << parent_name << "\n";
 
         PlatformDescription parent = get_platform(parent_name);
-        
+
         platform = platform.merge(parent);
     }
 
@@ -278,6 +284,7 @@ void ConfigManager::add_config_file(const std::string &path_s)
 void ConfigManager::add_param_alias(const std::string &alias_key, ParameterBase &dest)
 {
     m_aliases[alias_key] = &dest;
+    apply_aliases();
 }
 
 void ConfigManager::add_global_param(const string &key, const ParameterBase &param)

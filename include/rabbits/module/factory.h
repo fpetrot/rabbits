@@ -24,10 +24,13 @@
 
 #include "parameters.h"
 #include "namespace.h"
+#include "rabbits/config/has_config.h"
 
-class ModuleFactoryBase : public HasParametersIface
+
+class ModuleFactoryBase : public HasParametersIface, public HasConfigIface
 {
 private:
+    ConfigManager &m_config;
     std::string m_name;
     std::string m_description;
     const Namespace & m_namespace;
@@ -37,8 +40,9 @@ protected:
     template <class T>
     void add_param(const std::string &name, const T &t) { m_params.add(name, t); }
 
-    ModuleFactoryBase(std::string name, std::string description, const Namespace & ns)
-        : m_name(name), m_description(description), m_namespace(ns)
+    ModuleFactoryBase(ConfigManager &config, const std::string & name,
+                      const std::string & description, const Namespace & ns)
+        : m_config(config), m_name(name), m_description(description), m_namespace(ns)
     {}
 
 public:
@@ -87,6 +91,9 @@ public:
 
     /* HasParametersIface */
     const Parameters & get_params() const { return m_params; }
+
+    /* HasConfigIface */
+    ConfigManager & get_config() const { return m_config; }
 };
 
 template <class Type>
@@ -94,9 +101,9 @@ class ModuleFactory : public ModuleFactoryBase {
 protected:
     virtual Type * create(const std::string & name, Parameters & params) = 0;
 
-    ModuleFactory(const std::string & name, const std::string & description,
+    ModuleFactory(ConfigManager &config, const std::string & name, const std::string & description,
                   const Namespace & ns)
-        : ModuleFactoryBase(name, description, ns) {}
+        : ModuleFactoryBase(config, name, description, ns) {}
 
     virtual ~ModuleFactory() {}
 
@@ -105,9 +112,11 @@ public:
     {
         Parameters cp = get_params();
         cp.fill_from_description(p);
-        cp.set_namespace(get_namespace().get_name());
+        cp.set_namespace(get_namespace());
 
-        return create(name, cp);
+        Type *t = create(name, cp);
+
+        return t;
     }
 };
 

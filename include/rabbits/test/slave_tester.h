@@ -26,7 +26,7 @@
 template <unsigned int BUSWIDTH = 32>
 class SlaveTester : public Master<> {
 public:
-    SlaveTester(sc_core::sc_module_name n) : Master(n) {}
+    SlaveTester(sc_core::sc_module_name n, ConfigManager &c) : Master(n, c) {}
 
     virtual ~SlaveTester() {}
 

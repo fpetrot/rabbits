@@ -55,7 +55,7 @@ public:
 
     BindingResult bind(ConnectionStrategyBase &cs, BindingType t,
                        PlatformDescription &d = PlatformDescription::INVALID_DESCRIPTION)
-    { 
+    {
         if (!is_compatible_with(cs)) {
             LOG(APP, ERR) << "Incompatible strategies bind attempt\n";
             abort();

@@ -30,6 +30,7 @@
 #include <vector>
 #include <map>
 
+#include "rabbits/config/manager.h"
 #include "rabbits/component/manager.h"
 #include "rabbits/component/component.h"
 #include "rabbits/component/debug_initiator.h"
@@ -48,6 +49,9 @@ class PlatformBuilder : public sc_core::sc_module {
 public:
     typedef std::map<std::string, ComponentBase*>::iterator comp_iterator;
     typedef std::map<std::string, ComponentBase*>::const_iterator const_comp_iterator;
+
+    typedef std::map<std::string, PluginBase*> Plugins;
+
 protected:
     /**
      * @brief The components creation stages.
@@ -59,8 +63,14 @@ protected:
         };
     };
 
+    ConfigManager &m_config;
+
+    std::map<std::string, PluginBase*> m_plugins;
     std::map<std::string, ComponentBase*> m_components;
     DebugInitiator *m_dbg;
+
+    void create_plugins(PlatformDescription &descr);
+    template <class HOOK> void run_hooks(HOOK &&hook);
 
     void create_components(PlatformDescription &descr, CreationStage::value);
 
@@ -80,7 +90,7 @@ public:
      * @param name Name of the SystemC module.
      * @param descr Platform description.
      */
-    PlatformBuilder(sc_core::sc_module_name name, PlatformDescription &descr);
+    PlatformBuilder(sc_core::sc_module_name name, PlatformDescription &descr, ConfigManager &config);
     virtual ~PlatformBuilder();
 
     /**
@@ -152,6 +162,8 @@ public:
      * @return true if the built platform contains no components.
      */
     bool is_empty() const { return m_components.empty(); }
+
+    const Plugins get_plugins() const { return m_plugins; }
 };
 
 #endif

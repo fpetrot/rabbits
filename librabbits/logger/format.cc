@@ -25,19 +25,19 @@
 
 #include "rlutil.h"
 
-static inline bool color_enabled()
+static inline bool color_enabled(ConfigManager &config)
 {
-    ConfigManager & config = ConfigManager::get_manager();
-
     return config.get_global_params()["color-output"].as<bool>();
 }
 
-Formatter::Formatter(std::ostream &o) : m_stream(&o)
+Formatter::Formatter(std::ostream &o, ConfigManager &config)
+    : m_config(config), m_stream(&o)
 {
     detect_tty();
 }
 
-Formatter::Formatter(const Formatter &f) : m_stream(f.m_stream), m_is_tty(f.m_is_tty)
+Formatter::Formatter(const Formatter &f)
+    : m_config(f.m_config), m_stream(f.m_stream), m_is_tty(f.m_is_tty)
 {}
 
 Formatter::~Formatter() {}
@@ -68,7 +68,7 @@ void Formatter::set_color(ConsoleColor::value c, ConsoleAttr::value a)
         return;
     }
 
-    if (!color_enabled()) {
+    if (!color_enabled(m_config)) {
         return;
     }
 
@@ -83,7 +83,7 @@ void Formatter::reset()
         return;
     }
 
-    if (!color_enabled()) {
+    if (!color_enabled(m_config)) {
         return;
     }
 

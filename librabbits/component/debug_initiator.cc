@@ -20,17 +20,18 @@
 #include "rabbits-common.h"
 #include "rabbits/component/debug_initiator.h"
 
-DebugInitiator::DebugInitiator(sc_core::sc_module_name n) : Master(n)
-{
-}
+DebugInitiator::DebugInitiator(sc_core::sc_module_name n,
+                               ConfigManager &config)
+    : Master(n, config)
+{}
 
-DebugInitiator::DebugInitiator(sc_core::sc_module_name n, Parameters &cp) : Master(n, cp)
-{
-}
+DebugInitiator::DebugInitiator(sc_core::sc_module_name n,
+                               Parameters &cp, ConfigManager &config)
+    : Master(n, cp, config)
+{}
 
 DebugInitiator::~DebugInitiator()
-{
-}
+{}
 
 
 uint64_t DebugInitiator::debug_read(uint64_t addr, void *buf, uint64_t size)

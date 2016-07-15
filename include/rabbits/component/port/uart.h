@@ -52,7 +52,7 @@ public:
         if (&cs == &m_chardev_cs) {
             m_mode = CHAR_DEV;
         } else {
-            LOG(APP, ERR) << "Selected strategy is invalid\n";
+            MLOG(APP, ERR) << "Selected strategy is invalid\n";
             std::abort();
         }
     }

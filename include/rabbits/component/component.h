@@ -40,6 +40,8 @@
 #include "rabbits/rabbits_exception.h"
 #include "rabbits/datatypes/address_range.h"
 #include "rabbits/platform/description.h"
+#include "rabbits/config/manager.h"
+#include "rabbits/logger/wrapper.h"
 
 
 /**
@@ -90,26 +92,21 @@ public:
  */
 class Component : public ComponentBase {
 public:
-    enum LogTarget {
-        LT_STDOUT, LT_STDERR, LT_FILE
-    };
-
-    typedef std::unique_ptr<std::fstream> LogFile;
-    typedef std::map<std::string, LogFile> LogFiles;
     typedef std::map<std::string, std::string> Attributes;
 
     SC_HAS_PROCESS(Component);
 
 protected:
+    std::string m_name;
     Parameters m_params;
+    ConfigManager &m_config;
+
+    LoggerWrapper m_loggers;
 
     std::map<std::string, Port*> m_ports;
     std::vector< std::function<void() > > m_pushed_threads;
-    LogFiles m_log_files;
 
     Attributes m_attributes;
-
-    mutable Logger m_loggers[LogContext::LASTLOGCONTEXT];
 
     void pushed_threads_entry()
     {
@@ -173,156 +170,33 @@ protected:
         }
     }
 
-    LogTarget get_log_target(const std::string target_s)
-    {
-        if (target_s == "stdout") {
-            return LT_STDOUT;
-        } else if (target_s == "stderr") {
-            return LT_STDERR;
-        } else if (target_s == "file") {
-            return LT_FILE;
-        }
-
-        LOG(APP, ERR) << "Ignoring invalid log target " << target_s << "\n";
-        return LT_STDERR;
-    }
-
-    LogLevel::value get_log_level(const std::string level_s)
-    {
-        if (level_s == "debug") {
-            return LogLevel::DEBUG;
-        } else if (level_s == "info") {
-            return LogLevel::INFO;
-        } else if (level_s == "warning") {
-            return LogLevel::WARNING;
-        } else if (level_s == "error") {
-            return LogLevel::ERROR;
-        }
-
-        LOG(APP, ERR) << "Ignoring invalid log level " << level_s << "\n";
-        return LogLevel::INFO;
-    }
-
-    std::fstream* open_file(const std::string &fn)
-    {
-        std::fstream* ret = nullptr;
-
-        if (m_log_files.find(fn) != m_log_files.end()) {
-            if (!m_log_files[fn]) {
-                return nullptr;
-            }
-            return m_log_files[fn].get();
-        }
-
-        ret = new std::fstream(fn, std::fstream::out | std::fstream::trunc);
-
-        m_log_files[fn].reset(ret);
-
-        return ret;
-    }
-
-    void setup_logger_banner(Logger &l)
-    {
-        std::stringstream banner;
-        banner << "[" << name() << "]";
-        l.set_custom_banner(banner.str());
-
-        l.set_custom_banner([] (Logger &l, const std::string &banner)
-        {
-            l << format::cyan << banner << format::reset;
-        });
-    }
-
-    void setup_logger(Logger &l, LogTarget target, LogLevel::value lvl,
-                      const std::string log_file)
-    {
-        setup_logger_banner(l);
-
-        switch (target) {
-        case LT_STDOUT:
-            l.set_streams(&std::cout);
-            break;
-
-        case LT_FILE:
-            {
-                std::fstream* file = open_file(log_file);
-
-                if (!*file) {
-                    LOG(APP, ERR) << "Unable to open log file "
-                        << log_file << ". Falling back to stderr\n";
-                } else {
-                    l.set_streams(file);
-                }
-            }
-            break;
-
-        case LT_STDERR:
-            /* Default */
-            break;
-        }
-
-        l.set_log_level(lvl);
-    }
-
-    bool logger_is_custom()
-    {
-        return (!m_params["log-target"].is_default())
-            || (!m_params["log-level"].is_default())
-            || (!m_params["log-file"].is_default())
-            || (!m_params["debug"].is_default());
-    }
-
-    void setup_loggers()
-    {
-        LogTarget log_target;
-        LogLevel::value log_level;
-        std::string log_file;
-        bool debug = false;
-        bool no_custom = false;
-
-        if (m_params.exists("log-file")) {
-            no_custom = !logger_is_custom();
-            log_target = get_log_target(m_params["log-target"].as<std::string>());
-            log_level = get_log_level(m_params["log-level"].as<std::string>());
-            log_file = m_params["log-file"].as<std::string>();
-            debug = m_params["debug"].as<bool>();
-        } else {
-            log_target = LT_STDERR;
-            log_level = LogLevel::INFO;
-            log_file = "";
-        }
-
-        if (debug) {
-            log_level = LogLevel::DEBUG;
-        }
-
-        for (int i = 0; i < LogContext::LASTLOGCONTEXT; i++) {
-            Logger::get_root_logger(LogContext::value(i)).set_child(m_loggers[i]);
-
-            if (no_custom) {
-                setup_logger_banner(m_loggers[i]);
-            } else {
-                setup_logger(m_loggers[i], log_target, log_level, log_file);
-            }
-        }
-    }
-
     void init()
     {
-        if (m_params.exists("log-file")) {
-            m_params["log-file"].set_default(std::string(name()) + ".log");
-        }
-
-        setup_loggers();
+        m_name = std::string(basename());
+        m_params.set_module(*this);
     }
 
 public:
-    Component(sc_core::sc_module_name name, const Parameters &params)
-        : ComponentBase(name) { init(); }
+    Component(sc_core::sc_module_name n, const Parameters &params, ConfigManager &config)
+        : ComponentBase(n)
+        , m_params(params)
+        , m_config(config)
+        , m_loggers(std::string(name()), config, m_params, config)
+    {
+        init();
+    }
 
-    Component(sc_core::sc_module_name name) : ComponentBase(name) { init(); }
+    Component(sc_core::sc_module_name n, ConfigManager &config)
+        : ComponentBase(n)
+        , m_config(config)
+        , m_loggers(std::string(name()), config, m_params, config)
+    {
+        init();
+    }
 
     virtual ~Component() {}
+
+    const std::string & get_name() const { return m_name; }
 
     /* HasPortIface */
     virtual void declare_port(Port &p, const std::string &name) { m_ports[name] = &p; }
@@ -373,7 +247,10 @@ public:
     }
 
     /* HasLoggerIface */
-    Logger & get_logger(LogContext::value context) const { return m_loggers[context]; }
+    Logger & get_logger(LogContext::value context) const { return m_loggers.get_logger(context); }
+
+    /* HasConfigIface */
+    ConfigManager & get_config() const { return m_config; }
 };
 
 #endif

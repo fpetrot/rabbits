@@ -29,6 +29,9 @@
 #include "rabbits/platform/description.h"
 #include "rabbits/rabbits_exception.h"
 
+class ModuleIface;
+class Namespace;
+
 /**
  * @brief Component parameters collection.
  */
@@ -54,11 +57,12 @@ public:
 protected:
     std::map<std::string, ParameterBase*> m_pool;
     PlatformDescription m_descr; /* The associated description */
-    std::string m_namespace;
+    const Namespace * m_namespace = nullptr;
+    ModuleIface * m_module = nullptr;
 
 public:
     Parameters() {}
-    Parameters(const std::string &params_namespace) : m_namespace(params_namespace) {}
+    Parameters(const Namespace &params_namespace) : m_namespace(&params_namespace) {}
     Parameters(const Parameters &);
 
     virtual ~Parameters() {
@@ -78,14 +82,22 @@ public:
     void add(const std::string name, const ParameterBase &p) {
         m_pool[name] = p.clone();
         m_pool[name]->set_name(name);
-        m_pool[name]->set_namespace(m_namespace);
+        m_pool[name]->set_namespace(*m_namespace);
     }
 
-    void set_namespace(const std::string &_namespace) {
-        m_namespace = _namespace;
+    void set_namespace(const Namespace &_namespace) {
+        m_namespace = &_namespace;
 
         for (auto c: *this) {
-            c.second->set_namespace(m_namespace);
+            c.second->set_namespace(_namespace);
+        }
+    }
+
+    void set_module(ModuleIface &module) {
+        m_module = &module;
+
+        for (auto c: *this) {
+            c.second->set_module(module);
         }
     }
 

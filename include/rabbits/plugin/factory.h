@@ -28,45 +28,37 @@
 #include <string>
 #include <vector>
 
-#include "manager.h"
+#include "rabbits/module/factory.h"
 
-class Plugin;
+class PluginBase;
 
 /**
  * @brief Plugin factory base class.
+ *
+ * Note that plugin factories are automatically generated from the plugin
+ * YAML description.
  */
-class PluginFactory {
-private:
-    PluginFactory(const PluginFactory&);
-    PluginFactory & operator= (const PluginFactory&);
-
-    static std::vector<PluginFactory*> *m_insts;
-
+class PluginFactoryBase : public ModuleFactory<PluginBase> {
 protected:
-    PluginFactory() { 
-        if (m_insts == NULL) {
-            m_insts = new std::vector<PluginFactory*>;
-        }
-        m_insts->push_back(this); 
-    }
+    PluginFactoryBase(ConfigManager &config, const std::string & name, const std::string & description)
+        : ModuleFactory<PluginBase>(config, name, description, Namespace::get(Namespace::PLUGIN))
+    {}
 
 public:
-    static void register_plugins() {
-        std::vector<PluginFactory*>::iterator it;
+    virtual ~PluginFactoryBase() {}
+};
 
-        if (m_insts == NULL) {
-            return;
-        }
-
-        for (it = m_insts->begin(); it != m_insts->end(); it++) {
-            PluginManager::get().register_plugin(*it);
-        }
+template <class TPlugin>
+class PluginFactory : public PluginFactoryBase {
+protected:
+    virtual TPlugin * create(const std::string & name, Parameters & params)
+    {
+        return new TPlugin(name, params, get_config());
     }
 
-    virtual ~PluginFactory() {}
-
-    virtual Plugin *create() = 0;
-    virtual std::string get_name() = 0;
+    PluginFactory(ConfigManager &config, const std::string name, const std::string description)
+        : PluginFactoryBase(config, name, description)
+    {}
 };
 
 #endif

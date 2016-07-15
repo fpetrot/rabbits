@@ -24,6 +24,7 @@
 #include <rabbits/platform/builder.h>
 
 #include <rabbits/component/factory.h>
+#include <rabbits/plugin/plugin.h>
 
 #include <rabbits/ui/ui.h>
 
@@ -45,7 +46,15 @@ using std::unique_ptr;
 
 static inline string get_param_full_name(const ParameterBase &param)
 {
-    return "-" + param.get_namespace() + "." + param.get_name();
+    string ret = "-" + param.get_namespace().get_name();
+    
+    if (param.get_module()) {
+        ret += "." + param.get_module()->get_name();
+    }
+
+    ret += "." + param.get_name();
+
+    return ret;
 }
 
 static inline string strip_last_nl(const string &s)
@@ -305,8 +314,13 @@ public:
 
     void print_left(TextFormatter &f)
     {
-        f << "-" << m_param.get_namespace()
-          << "." << (m_param.is_advanced() ? format::yellow : format::green) << m_param.get_name() << " "
+        f << "-" << m_param.get_namespace().get_name();
+
+        if (m_param.get_module()) {
+            f << "." << m_param.get_module()->get_name();
+        }
+
+        f << "." << (m_param.is_advanced() ? format::yellow : format::green) << m_param.get_name() << " "
           << format::cyan << "<" << m_param.get_typeid() << ">"
           << format::reset;
     }
@@ -464,9 +478,24 @@ static void describe_component(ComponentFactoryBase &c, TextFormatter &f)
     describe_comp_params(p, f);
 }
 
-void enum_components(LogLevel::value lvl)
+static void describe_plugin(PluginFactoryBase &c, TextFormatter &f)
 {
-    ComponentManager cm;// = ComponentManager::get();
+    const Parameters & p = c.get_params();
+
+    f.set_start_col(2);
+    f << format::cyan << "description: " << format::reset << strip_last_nl(c.get_description()) << "\n";
+
+    if (p.empty()) {
+        return;
+    }
+
+    f << format::cyan << "parameters:\n" << format::reset;
+    describe_comp_params(p, f);
+}
+
+void enum_components(ConfigManager &config, LogLevel::value lvl)
+{
+    ComponentManager &cm = config.get_component_manager();
     ComponentManager::iterator it;
 
     Logger &l = get_app_logger();
@@ -481,6 +510,30 @@ void enum_components(LogLevel::value lvl)
         f.set_start_col(0);
         f << format::cyan_b << "* " << format::white_b << it->first << format::reset << "\n";
         describe_component(*(it->second), f);
+        f << "\n";
+    }
+
+    l << "\n";
+    l.enable_banner(banner_status);
+}
+
+void enum_plugins(ConfigManager &config, LogLevel::value lvl)
+{
+    PluginManager &cm = config.get_plugin_manager();
+    PluginManager::iterator it;
+
+    Logger &l = get_app_logger();
+
+    bool banner_status = l.enable_banner(false);
+
+    TextFormatter f(l, lvl);
+
+    f << format::white_b << "Available plugins:\n\n" << format::reset;
+
+    for (it = cm.begin(); it != cm.end(); it++) {
+        f.set_start_col(0);
+        f << format::cyan_b << "* " << format::white_b << it->first << format::reset << "\n";
+        describe_plugin(*(it->second), f);
         f << "\n";
     }
 
@@ -521,6 +574,14 @@ static void add_platform_parameters(PlatformBuilder &p, UsageFormatter &usage, b
     usage.add_section("Platform parameters");
     for (auto it = p.comp_begin(); it != p.comp_end(); it++) {
         for (auto param : it->second->get_params()) {
+            if (advanced || !param.second->is_advanced()) {
+                usage.add_param(*param.second);
+            }
+        }
+    }
+
+    for (auto plug : p.get_plugins()) {
+        for (auto param : plug.second->get_params()) {
             if (advanced || !param.second->is_advanced()) {
                 usage.add_param(*param.second);
             }

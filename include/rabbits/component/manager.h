@@ -44,7 +44,7 @@ protected:
     Factories m_by_type;
 
 public:
-    ComponentManager() {};
+    ComponentManager() {}
     virtual ~ComponentManager() {}
 
     void register_factory(Factory f)

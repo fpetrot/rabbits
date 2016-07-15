@@ -29,6 +29,8 @@
 #include <string>
 #include <map>
 
+class ConfigManager;
+
 extern "C" {
 
 struct RabbitsDynamicInfo {
@@ -38,7 +40,7 @@ struct RabbitsDynamicInfo {
 
 typedef int (*rabbits_dynamic_api_version_fn)(void);
 typedef const RabbitsDynamicInfo * (*rabbits_dynamic_info_fn)(void);
-typedef void (*rabbits_dynamic_load_fn)(void);
+typedef void (*rabbits_dynamic_load_fn)(ConfigManager &);
 typedef void (*rabbits_dynamic_unload_fn)(void);
 }
 
@@ -56,29 +58,15 @@ class DynamicLoaderVisitor;
  * This class load dynamic libraries and Rabbits dynlibs.
  */
 class DynamicLoader {
-private:
-    static DynamicLoader *m_inst;
-    DynamicLoader();
-
 protected:
+    ConfigManager &m_config;
     std::map<std::string, DynLib*> m_libs;
     std::vector<std::string> m_search_paths;
 
     void search_libs_and_visit(DynamicLoaderVisitor &);
 
 public:
-    /**
-     * @brief Return the singleton instance of the DynamicLoader.
-     *
-     * @return the singleton instance of the DynamicLoader
-     */
-    static DynamicLoader& get() {
-        if (m_inst == NULL) {
-            m_inst = new DynamicLoader;
-        }
-        return *m_inst;
-    }
-
+    DynamicLoader(ConfigManager &config);
     virtual ~DynamicLoader();
 
     /**

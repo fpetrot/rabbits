@@ -20,16 +20,8 @@
 #ifndef _UTILS_LOGGER_H
 #define _UTILS_LOGGER_H
 
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <stack>
-#include <type_traits>
-
 #include "rabbits/config.h"
-#include "logger/logger.h"
-
-
+#include "rabbits/logger/logger.h"
 
 #ifndef RABBITS_LOGLEVEL
 # define RABBITS_LOGLEVEL 0
@@ -59,7 +51,7 @@
 #define LOG_CHECK(logger, lvl) LOG_CHECK_ ## lvl (logger)
 
 #define LOG(ctx, lvl) \
-    LOG_CHECK(Logger::get_root_logger(LogContext::ctx), lvl) && Logger::get_root_logger(LogContext::ctx)
+    LOG_CHECK(::get_logger(LogContext::ctx), lvl) && ::get_logger(LogContext::ctx)
 
 #define MLOG(ctx, lvl) \
     LOG_CHECK(this->get_logger(LogContext::ctx), lvl) && this->get_logger(LogContext::ctx)
@@ -70,8 +62,9 @@
 #define MLOG_F(ctx, lvl, ...) \
     MLOG(ctx, lvl) << Logger::format(__VA_ARGS__)
 
-static inline Logger & get_logger(LogContext::value ctx) { return Logger::get_root_logger(ctx); }
-static inline Logger & get_app_logger() { return Logger::get_root_logger(LogContext::APP); }
-static inline Logger & get_sim_logger() { return Logger::get_root_logger(LogContext::SIM); }
+
+Logger & get_logger(LogContext::value ctx);
+Logger & get_app_logger();
+Logger & get_sim_logger();
 
 #endif

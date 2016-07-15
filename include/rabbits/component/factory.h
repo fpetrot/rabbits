@@ -43,8 +43,9 @@ private:
     std::string m_type;
 
 protected:
-    ComponentFactoryBase(const std::string & name, const std::string & description, const std::string & type) 
-        : ModuleFactory<ComponentBase>(name, description, Namespace::get(Namespace::COMPONENT))
+    ComponentFactoryBase(ConfigManager &config, const std::string & name,
+                         const std::string & description, const std::string & type) 
+        : ModuleFactory<ComponentBase>(config, name, description, Namespace::get(Namespace::COMPONENT))
         , m_type(type)
     {}
 
@@ -82,12 +83,13 @@ class ComponentFactory : public ComponentFactoryBase {
 protected:
     virtual TComponent * create(const std::string & name, Parameters & params) 
     {
-        return new TComponent(name.c_str(), params);
+        TComponent *c = new TComponent(name.c_str(), params, get_config());
+        return c;
     }
 
-    ComponentFactory(const std::string & name, const std::string & description,
-                     const std::string & type)
-        : ComponentFactoryBase(name, description, type)
+    ComponentFactory(ConfigManager &config, const std::string & name,
+                     const std::string & description, const std::string & type)
+        : ComponentFactoryBase(config, name, description, type)
     {}
 
 public:

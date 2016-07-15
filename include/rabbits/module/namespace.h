@@ -25,7 +25,7 @@
 class Namespace {
 public:
     enum eNamespace {
-        COMPONENT, PLUGIN, BACKEND
+        GLOBAL, COMPONENT, PLUGIN, BACKEND
     };
 
 private:

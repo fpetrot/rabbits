@@ -22,6 +22,8 @@
 
 #include <ostream>
 
+class ConfigManager;
+
 struct ConsoleColor
 {
     enum value { BLACK = 0, BLUE, GREEN, CYAN, RED, PURPLE, YELLOW, WHITE };
@@ -36,13 +38,14 @@ class Logger;
 
 class Formatter {
 protected:
+    ConfigManager &m_config;
     std::ostream * m_stream;
     bool m_is_tty;
 
     void detect_tty();
 
 public:
-    explicit Formatter(std::ostream &);
+    Formatter(std::ostream &, ConfigManager &config);
 
     Formatter(const Formatter &f);
 

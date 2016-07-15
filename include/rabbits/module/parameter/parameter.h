@@ -34,6 +34,9 @@
 #include "rabbits/rabbits_exception.h"
 #include "rabbits/platform/description.h"
 
+class ModuleIface;
+class Namespace;
+
 /**
  * @brief Parameter, base class.
  *
@@ -54,7 +57,9 @@ public:
 
 private:
     std::string m_name;
-    std::string m_namespace;
+    const Namespace * m_namespace = nullptr;
+    ModuleIface * m_module = nullptr;
+
     std::string m_description;
     bool m_advanced = false;
 
@@ -147,14 +152,26 @@ public:
     /**
      * @brief Set the paramater namespace.
      */
-    void set_namespace(const std::string &_namespace) { m_namespace = _namespace; }
+    void set_namespace(const Namespace & _namespace) { m_namespace = &_namespace; }
 
     /**
      * @brief Return the parameter namespace.
      *
      * @return the parameter namespace.
      */
-    const std::string & get_namespace() const { return m_namespace; }
+    const Namespace & get_namespace() const { return *m_namespace; }
+
+    /**
+     * @brief Set the paramater module.
+     */
+    void set_module(ModuleIface & _module) { m_module = &_module; }
+
+    /**
+     * @brief Return the parameter module.
+     *
+     * @return the parameter module.
+     */
+    ModuleIface * get_module() const { return m_module; }
 
     /**
      * @brief Set this parameter as advanced

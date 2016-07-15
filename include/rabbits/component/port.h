@@ -30,6 +30,7 @@
 
 #include "connection_strategy.h"
 #include "rabbits/rabbits_exception.h"
+#include "rabbits/logger/has_logger.h"
 #include "rabbits/logger.h"
 
 class Port;

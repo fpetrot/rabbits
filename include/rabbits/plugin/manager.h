@@ -25,61 +25,17 @@
 #ifndef _UTILS_PLUGIN_MANAGER_H
 #define _UTILS_PLUGIN_MANAGER_H
 
-#include <vector>
+#include "rabbits/module/manager.h"
 
-#include "plugin.h"
-
-class PluginFactory;
+#include "factory.h"
 
 /**
  * @brief The plugin manager.
  */
-class PluginManager {
-private:
-    static PluginManager *m_inst;
-
-protected:
-    std::vector<Plugin*> m_plugins;
-
-    PluginManager() {}
-
+class PluginManager : public ModuleManager<PluginFactoryBase> {
 public:
+    PluginManager() {}
     virtual ~PluginManager() {}
-
-    /**
-     * @brief Return the singleton instance of the plugin manager.
-     *
-     * @return the singleton instance of the plugin manager.
-     */
-    static PluginManager& get();
-
-    /**
-     * @brief Register a new plugin into the manager.
-     *
-     * @param[in] PluginFactory The factory of the plugin to register.
-     */
-    void register_plugin(PluginFactory*);
-
-    /**
-     * @brief Run the hook corresponding to the hook type HOOK.
-     *
-     * @tparam HOOK the hook type.
-     * @param[in] h the hook context instance.
-     */
-    template <typename HOOK>
-    void run_hook(const HOOK &h);
 };
-
-
-template <typename HOOK>
-inline void PluginManager::run_hook(const HOOK &hook)
-{
-    std::vector<Plugin*>::iterator it;
-
-    for (it = m_plugins.begin(); it != m_plugins.end(); it++) {
-        Plugin *p = *it;
-        p->hook(hook);
-    }
-}
 
 #endif

@@ -4,6 +4,7 @@
 #include "rabbits/component/factory.h"
 #include "rabbits/platform/description.h"
 #include "rabbits/dynloader/dynloader.h"
+#include "rabbits/config/manager.h"
 
 #include <cstring>
 
@@ -25,8 +26,7 @@ std::set<TestFactory*> * TestFactory::m_insts = NULL;
 ComponentBase * Test::create_component_by_name(const string name,
                                                const string yml_params)
 {
-    //ComponentManager &cm = ComponentManager::get();
-    ComponentManager cm;
+    ComponentManager &cm = get_config().get_component_manager();
     ComponentManager::Factory cf = cm.find_by_name(name);
     PlatformDescription descr;
 
@@ -39,14 +39,14 @@ ComponentBase * Test::create_component_by_name(const string name,
     return cf->create(name, descr);
 }
 
-static int do_test(TestFactory *tf)
+static int do_test(TestFactory *tf, ConfigManager &config)
 {
 
     Test *t = NULL;
     bool tests_passed;
 
     try {
-        t = tf->create();
+        t = tf->create(config);
     } catch (TestFailureException e) {
         LOG(APP, ERR) << tf->get_name() << ": Failed during elaboration: " << e.what_without_bt() << "\n";
         return 1;
@@ -111,9 +111,9 @@ std::string Test::get_test_dir(const std::string &fn) const
     return path(fn).parent_path().string();
 }
 
-static void load_test_module()
+static void load_test_module(DynamicLoader &dyn_loader)
 {
-    DynLib *tst = DynamicLoader::get().load_library(test::test_payload);
+    DynLib *tst = dyn_loader.load_library(test::test_payload);
 
     if (tst == NULL) {
         LOG(APP, ERR) << "Unable to load test module\n";
@@ -123,7 +123,8 @@ static void load_test_module()
 int sc_main(int argc, char *argv[])
 {
     char *env_dynlib_paths;
-    DynamicLoader &dyn_loader = DynamicLoader::get();
+    ConfigManager config;
+    DynamicLoader &dyn_loader = config.get_dynloader();
     TestFactory::const_iterator it;
     int result = 0;
 
@@ -142,7 +143,7 @@ int sc_main(int argc, char *argv[])
     //ComponentManager::get(); [> Force instantiation of ComponentManager
                                 //and registration of components before forking */
 
-    load_test_module();
+    load_test_module(dyn_loader);
 
     for (it = TestFactory::begin(); it != TestFactory::end(); it++) {
         int pid = fork();
@@ -154,7 +155,7 @@ int sc_main(int argc, char *argv[])
         }
 
         if (pid == 0) {
-            return do_test(*it);
+            return do_test(*it, config);
         }
 
         wait(&status);

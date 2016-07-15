@@ -28,6 +28,8 @@
 #include "rabbits/platform/description.h"
 #include "rabbits/component/manager.h"
 #include "rabbits/plugin/manager.h"
+#include "rabbits/dynloader/dynloader.h"
+#include "rabbits/logger/has_logger.h"
 
 namespace boost {
     namespace filesystem {
@@ -35,24 +37,31 @@ namespace boost {
     }
 }
 
-class ConfigManager {
+class ConfigManager : public HasLoggerIface {
 public:
     typedef std::map<std::string, PlatformDescription> Platforms;
     typedef std::map<std::string, ParameterBase*> ParamAliases;
 
 private:
-    static ConfigManager *m_manager;
+    static ConfigManager * m_config;
+
+    mutable Logger m_logger_app;
+    mutable Logger m_logger_sim;
+
+    Logger * m_root_loggers[LogContext::LASTLOGCONTEXT] { &m_logger_app, &m_logger_sim };
+
+    Parameters m_global_params;
 
     ComponentManager m_components;
-    //PluginManager m_plugins;
+    PluginManager m_plugins;
+
+    DynamicLoader m_dynloader;
 
     PlatformDescription m_root_descr;
     PlatformDescription m_cmdline_descr;
     PlatformDescription m_config_file_descr;
 
     Platforms m_platforms;
-
-    Parameters m_global_params;
 
     std::vector<std::string> m_dynlibs_to_load;
     std::set<std::string> m_loaded_config_files;
@@ -75,8 +84,8 @@ private:
     void build_cmdline_unaries(std::set<std::string> &unaries) const;
 
 public:
-    static void set_manager(ConfigManager &c) { m_manager = &c; }
-    static ConfigManager & get_manager() { return *m_manager; }
+    static ConfigManager & get() { return *m_config; }
+    static void set_config_manager(ConfigManager &c) { m_config = &c; }
 
     ConfigManager();
     virtual ~ConfigManager();
@@ -92,7 +101,7 @@ public:
     const ParamAliases & get_param_aliases() const { return m_aliases; }
     void add_global_param(const std::string &key, const ParameterBase &param);
     Parameters & get_global_params();
-    
+
     void get_dynlibs_to_load(std::vector<std::string> &dynlibs) const;
 
     bool platform_exists(const std::string &name) const { return m_platforms.find(name) != m_platforms.end(); }
@@ -101,8 +110,12 @@ public:
 
     PlatformDescription get_root_description() const { return m_root_descr; }
 
+    Logger & get_logger(LogContext::value context) const { return *m_root_loggers[context]; }
+
     ComponentManager & get_component_manager() { return m_components; }
-    //PluginManager & get_plugin_manager() { return m_plugins; }
+    PluginManager & get_plugin_manager() { return m_plugins; }
+
+    DynamicLoader & get_dynloader() { return m_dynloader; }
 };
 
 #endif

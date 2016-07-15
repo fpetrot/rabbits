@@ -17,26 +17,14 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <string>
+#ifndef _RABBITS_CONFIG_HAS_CONFIG_H
+#define _RABBITS_CONFIG_HAS_CONFIG_H
 
-#include "rabbits/plugin/manager.h"
-#include "rabbits/plugin/plugin.h"
-#include "rabbits/plugin/factory.h"
+class ConfigManager;
 
-#include "rabbits/logger.h"
+class HasConfigIface {
+public:
+    virtual ConfigManager & get_config() const = 0;
+};
 
-PluginManager* PluginManager::m_inst = NULL;
-
-void PluginManager::register_plugin(PluginFactory *pf)
-{
-    LOG(APP, DBG) << "Registering plugin `" << pf->get_name() << "`\n";
-    m_plugins.push_back(pf->create());
-}
-
-PluginManager& PluginManager::get() {
-    if (m_inst == NULL) {
-        m_inst = new PluginManager;
-        PluginFactory::register_plugins();
-    }
-    return *m_inst;
-}
+#endif

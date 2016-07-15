@@ -28,6 +28,8 @@
 #include "rabbits/component/factory.h"
 #include "rabbits/datatypes/address_range.h"
 
+#include "rabbits/plugin/plugin.h"
+#include "rabbits/plugin/factory.h"
 #include "rabbits/plugin/hook.h"
 #include "rabbits/plugin/manager.h"
 
@@ -51,25 +53,26 @@ static void tokenize(const string s, vector<string>& toks, const char sep = '.')
     }
 }
 
-PlatformBuilder::PlatformBuilder(sc_module_name name, PlatformDescription &descr)
-    : sc_module(name), m_dbg(NULL)
+PlatformBuilder::PlatformBuilder(sc_module_name name, PlatformDescription &descr,
+                                 ConfigManager &config)
+    : sc_module(name), m_config(config), m_dbg(NULL)
 {
-    PluginManager &pm = PluginManager::get();
+    create_plugins(descr);
 
-    pm.run_hook(PluginHookBeforeBuild(&descr, this));
+    run_hooks(PluginHookBeforeBuild(&descr, this));
 
     create_components(descr, CreationStage::DISCOVER);
-    pm.run_hook(PluginHookAfterComponentDiscovery(&descr, this));
-    
+    run_hooks(PluginHookAfterComponentDiscovery(&descr, this));
+
     create_components(descr, CreationStage::CREATE);
-    pm.run_hook(PluginHookAfterComponentInst(&descr, this));
-    
+    run_hooks(PluginHookAfterComponentInst(&descr, this));
+
     do_bindings(descr);
-    pm.run_hook(PluginHookAfterBusConnections(&descr, this));
+    run_hooks(PluginHookAfterBusConnections(&descr, this));
 
     create_dbg_init();
 
-    pm.run_hook(PluginHookAfterBuild(&descr, this));
+    run_hooks(PluginHookAfterBuild(&descr, this));
 }
 
 PlatformBuilder::~PlatformBuilder()
@@ -94,7 +97,7 @@ void PlatformBuilder::create_dbg_init()
     }
 
     for (ComponentBase* bus : buses) {
-        m_dbg = new DebugInitiator("dbg-initiator");
+        m_dbg = new DebugInitiator("dbg-initiator", m_config);
 
         assert(bus->has_attr("tlm-bus-port"));
         assert(m_dbg->has_attr("tlm-initiator-port"));
@@ -109,11 +112,53 @@ void PlatformBuilder::create_dbg_init()
     }
 }
 
+void PlatformBuilder::create_plugins(PlatformDescription &descr)
+{
+    PluginManager &pm = m_config.get_plugin_manager();
+    const Namespace &ns = Namespace::get(Namespace::PLUGIN);
+
+    if ((!descr.exists(ns.get_name())) || (!descr[ns.get_name()].is_map())) {
+        LOG(APP, DBG) << "No plugin instanciation in description\n";
+        return;
+    }
+
+    for (auto &d : descr[ns.get_name()]) {
+        PlatformDescription &p_descr = d.second;
+        const string &name = d.first;
+
+        if (!p_descr.exists("plugin")) {
+            LOG(APP, WRN) << "Missing `plugin` attribute for plugin `" << name << "`\n";
+            continue;
+        }
+
+        const string p_name = p_descr["plugin"].as<string>();
+
+        PluginManager::Factory p_fact = pm.find_by_name(p_name);
+
+        if (p_fact != NULL) {
+            LOG(APP, DBG) << "Creating plugin instance `" << name
+                << "` of plugin `" << p_name << "`\n";
+            m_plugins[name] = p_fact->create(name, p_descr);
+        } else {
+            LOG(APP, WRN) << "Plugin `" << p_name << "` does not exists.\n";
+        }
+    }
+}
+
+template <class HOOK>
+void PlatformBuilder::run_hooks(HOOK &&hook)
+{
+    for (auto &p : m_plugins) {
+        PluginBase *plugin = p.second;
+
+        plugin->hook(hook);
+    }
+}
+
 void PlatformBuilder::create_components(PlatformDescription &descr, CreationStage::value stage)
 {
     PlatformDescription::iterator it;
-    //ComponentManager &cm = ComponentManager::get();
-    ComponentManager cm;// = ComponentManager::get();
+    ComponentManager &cm = m_config.get_component_manager();
 
     if ((!descr.exists("components")) || (descr["components"].type() != PlatformDescription::MAP)) {
         LOG(APP, DBG) << "No component found in description\n";

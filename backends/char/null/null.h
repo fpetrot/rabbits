@@ -23,12 +23,12 @@
 #include <vector>
 
 #include <rabbits/component/component.h>
-#include <rabbits/component/port/uart.h>
+#include <rabbits/component/port/char.h>
 
 
-class NullCharDevice : public Component{
+class NullCharDevice : public Component {
 private:
-    UartPort m_port;
+    CharPort m_port;
 
     void recv_thread()
     {
@@ -41,8 +41,8 @@ private:
 
 public:
     SC_HAS_PROCESS(NullCharDevice);
-    NullCharDevice(sc_core::sc_module_name n, Parameters &p) 
-        : Component(n, p), m_port("uart")
+    NullCharDevice(sc_core::sc_module_name n, Parameters &p, ConfigManager &c)
+        : Component(n, p, c), m_port("uart")
     {
         SC_THREAD(recv_thread);
     }

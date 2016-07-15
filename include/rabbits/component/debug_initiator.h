@@ -39,8 +39,8 @@
  */
 class DebugInitiator : public Master<> {
 public:
-    DebugInitiator(sc_core::sc_module_name name);
-    DebugInitiator(sc_core::sc_module_name name, Parameters &cp);
+    DebugInitiator(sc_core::sc_module_name name, ConfigManager &config);
+    DebugInitiator(sc_core::sc_module_name name, Parameters &cp, ConfigManager &config);
     virtual ~DebugInitiator();
 
     /**

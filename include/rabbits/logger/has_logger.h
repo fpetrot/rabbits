@@ -17,6 +17,28 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "rabbits/plugin/factory.h"
+#ifndef _RABBITS_LOGGER_HAS_LOGGER_H
+#define _RABBITS_LOGGER_HAS_LOGGER_H
 
-std::vector<PluginFactory*> * PluginFactory::m_insts = NULL;
+#include "datatypes.h"
+
+class Logger;
+
+/**
+ * @brief Logger interface.
+ *
+ * Classes willing to override log traces must implement this interface.
+ */
+class HasLoggerIface {
+public:
+    /**
+     * @brief Return the logger associated to the object and the given context.
+     *
+     * @param[in] context The desired log context.
+     *
+     * @return the logger associated to the object and the given context.
+     */
+    virtual Logger & get_logger(LogContext::value context) const = 0;
+};
+
+#endif

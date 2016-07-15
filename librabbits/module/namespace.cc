@@ -20,6 +20,7 @@
 #include "rabbits/module/namespace.h"
 
 const Namespace Namespace::namespaces[] {
+    [GLOBAL] = Namespace(GLOBAL, "global"),
     [COMPONENT] = Namespace(COMPONENT, "components"),
     [PLUGIN] = Namespace(PLUGIN, "plugins"),
     [BACKEND] = Namespace(BACKEND, "backends"),

@@ -30,6 +30,7 @@
 #include "rabbits/component/component.h"
 #include "rabbits/rabbits_exception.h"
 #include "rabbits/logger.h"
+#include "rabbits/config/has_config.h"
 
 class Test;
 
@@ -109,17 +110,18 @@ public:
 
     const std::string & get_name() { return m_name; }
 
-    virtual Test * create() const = 0;
+    virtual Test * create(ConfigManager &) const = 0;
 };
 
 class Test : public sc_core::sc_module {
 private:
-    bool m_test_result;
-    std::string m_current_filename;
-    int m_current_line;
+    bool m_test_result = true;
+    std::string m_current_filename = "??";
+    int m_current_line = -1;
+    ConfigManager & m_config;
 
 protected:
-    sc_core::sc_time m_last_timestamp;
+    sc_core::sc_time m_last_timestamp = sc_core::SC_ZERO_TIME;
 
     void set_current_file(const std::string &fn) { m_current_filename = fn; }
     void set_current_line(int line) { m_current_line = line; }
@@ -170,36 +172,34 @@ protected:
 
 public:
     SC_HAS_PROCESS(Test);
-    Test(sc_core::sc_module_name n)
+    Test(sc_core::sc_module_name n, ConfigManager &c)
         : sc_module(n)
-        , m_test_result(true)
-        , m_current_filename("??")
-        , m_current_line(-1)
-        , m_last_timestamp(sc_core::SC_ZERO_TIME)
+        , m_config(c)
     {
         SC_THREAD(unit_wrapper);
     }
 
     bool tests_passed() const { return m_test_result; }
+    ConfigManager & get_config() const { return m_config; }
 };
 
-#define RABBITS_UNIT_TEST(_name, _base)                        \
-    class Test_ ## _name : public _base {                      \
-    public:                                                    \
-        SC_HAS_PROCESS(Test_ ## _name);                        \
-        Test_ ## _name(sc_core::sc_module_name n)              \
-            : _base(n) {}                                      \
-        virtual void unit();                                   \
-    };                                                         \
-    class Test_ ## _name ## _Factory : public TestFactory {    \
-    public:                                                    \
-        Test_ ## _name ## _Factory(std::string n)              \
-            : TestFactory(n) {}                                \
-        virtual Test * create() const {                        \
-            return new Test_ ## _name (# _name);               \
-        }                                                      \
-    };                                                         \
-    static Test_ ## _name ## _Factory _name ## _inst(# _name); \
+#define RABBITS_UNIT_TEST(_name, _base)                             \
+    class Test_ ## _name : public _base {                           \
+    public:                                                         \
+        SC_HAS_PROCESS(Test_ ## _name);                             \
+        Test_ ## _name(sc_core::sc_module_name n, ConfigManager &c) \
+            : _base(n, c) {}                                        \
+        virtual void unit();                                        \
+    };                                                              \
+    class Test_ ## _name ## _Factory : public TestFactory {         \
+    public:                                                         \
+        Test_ ## _name ## _Factory(std::string n)                   \
+            : TestFactory(n) {}                                     \
+        virtual Test * create(ConfigManager &c) const {             \
+            return new Test_ ## _name (# _name, c);                 \
+        }                                                           \
+    };                                                              \
+    static Test_ ## _name ## _Factory _name ## _inst(# _name);      \
     void Test_ ## _name::unit()
 
 #define RABBITS_TEST_ASSERT(assertion)      \

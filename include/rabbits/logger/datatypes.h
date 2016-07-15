@@ -17,23 +17,30 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _RABBITS_MODULE_MODULE_H
-#define _RABBITS_MODULE_MODULE_H
+#ifndef _RABBITS_LOGGER_DATATYPES_H
+#define _RABBITS_LOGGER_DATATYPES_H
 
-#include "rabbits/logger/has_logger.h"
-#include "rabbits/config/has_config.h"
-#include "parameters.h"
-
-class ModuleIface
-    : public HasParametersIface
-    , public HasLoggerIface
-    , public HasConfigIface
-{
+/**
+ * @brief Log level.
+ */
+class LogLevel {
 public:
-    /**
-     * @brief Return the module name
-     */
-    virtual const std::string & get_name() const = 0;
+    enum value {
+        ERROR = 0, WARNING, INFO, DEBUG,
+        LASTLOGLVL
+    };
+};
+
+/**
+ * @brief Log context.
+ */
+class LogContext {
+public:
+    enum value {
+        APP = 0, /**< Log messages related to the application */
+        SIM,     /**< Log messages related to the simulation */
+        LASTLOGCONTEXT
+    };
 };
 
 #endif

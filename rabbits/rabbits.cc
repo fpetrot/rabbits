@@ -30,6 +30,7 @@
 #include <rabbits/dynloader/dynloader.h>
 
 #include <rabbits/config/manager.h>
+#include <rabbits/config/static_loader.h>
 
 #include <cstdlib>
 #include <iostream>
@@ -58,6 +59,11 @@ static void declare_global_params(ConfigManager &config)
 
     config.add_global_param("list-components",
                             Parameter<bool>("List available components "
+                                            "with their description",
+                                            false));
+
+    config.add_global_param("list-plugins",
+                            Parameter<bool>("List available plugins "
                                             "with their description",
                                             false));
 
@@ -119,6 +125,7 @@ static void declare_aliases(ConfigManager &config)
     config.add_param_alias("help",              p["show-help"]);
     config.add_param_alias("help-advanced",     p["show-advanced-params"]);
     config.add_param_alias("list-components",   p["list-components"]);
+    config.add_param_alias("list-plugins",      p["list-plugins"]);
     config.add_param_alias("systemc-hierarchy", p["show-systemc-hierarchy"]);
     config.add_param_alias("debug",             p["debug"]);
     config.add_param_alias("version",           p["show-version"]);
@@ -251,12 +258,11 @@ static void setup_loggers(ConfigManager &config, LogFiles &files)
 extern "C" {
 int sc_main(int argc, char *argv[])
 {
+    ConfigManager config;
+    ConfigManager::set_config_manager(config);
+
     get_app_logger().set_log_level(LogLevel::INFO);
     get_sim_logger().set_log_level(LogLevel::INFO);
-
-    ConfigManager config;
-
-    ConfigManager::set_manager(config);
 
     declare_global_params(config);
     declare_aliases(config);
@@ -283,7 +289,9 @@ int sc_main(int argc, char *argv[])
         return 0;
     }
 
-    DynamicLoader &dyn_loader = DynamicLoader::get();
+    StaticLoader::load(config);
+
+    DynamicLoader &dyn_loader = config.get_dynloader();
     char * env_dynlib_paths = std::getenv("RABBITS_DYNLIB_PATH");
     if (env_dynlib_paths != NULL) {
         dyn_loader.add_colon_sep_search_paths(env_dynlib_paths);
@@ -292,7 +300,12 @@ int sc_main(int argc, char *argv[])
     dyn_loader.search_and_load_rabbits_dynlibs();
 
     if (globals["list-components"].as<bool>()) {
-        enum_components(LogLevel::INFO);
+        enum_components(config, LogLevel::INFO);
+        return 0;
+    }
+
+    if (globals["list-plugins"].as<bool>()) {
+        enum_plugins(config, LogLevel::INFO);
         return 0;
     }
 
@@ -300,7 +313,7 @@ int sc_main(int argc, char *argv[])
 
     if (pname.empty()) {
         if (globals["show-help"].as<bool>() || globals["show-advanced-params"].as<bool>()) {
-            PlatformBuilder empty("", PlatformDescription::INVALID_DESCRIPTION);
+            PlatformBuilder empty("", PlatformDescription::INVALID_DESCRIPTION, config);
             print_usage(argv[0], config, empty);
             return 0;
         }
@@ -316,7 +329,7 @@ int sc_main(int argc, char *argv[])
     LOG(APP, DBG) << "Selected platform is " << pname << "\n";
 
     PlatformDescription platform = config.apply_platform(pname);
-    PlatformBuilder builder(pname.c_str(), platform);
+    PlatformBuilder builder(pname.c_str(), platform, config);
 
     if (globals["show-help"].as<bool>() || globals["show-advanced-params"].as<bool>()) {
         print_usage(argv[0], config, builder);

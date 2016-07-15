@@ -31,31 +31,11 @@
 #include <ostream>
 #include <functional>
 
+#include "datatypes.h"
 #include "rabbits/config.h"
 #include "format.h"
 
-/**
- * @brief Log level.
- */
-class LogLevel {
-public:
-    enum value {
-        ERROR = 0, WARNING, INFO, DEBUG,
-        LASTLOGLVL
-    };
-};
-
-/**
- * @brief Log context.
- */
-class LogContext {
-public:
-    enum value {
-        APP = 0, /**< Log messages related to the application */
-        SIM,     /**< Log messages related to the simulation */
-        LASTLOGCONTEXT
-    };
-};
+class ConfigManager;
 
 /**
  * @brief Main logging system.
@@ -67,11 +47,11 @@ public:
         Formatter *formatter = nullptr;
 
         Stream() {}
-        explicit Stream(std::ostream &sink) : sink(&sink), formatter(new Formatter(sink)) {}
+        Stream(std::ostream &sink, ConfigManager &config) : sink(&sink), formatter(new Formatter(sink, config)) {}
 
         Stream(const Stream &s) : sink(s.sink), formatter(new Formatter(*s.formatter)) {}
         Stream(Stream &&s) : sink(s.sink), formatter(s.formatter) { s.sink = nullptr; s.formatter = nullptr; }
-        
+
         ~Stream() { delete formatter; }
 
         Stream & operator= (Stream s) { std::swap(sink, s.sink); std::swap(formatter, s.formatter); return *this; }
@@ -88,12 +68,6 @@ protected:
     typedef std::vector<char>::size_type size_type;
     static const size_type DEFAULT_BUF_SIZE = 256;
 
-private:
-    static Logger m_root_loggers[LogContext::LASTLOGCONTEXT];
-
-    Logger(const Logger&);
-    Logger& operator=(const Logger&);
-
 protected:
     static std::vector<char> m_format_buf;
     static char * vformat(const char *fmt, va_list ap);
@@ -101,6 +75,8 @@ protected:
     Logger *m_parent = nullptr;
     LogLevel::value m_level = LogLevel::value(RABBITS_LOGLEVEL);
     LogLevel::value m_next_lvl;
+
+    ConfigManager &m_config;
 
     bool m_new_trace = true;
 
@@ -175,19 +151,24 @@ protected:
     }
 
 public:
-    Logger(std::ostream *default_stream = &std::cerr)
+    Logger(std::ostream *default_stream, ConfigManager &config)
+        : m_config(config)
     {
         for (int i = 0; i < LogLevel::LASTLOGLVL; i++) {
-            m_streams[i] = Stream(*default_stream);
+            m_streams[i] = Stream(*default_stream, m_config);
         }
     }
 
-    /**
-     * @brief Return the singleton instance of the root Logger.
-     *
-     * @return the singleton instance of the root Logger.
-     */
-    static Logger & get_root_logger(LogContext::value context) { return m_root_loggers[context]; }
+    explicit Logger(ConfigManager &config)
+        : m_config(config)
+    {
+        for (int i = 0; i < LogLevel::LASTLOGLVL; i++) {
+            m_streams[i] = Stream(std::cerr, m_config);
+        }
+    }
+
+    Logger(const Logger&) = delete;
+    Logger& operator=(const Logger&) = delete;
 
     static char * format(const char *fmt, ...);
 
@@ -199,7 +180,7 @@ public:
      * @param[in] lvl The log level.
      * @param[in] str The stream to associate to the log level.
      */
-    void set_stream(LogLevel::value lvl, std::ostream *str) { m_streams[lvl] = Stream(*str); }
+    void set_stream(LogLevel::value lvl, std::ostream *str) { m_streams[lvl] = Stream(*str, m_config); }
 
     /**
      * @brief Set the stream for all log levels.
@@ -211,7 +192,7 @@ public:
     void set_streams(std::ostream *str)
     {
         for (int i = 0; i < int(LogLevel::LASTLOGLVL); i++) {
-            m_streams[i] = Stream(*str);
+            m_streams[i] = Stream(*str, m_config);
         }
     }
 
@@ -228,7 +209,7 @@ public:
     void set_color(ConsoleColor::value c, ConsoleAttr::value a)
     {
         Stream &s = get_stream(m_next_lvl);
-        
+
         if (s.is_null()) {
             return;
         }
@@ -239,7 +220,7 @@ public:
     void reset_format()
     {
         Stream &s = get_stream(m_next_lvl);
-        
+
         if (s.is_null()) {
             return;
         }
@@ -365,7 +346,7 @@ public:
      *
      * @param[in,out] l The instance to set as a child of this instance.
      */
-    void set_child(Logger &l) 
+    void set_child(Logger &l)
     {
         l.m_level = m_level;
         l.m_banner_enabled = m_banner_enabled;
@@ -373,7 +354,7 @@ public:
         l.m_muted = m_muted;
 
         l.clear_streams();
-        
+
         l.m_parent = this;
     }
 
@@ -443,23 +424,6 @@ public:
 
     explicit operator bool() const { return true; }
 };
-
-/**
- * @brief Logger interface.
- *
- * Classes willing to override log traces must implement this interface.
- */
-class HasLoggerIface {
-    /**
-     * @brief Return the logger associated to the object and the given context.
-     *
-     * @param[in] context The desired log context.
-     *
-     * @return the logger associated to the object and the given context.
-     */
-    virtual Logger & get_logger(LogContext::value context) const = 0;
-};
-
 
 namespace format {
     static inline Logger & reset(Logger &l) { l.reset_format(); return l; }
