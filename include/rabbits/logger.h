@@ -48,6 +48,12 @@
 # define LOG_CHECK_DBG(logger) false
 #endif
 
+#if (RABBITS_LOGLEVEL > 3)
+# define LOG_CHECK_TRC(logger) logger.next_trace(LogLevel::TRACE)
+#else
+# define LOG_CHECK_TRC(logger) false
+#endif
+
 #define LOG_CHECK(logger, lvl) LOG_CHECK_ ## lvl (logger)
 
 #define LOG(ctx, lvl) \

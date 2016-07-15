@@ -54,10 +54,10 @@ public:
 
     explicit TlmInitiatorPort(const std::string &name)
         : Port(name)
-        , socket(name.c_str())
-        , inspector("inspector")
-        , m_init_target_cs(socket)
-        , m_initiator_bus_cs(socket, inspector)
+          , socket(name.c_str())
+          , inspector("inspector")
+          , m_init_target_cs(socket)
+          , m_initiator_bus_cs(socket, inspector)
     {
         init();
     }
@@ -65,10 +65,10 @@ public:
     TlmInitiatorPort(const std::string &name,
                      tlm::tlm_bw_transport_if<> &initiator_iface)
         : Port(name)
-        , socket(name.c_str())
-        , inspector("inspector")
-        , m_init_target_cs(socket)
-        , m_initiator_bus_cs(socket, inspector)
+          , socket(name.c_str())
+          , inspector("inspector")
+          , m_init_target_cs(socket)
+          , m_initiator_bus_cs(socket, inspector)
     {
         init();
         socket.bind(initiator_iface);
@@ -77,10 +77,10 @@ public:
     TlmInitiatorPort(const std::string &name,
                      typename TlmInitiatorTargetCS<BUSWIDTH, 1>::initiator_socket &initiator_proxy)
         : Port(name)
-        , socket(name.c_str())
-        , inspector("inspector")
-        , m_init_target_cs(socket)
-        , m_initiator_bus_cs(socket, inspector)
+          , socket(name.c_str())
+          , inspector("inspector")
+          , m_init_target_cs(socket)
+          , m_initiator_bus_cs(socket, inspector)
     {
         init();
         socket.bind(initiator_proxy);
@@ -102,8 +102,8 @@ public:
     {
         tlm::tlm_generic_payload trans;
 
-        MLOG_F(SIM, DBG, "bus access: addr=%p, data=%p, len=%d\n",
-	      (void *) addr, data, len);
+        MLOG_F(SIM, TRC, "bus access: addr=%p, data=%p, len=%d\n",
+               (void *) addr, data, len);
 
         assert(data);
 
@@ -122,8 +122,8 @@ public:
 
         if (trans.is_response_error()) {
             MLOG_F(SIM, ERR, "Bus %s error at address 0x%.8" PRIx64 ", lenght access: %u byte(s)\n",
-		  (cmd == tlm::TLM_READ_COMMAND) ? "read" : "write",
-		  addr, len);
+                   (cmd == tlm::TLM_READ_COMMAND) ? "read" : "write",
+                   addr, len);
         }
 
         m_last_access = trans.get_response_status();
@@ -133,8 +133,8 @@ public:
     {
         tlm::tlm_generic_payload trans;
 
-        MLOG_F(SIM, DBG, "debug access: addr=%p, data=%p, len=%d\n",
-	      (void *) addr, data, len);
+        MLOG_F(SIM, TRC, "debug access: addr=%p, data=%p, len=%d\n",
+               (void *) addr, data, len);
 
         assert(data);
 

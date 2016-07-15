@@ -500,6 +500,11 @@ parameters:
     description: Set log level to `debug\' for this module
     default: false
     advanced: true
+  trace:
+    type: boolean
+    description: Set log level to `trace\' for this module
+    default: false
+    advanced: true
   log-target:
     type: string
     description: Specify the log target for this module (valid options are `stdout\', `stderr\' and `file\')
@@ -507,7 +512,7 @@ parameters:
     advanced: true
   log-level:
     type: string
-    description: Specify the log level for this module (valid options are `debug\', `info\', `warning\', `error\')
+    description: Specify the log level for this module (valid options are `trace\', `debug\', `info\', `warning\', `error\')
     default: info
     advanced: true
   log-file:

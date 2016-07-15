@@ -26,7 +26,7 @@
 class LogLevel {
 public:
     enum value {
-        ERROR = 0, WARNING, INFO, DEBUG,
+        ERROR = 0, WARNING, INFO, DEBUG, TRACE,
         LASTLOGLVL
     };
 };

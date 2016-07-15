@@ -28,6 +28,7 @@ const std::string Logger::PREFIXES[] = {
         [LogLevel::WARNING] = "[ warn]",
         [LogLevel::INFO]    = "[ info]",
         [LogLevel::DEBUG]   = "[debug]",
+        [LogLevel::TRACE]   = "[trace]",
 };
 
 const Logger::formater_fn Logger::PREFIX_COLORS[] = {
@@ -35,6 +36,7 @@ const Logger::formater_fn Logger::PREFIX_COLORS[] = {
         [LogLevel::WARNING] = format::yellow,
         [LogLevel::INFO]    = format::white,
         [LogLevel::DEBUG]   = format::black,
+        [LogLevel::TRACE]   = format::black_b,
 };
 
 std::vector<char> Logger::m_format_buf;

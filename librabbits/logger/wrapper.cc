@@ -67,6 +67,8 @@ LogLevel::value LoggerWrapper::get_log_level(const std::string level_s)
         return LogLevel::WARNING;
     } else if (level_s == "error") {
         return LogLevel::ERROR;
+    } else if (level_s == "trace") {
+        return LogLevel::TRACE;
     }
 
     LOG(APP, ERR) << "Ignoring invalid log level " << level_s << "\n";
@@ -147,7 +149,8 @@ bool LoggerWrapper::logger_is_custom()
     return (!m_params["log-target"].is_default())
         || (!m_params["log-level"].is_default())
         || (!m_params["log-file"].is_default())
-        || (!m_params["debug"].is_default());
+        || (!m_params["debug"].is_default())
+        || (!m_params["trace"].is_default());
 }
 
 void LoggerWrapper::setup_loggers(HasLoggerIface *parent)
@@ -156,6 +159,7 @@ void LoggerWrapper::setup_loggers(HasLoggerIface *parent)
     LogLevel::value log_level;
     std::string log_file;
     bool debug = false;
+    bool trace = false;
     bool custom = logger_is_custom();
 
     if (custom) {
@@ -163,6 +167,7 @@ void LoggerWrapper::setup_loggers(HasLoggerIface *parent)
         log_level = get_log_level(m_params["log-level"].as<std::string>());
         log_file = m_params["log-file"].as<std::string>();
         debug = m_params["debug"].as<bool>();
+        trace = m_params["trace"].as<bool>();
     } else {
         log_target = LT_STDERR;
         log_level = LogLevel::INFO;
@@ -171,6 +176,10 @@ void LoggerWrapper::setup_loggers(HasLoggerIface *parent)
 
     if (debug) {
         log_level = LogLevel::DEBUG;
+    }
+
+    if (trace) {
+        log_level = LogLevel::TRACE;
     }
 
     for (int i = 0; i < LogContext::LASTLOGCONTEXT; i++) {

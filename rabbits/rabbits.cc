@@ -92,7 +92,7 @@ static void declare_global_params(ConfigManager &config)
                                               "rabbits.log"));
     config.add_global_param("log-level",
                             Parameter<string>("Specify the log level (valid options "
-                                              "are `debug', `info', `warning', `error')",
+                                              "are `trace', `debug', `info', `warning', `error')",
                                               "info"));
     config.add_global_param("log-sim-target",
                             Parameter<string>("Specify simulation related log target "
@@ -103,7 +103,7 @@ static void declare_global_params(ConfigManager &config)
                                               "rabbits.log"));
     config.add_global_param("log-sim-level",
                             Parameter<string>("Specify simulation related log level "
-                                              "(valid options are `debug', `info', `warning', `error')",
+                                              "(valid options are `trace', `debug', `info', `warning', `error')",
                                               "info"));
 }
 
