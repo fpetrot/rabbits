@@ -38,6 +38,8 @@
  */
 class PluginBase : public ModuleIface {
 public:
+    virtual ~PluginBase() {}
+
     /**
      * @brief Hook called before the build starts.
      *

@@ -67,7 +67,7 @@ protected:
 
     std::map<std::string, PluginBase*> m_plugins;
     std::map<std::string, ComponentBase*> m_components;
-    DebugInitiator *m_dbg;
+    DebugInitiator *m_dbg = nullptr;
 
     void create_plugins(PlatformDescription &descr);
     template <class HOOK> void run_hooks(HOOK &&hook);

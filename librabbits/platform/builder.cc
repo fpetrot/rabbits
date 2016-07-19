@@ -55,7 +55,7 @@ static void tokenize(const string s, vector<string>& toks, const char sep = '.')
 
 PlatformBuilder::PlatformBuilder(sc_module_name name, PlatformDescription &descr,
                                  ConfigManager &config)
-    : sc_module(name), m_config(config), m_dbg(NULL)
+    : sc_module(name), m_config(config)
 {
     create_plugins(descr);
 
@@ -76,7 +76,17 @@ PlatformBuilder::PlatformBuilder(sc_module_name name, PlatformDescription &descr
 }
 
 PlatformBuilder::~PlatformBuilder()
-{}
+{
+    delete m_dbg;
+
+    for (auto &p : m_components) {
+        delete p.second;
+    }
+
+    for (auto &p : m_plugins) {
+        delete p.second;
+    }
+}
 
 void PlatformBuilder::create_dbg_init()
 {
