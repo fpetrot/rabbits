@@ -20,9 +20,19 @@
 #include "rabbits/module/namespace.h"
 
 const Namespace Namespace::namespaces[] {
-    [GLOBAL] = Namespace(GLOBAL, "global"),
-    [COMPONENT] = Namespace(COMPONENT, "components"),
-    [PLUGIN] = Namespace(PLUGIN, "plugins"),
-    [BACKEND] = Namespace(BACKEND, "backends"),
+    [GLOBAL] = Namespace(GLOBAL, "global", "global"),
+    [COMPONENT] = Namespace(COMPONENT, "components", "component"),
+    [PLUGIN] = Namespace(PLUGIN, "plugins", "plugin"),
+    [BACKEND] = Namespace(BACKEND, "backends", "backend"),
 };
 
+const Namespace & Namespace::find_by_name(const std::string &name)
+{
+    for (const auto &ns: namespaces) {
+        if (ns.get_name() == name) {
+            return ns;
+        }
+    }
+
+    throw NamespaceNotFoundException(name);
+}

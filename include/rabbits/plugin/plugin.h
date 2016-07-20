@@ -62,6 +62,13 @@ public:
     virtual void hook(const PluginHookAfterComponentInst& h) = 0;
 
     /**
+     * @brief Hook called after the backends creation step.
+     *
+     * @param[in] h Hook context.
+     */
+    virtual void hook(const PluginHookAfterBackendInst& h) = 0;
+
+    /**
      * @brief Hook called after the components connection step.
      *
      * @param[in] h Hook context.
@@ -94,13 +101,16 @@ public:
 
     virtual ~Plugin() {}
 
-    const std::string & get_name() const { return m_name; }
-
     virtual void hook(const PluginHookBeforeBuild& h) {}
     virtual void hook(const PluginHookAfterComponentDiscovery& h) {}
     virtual void hook(const PluginHookAfterComponentInst& h) {}
+    virtual void hook(const PluginHookAfterBackendInst& h) {}
     virtual void hook(const PluginHookAfterBusConnections& h) {}
     virtual void hook(const PluginHookAfterBuild& h) {}
+
+    /* ModuleIface */
+    const std::string & get_name() const { return m_name; }
+    const Namespace & get_namespace() const { return *(m_params.get_namespace()); }
 
     /* HasParametersIface */
     const Parameters & get_params() const { return m_params; }

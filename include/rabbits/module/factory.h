@@ -20,7 +20,8 @@
 #ifndef _RABBITS_MODULE_FACTORY_H
 #define _RABBITS_MODULE_FACTORY_H
 
-#include <tuple>
+#include <utility>
+#include <vector>
 
 #include "parameters.h"
 #include "namespace.h"
@@ -29,6 +30,10 @@
 
 class ModuleFactoryBase : public HasParametersIface, public HasConfigIface
 {
+public:
+    typedef std::pair<std::string, std::string> ExtraValue;
+    typedef std::vector<ExtraValue> ExtraValues;
+
 private:
     ConfigManager &m_config;
     std::string m_name;
@@ -88,6 +93,16 @@ public:
      * @return the full name of the module.
      */
     std::string get_full_name() const { return m_namespace.get_name() + "." + m_name; }
+
+    /**
+     * @brief Fill v with extra values associated to the module factory
+     *
+     * An extra value is a pair of two strings, the first one being the name of
+     * the extra value, and the second the value itself.
+     *
+     * @param[in] v The extra values to fill.
+     */
+    virtual void get_extra_values(ExtraValues &v) const {}
 
     /* HasParametersIface */
     const Parameters & get_params() const { return m_params; }

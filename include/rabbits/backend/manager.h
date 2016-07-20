@@ -17,13 +17,24 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _RABBITS_COMPONENT_COMPONENT_BASE_H
-#define _RABBITS_COMPONENT_COMPONENT_BASE_H
+#ifndef _RABBITS_BACKEND_MANAGER_H
+#define _RABBITS_BACKEND_MANAGER_H
 
-#include <map>
+#include "rabbits/module/manager.h"
+#include "factory.h"
 
-#include <tlm>
-
-
+/**
+ * @brief Backend manager
+ *
+ * Handles the backends collection. Backends are special components that
+ * interacts with te outside world during simulation (user input/output, real
+ * peripheral, ...).  This manager allows for searching a backend by name and
+ * returns the corresponding backend factory.
+ */
+class BackendManager : public ModuleManager<BackendFactoryBase> {
+public:
+    BackendManager() {}
+    virtual ~BackendManager() {}
+};
 
 #endif

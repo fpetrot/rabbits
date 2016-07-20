@@ -51,6 +51,8 @@ public:
     typedef std::map<std::string, ComponentBase*>::const_iterator const_comp_iterator;
 
     typedef std::map<std::string, PluginBase*> Plugins;
+    typedef std::map<std::string, ComponentBase*> Components;
+    typedef std::map<std::string, ModuleIface*> Modules;
 
 protected:
     /**
@@ -65,18 +67,25 @@ protected:
 
     ConfigManager &m_config;
 
-    std::map<std::string, PluginBase*> m_plugins;
-    std::map<std::string, ComponentBase*> m_components;
+    /* Instanciated modules */
+    Plugins m_plugins;
+    Components m_components;
+    Components m_backends;
+
+    /* Instanciated modules, refered as abstract ModuleIface */
+    Modules m_modules[Namespace::COUNT];
+
     DebugInitiator *m_dbg = nullptr;
 
     void create_plugins(PlatformDescription &descr);
     template <class HOOK> void run_hooks(HOOK &&hook);
 
     void create_components(PlatformDescription &descr, CreationStage::value);
+    void create_backends(PlatformDescription &descr);
 
     void do_bindings(PlatformDescription &descr);
     void do_bindings(ComponentBase &c, PlatformDescription &descr);
-    void do_binding(Port &p, PlatformDescription &descr);
+    void do_binding(ComponentBase &c, Port &p, PlatformDescription &descr);
     void do_binding(Port &p0, Port &p1, PlatformDescription &descr);
 
     void create_dbg_init();
@@ -101,43 +110,65 @@ public:
     DebugInitiator& get_dbg_init() { return *m_dbg; }
 
     /**
-     * @brief Return an iterator to the first component of the platform.
+     * @brief Return true if the component of the given namespace and name exists.
      *
-     * @return an iterator to the first component of the platform.
+     * @param[in] namespace The component namespace.
+     * @param[in] name The component name.
+     *
+     * @return true if the component exists, false otherwise.
      */
-    comp_iterator comp_begin() { return m_components.begin(); }
+    bool comp_exists(const Namespace &ns, const std::string &name) const
+    {
+        switch(ns.get_id()) {
+        case Namespace::COMPONENT:
+            return m_components.find(name) != m_components.end();
+        case Namespace::BACKEND:
+        return m_backends.find(name) != m_backends.end();
+        default:
+            return false;
+        }
+
+    }
 
     /**
-     * @brief Return an iterator to the <i>past-the-end</i> component of the platform.
-     *
-     * @return an iterator to the <i>past-the-end</i> component of the platform.
-     */
-    comp_iterator comp_end() { return m_components.end(); }
-
-    /**
-     * @brief Return a constant iterator to the first component of the platform.
-     *
-     * @return a constant iterator to the first component of the platform.
-     */
-    const_comp_iterator comp_begin() const { return m_components.begin(); }
-
-    /**
-     * @brief Return a constant iterator to the <i>past-the-end</i> component of the platform.
-     *
-     * @return a constant iterator to the <i>past-the-end</i> component of the platform.
-     */
-    const_comp_iterator comp_end() const { return m_components.end(); }
-
-    /**
-     * @brief Return true if the component of the given name exists.
+     * @brief Return true if the component of the given name exists in the
+     * COMPONENT namespace.
      *
      * @param name The component name.
      *
      * @return true if the component exists, false otherwise.
      */
-    bool comp_exists(const std::string &name) const { return m_components.find(name) != m_components.end(); }
+    bool comp_exists(const std::string &name) const
+    {
+        return comp_exists(Namespace::get(Namespace::COMPONENT), name);
+    }
 
     void find_comp_by_attr(const std::string &key, std::vector<ComponentBase*> &out);
+
+    /**
+     * @brief Return the component of the given namespace and name.
+     *
+     * @param[in] namespace The component namespace.
+     * @param[in] name The component name.
+     *
+     * @return component instance.
+     *
+     * @throw ComponentNotFoundException if the component does not exists.
+     */
+    ComponentBase & get_comp(const Namespace &ns, const std::string &name) {
+        if (!comp_exists(ns, name)) {
+            throw ComponentNotFoundException(name);
+        }
+
+        switch(ns.get_id()) {
+        case Namespace::COMPONENT:
+            return *m_components[name];
+        case Namespace::BACKEND:
+            return *m_backends[name];
+        default:
+            throw ComponentNotFoundException(name);
+        }
+    }
 
     /**
      * @brief Return the component of the given name.
@@ -163,6 +194,8 @@ public:
      */
     bool is_empty() const { return m_components.empty(); }
 
+    const Components get_components() const { return m_components; }
+    const Components get_backends() const { return m_backends; }
     const Plugins get_plugins() const { return m_plugins; }
 };
 

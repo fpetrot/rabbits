@@ -1,6 +1,8 @@
-component:
-  name: null-chardev-backend
-  type: null-chardev-backend
-  description: "Null character device"
-  class: NullCharDevice
+backend:
+  name: chardev-null
+  description: >
+    Null character device.
+    This character device backend discards data it receives and never sends any.
+    Can be used to stub unused UART.
+  class: NullCharBackend
   include: null.h

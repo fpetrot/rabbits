@@ -26,6 +26,7 @@
 
 #include "rabbits/logger.h"
 #include "rabbits/rabbits_exception.h"
+#include "factory.h"
 
 /**
  * @brief Exception raised when a named component has not been found.
@@ -39,8 +40,86 @@ public:
 };
 
 
+class ModuleFactoryBase;
+
+class ModuleManagerBase {
+public:
+    typedef std::shared_ptr<ModuleFactoryBase> Factory;
+    typedef std::map<std::string, Factory > Factories;
+
+    typedef typename Factories::iterator iterator;
+    typedef typename Factories::const_iterator const_iterator;
+
+private:
+    std::map<std::string, std::shared_ptr<ModuleFactoryBase> > m_factories;
+
+protected:
+    void register_factory(Factory f)
+    {
+        const std::string &name = f->get_name();
+        m_factories[name] = f;
+    }
+    
+public:
+    ModuleManagerBase() {}
+    virtual ~ModuleManagerBase() {}
+
+
+    bool name_exists(const std::string &name) const
+    {
+        return m_factories.find(name) != m_factories.end();
+    }
+
+    /**
+     * @brief Find a module factory given its name
+     *
+     * @param name The module factory name.
+     *
+     * @return the module factory associated to the name.
+     * @throw FactoryNotFoundException if the factory was not found.
+     */
+    Factory find_by_name(const std::string &name)
+    {
+        if (!name_exists(name)) {
+            throw FactoryNotFoundException(name);
+        }
+
+        return m_factories[name];
+    }
+
+    /**
+     * @brief Return an iterator to the first registered component factory.
+     *
+     * @return an iterator to the first registered component factory.
+     */
+    iterator begin() { return m_factories.begin(); }
+
+    /**
+     * @brief Return an iterator to the <i>past-the-end</i> registered component factory.
+     *
+     * @return an iterator to the <i>past-the-end</i> registered component factory.
+     */
+    iterator end() { return m_factories.end(); }
+
+    /**
+     * @brief Return an constant iterator to the first registered component factory.
+     *
+     * @return an iterator to the first registered component factory.
+     */
+    const_iterator begin() const { return m_factories.begin(); }
+
+    /**
+     * @brief Return an constant iterator to the <i>past-the-end</i> registered component factory.
+     *
+     * @return an iterator to the <i>past-the-end</i> registered component factory.
+     */
+    const_iterator end() const { return m_factories.end(); }
+
+};
+
+
 template <class TFactory>
-class ModuleManager {
+class ModuleManager : public ModuleManagerBase {
 public:
     typedef std::shared_ptr<TFactory> Factory;
     typedef std::map<std::string, Factory> Factories;
@@ -66,6 +145,7 @@ public:
         const std::string &name = f->get_name();
         m_factories[name] = f;
 
+        ModuleManagerBase::register_factory(f);
         LOG(APP, DBG) << "Registering module " << f->get_full_name() << "\n";
     }
 

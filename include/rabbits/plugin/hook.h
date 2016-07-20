@@ -27,16 +27,13 @@
 class PlatformDescription;
 class PlatformBuilder;
 
-/**
- * @brief Hook context used before the build starts.
- */
-class PluginHookBeforeBuild {
+class PluginHook {
 protected:
-    PlatformDescription *m_descr;
-    PlatformBuilder *m_builder;
+    PlatformDescription &m_descr;
+    PlatformBuilder &m_builder;
 
 public:
-    PluginHookBeforeBuild(PlatformDescription *descr, PlatformBuilder *builder) 
+    PluginHook(PlatformDescription &descr, PlatformBuilder &builder) 
         : m_descr(descr), m_builder(builder) {}
 
     /**
@@ -44,122 +41,71 @@ public:
      *
      * @return the platform description.
      */
-    PlatformDescription* get_descr() const { return m_descr; }
+    PlatformDescription& get_descr() const { return m_descr; }
 
     /**
      * @brief Get the platform builder.
      *
      * @return the platform builder.
      */
-    PlatformBuilder* get_builder() const { return m_builder; }
+    PlatformBuilder& get_builder() const { return m_builder; }
+};
+
+/**
+ * @brief Hook context used before the build starts.
+ */
+class PluginHookBeforeBuild : public PluginHook {
+public:
+    PluginHookBeforeBuild(PlatformDescription &descr, PlatformBuilder &builder) 
+        : PluginHook(descr, builder) {}
 };
 
 /**
  * @brief Hook context used after the components discovery step.
  */
-class PluginHookAfterComponentDiscovery {
-protected:
-    PlatformDescription *m_descr;
-    PlatformBuilder *m_builder;
-
+class PluginHookAfterComponentDiscovery : public PluginHook {
 public:
-    PluginHookAfterComponentDiscovery (PlatformDescription *descr, PlatformBuilder *builder) 
-        : m_descr(descr), m_builder(builder) {}
-
-    /**
-     * @brief Get the platform description.
-     *
-     * @return the platform description.
-     */
-    PlatformDescription* get_descr() const { return m_descr; }
-
-    /**
-     * @brief Get the platform builder.
-     *
-     * @return the platform builder.
-     */
-    PlatformBuilder* get_builder() const { return m_builder; }
+    PluginHookAfterComponentDiscovery (PlatformDescription &descr, PlatformBuilder &builder) 
+        : PluginHook(descr, builder) {}
 };
 
 /**
  * @brief Hook context used after the components creation step.
  */
-class PluginHookAfterComponentInst {
-protected:
-    PlatformDescription *m_descr;
-    PlatformBuilder *m_builder;
-
+class PluginHookAfterComponentInst : public PluginHook {
 public:
-    PluginHookAfterComponentInst (PlatformDescription *descr, PlatformBuilder *builder) 
-        : m_descr(descr), m_builder(builder) {}
+    PluginHookAfterComponentInst (PlatformDescription &descr,
+                                  PlatformBuilder &builder) 
+        : PluginHook(descr, builder) {}
+};
 
-    /**
-     * @brief Get the platform description.
-     *
-     * @return the platform description.
-     */
-    PlatformDescription* get_descr() const { return m_descr; }
-
-    /**
-     * @brief Get the platform builder.
-     *
-     * @return the platform builder.
-     */
-    PlatformBuilder* get_builder() const { return m_builder; }
+/**
+ * @brief Hook context used after the backends creation step.
+ */
+class PluginHookAfterBackendInst : public PluginHook {
+public:
+    PluginHookAfterBackendInst (PlatformDescription &descr,
+                                PlatformBuilder &builder) 
+        : PluginHook(descr, builder) {}
 };
 
 /**
  * @brief Hook context used after the components connection step.
  */
-class PluginHookAfterBusConnections {
-protected:
-    PlatformDescription *m_descr;
-    PlatformBuilder *m_builder;
-
+class PluginHookAfterBusConnections : public PluginHook {
 public:
-    PluginHookAfterBusConnections (PlatformDescription *descr, PlatformBuilder *builder) 
-        : m_descr(descr), m_builder(builder) {}
-
-    /**
-     * @brief Get the platform description.
-     *
-     * @return the platform description.
-     */
-    PlatformDescription* get_descr() const { return m_descr; }
-
-    /**
-     * @brief Get the platform builder.
-     *
-     * @return the platform builder.
-     */
-    PlatformBuilder* get_builder() const { return m_builder; }
+    PluginHookAfterBusConnections (PlatformDescription &descr,
+                                   PlatformBuilder &builder) 
+        : PluginHook(descr, builder) {}
 };
 
 /**
  * @brief Hook context used at the end of the build.
  */
-class PluginHookAfterBuild {
-protected:
-    PlatformDescription *m_descr;
-    PlatformBuilder *m_builder;
-
+class PluginHookAfterBuild : public PluginHook {
 public:
-    PluginHookAfterBuild(PlatformDescription *descr, PlatformBuilder *builder) 
-        : m_descr(descr), m_builder(builder) {}
-
-    /**
-     * @brief Get the platform description.
-     *
-     * @return the platform description.
-     */
-    PlatformDescription* get_descr() const { return m_descr; }
-
-    /**
-     * @brief Get the platform builder.
-     *
-     * @return the platform builder.
-     */
-    PlatformBuilder* get_builder() const { return m_builder; }
+    PluginHookAfterBuild(PlatformDescription &descr, PlatformBuilder &builder) 
+        : PluginHook(descr, builder) {}
 };
 
 #endif

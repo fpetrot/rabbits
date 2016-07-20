@@ -17,34 +17,65 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _CONSOLE_BACKEND_H
-#define _CONSOLE_BACKEND_H
+#ifndef _BACKEND_CHAR_STDIO_H
+#define _BACKEND_CHAR_STDIO_H
 
 #include <vector>
 
 #include <rabbits/component/component.h>
 #include <rabbits/component/port/char.h>
 
+#include <termios.h>
 
-class NullCharBackend : public Component {
+class StdioCharBackend : public Component {
+public:
+    /* Escape character is ctrl-a */
+    const uint8_t ESCAPE = 0x01;
 private:
+    static bool in_use;
+
     CharPort m_port;
 
-    void recv_thread()
-    {
-        std::vector<uint8_t> data;
+    void send_char(uint8_t c);
+    void handle_escape(uint8_t c);
 
-        for(;;) {
-            m_port.recv(data);
-        }
-    }
+    void send_buf();
+
+    void recv_thread();
+    void send_thread();
+
+    void setup_tty();
+    void restore_tty();
+
+    std::vector<uint8_t> m_buf;
+
+    termios m_tty_all_save;
+    termios m_tty_out_save;
+
+    bool m_got_escape = false;
 
 public:
-    SC_HAS_PROCESS(NullCharBackend);
-    NullCharBackend(sc_core::sc_module_name n, Parameters &p, ConfigManager &c)
+    SC_HAS_PROCESS(StdioCharBackend);
+    StdioCharBackend(sc_core::sc_module_name n, Parameters &p, ConfigManager &c)
         : Component(n, p, c), m_port("char")
     {
+        if (in_use) {
+            LOG(APP, ERR) << "Only one stdio char backend allowed\n";
+            return;
+        }
+
+        setup_tty();
+
+        in_use = true;
+
         SC_THREAD(recv_thread);
+        SC_THREAD(send_thread);
+    }
+
+    virtual ~StdioCharBackend()
+    {
+        restore_tty();
+        in_use = false;
     }
 };
 

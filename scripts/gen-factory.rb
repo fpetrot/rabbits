@@ -369,6 +369,37 @@ class Plugin < RabbitsModule
 
 end
 
+class Backend < RabbitsModule
+  def initialize(fn, descr, args)
+    super(fn, descr, args)
+  end
+
+  def build_discover
+    if @discover then
+      DISCOVER_TPL % { :class =>  + @class }
+    else
+      ''
+    end
+  end
+
+  def get_print_args
+    super.merge({
+      :extra_ctor_params => '',
+      :discover => build_discover,
+      :kind => "backend",
+      :Kind => "Backend",
+    })
+  end
+
+  def build_discover
+    if @discover then
+      DISCOVER_TPL % { :class =>  + @class }
+    else
+      ''
+    end
+  end
+
+end
 
 class StaticLoader
   def initialize(modules)
@@ -561,6 +592,9 @@ begin
     when "component"
       yml = hash_merge({"component" => generic_module}, yml)
       Component.new(f, yml['component'], args)
+    when "backend"
+      yml = hash_merge({"backend" => generic_module}, yml)
+      Backend.new(f, yml['backend'], args)
     when "plugin"
       yml = hash_merge({"plugin" => generic_module}, yml)
       Plugin.new(f, yml['plugin'], args)

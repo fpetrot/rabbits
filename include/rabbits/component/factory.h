@@ -61,6 +61,11 @@ public:
      */
     std::string get_type() const { return m_type; }
 
+    virtual void get_extra_values(ExtraValues &v) const
+    {
+        v.push_back(std::make_pair("type", get_type()));
+    }
+
     /**
      * @brief Called during the PlatformBuilder discovery phase.
      *

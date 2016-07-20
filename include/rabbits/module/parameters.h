@@ -101,6 +101,14 @@ public:
         }
     }
 
+    const Namespace * get_namespace() const {
+        return m_namespace;
+    }
+
+    const ModuleIface * get_module() const {
+        return m_module;
+    }
+
     /**
      * @brief Fill the collection from the given PlatformDescription.
      *

@@ -27,6 +27,7 @@
 #include "rabbits/module/parameters.h"
 #include "rabbits/platform/description.h"
 #include "rabbits/component/manager.h"
+#include "rabbits/backend/manager.h"
 #include "rabbits/plugin/manager.h"
 #include "rabbits/dynloader/dynloader.h"
 #include "rabbits/logger/has_logger.h"
@@ -53,7 +54,15 @@ private:
     Parameters m_global_params;
 
     ComponentManager m_components;
+    BackendManager m_backends;
     PluginManager m_plugins;
+
+    ModuleManagerBase * m_managers[Namespace::COUNT] {
+        [Namespace::GLOBAL] = nullptr,
+        [Namespace::COMPONENT] = &m_components,
+        [Namespace::PLUGIN] = &m_plugins,
+        [Namespace::BACKEND] = &m_backends,
+    };
 
     DynamicLoader m_dynloader;
 
@@ -113,7 +122,16 @@ public:
     Logger & get_logger(LogContext::value context) const { return *m_root_loggers[context]; }
 
     ComponentManager & get_component_manager() { return m_components; }
+    BackendManager & get_backend_manager() { return m_backends; }
     PluginManager & get_plugin_manager() { return m_plugins; }
+
+    ModuleManagerBase & get_manager_by_namespace(const Namespace &n) {
+        if (n.get_id() == Namespace::GLOBAL) {
+            throw RabbitsException("There is no manager for the global namespace.");
+        }
+
+        return *m_managers[n.get_id()];
+    }
 
     DynamicLoader & get_dynloader() { return m_dynloader; }
 };

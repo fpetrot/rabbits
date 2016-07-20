@@ -47,7 +47,7 @@ using std::unique_ptr;
 static inline string get_param_full_name(const ParameterBase &param)
 {
     string ret = "-" + param.get_namespace().get_name();
-    
+
     if (param.get_module()) {
         ret += "." + param.get_module()->get_name();
     }
@@ -78,7 +78,9 @@ private:
 
     bool m_is_tty;
     int m_start_at, m_max_len;
-    int m_cur;
+    int m_next_start_at = -1;
+    int m_forced_max_len = 0;
+    int m_cur = 0;
 
     void spaces(int c)
     {
@@ -107,38 +109,55 @@ public:
         m_cur = m_start_at;
     }
 
-    void set_start_col(int col)
+    void set_max_len(int len)
+    {
+        m_forced_max_len = len;
+    }
+
+    void set_start_col(int col, bool next_line = false)
     {
         if (!m_is_tty) {
             return;
         }
 
+        if (next_line) {
+            m_next_start_at = col;
+            return;
+        }
+
         int rows, cols;
 
-        m_logger.get_tty_attr(m_lvl, rows, cols);
+        if (!m_forced_max_len) {
+            m_logger.get_tty_attr(m_lvl, rows, cols);
+            m_max_len = cols;
+        } else {
+            m_max_len = m_forced_max_len;
+        }
 
         m_start_at = col;
-        m_max_len = cols;
 
         /* XXX m_max_len <= 0 */
         reset_pos();
     }
 
-    void inc_start_col(int inc)
+    void inc_start_col(int inc, bool next_line = false)
     {
-        set_start_col(m_start_at + inc);
+        set_start_col(m_start_at + inc, next_line);
     }
 
-    void dec_start_col(int dec)
+    void dec_start_col(int dec, bool next_line = false)
     {
-        set_start_col(m_start_at - dec);
+        set_start_col(m_start_at - dec, next_line);
     }
 
     void wrap() {
         m_logger << "\n";
         m_cur = 0;
 
-        if (m_is_tty) {
+        if (m_next_start_at >= 0) {
+            set_start_col(m_next_start_at, false);
+            m_next_start_at = -1;
+        } else if (m_is_tty) {
             reset_pos();
         }
     }
@@ -406,6 +425,7 @@ static void print_tree(std::vector<bool> lvls, TextFormatter &f, bool separator)
     }
 }
 
+
 static void _dump_systemc_hierarchy(const sc_core::sc_object &top_level, TextFormatter &f, vector<bool> &lvls)
 {
     const vector<sc_core::sc_object*> & children = top_level.get_child_objects();
@@ -449,6 +469,7 @@ void dump_systemc_hierarchy(PlatformBuilder &p, LogLevel::value lvl)
     l.enable_banner(banner_status);
 }
 
+
 static void describe_comp_params(const Parameters &p, TextFormatter &f)
 {
     Parameters::const_iterator it;
@@ -462,41 +483,42 @@ static void describe_comp_params(const Parameters &p, TextFormatter &f)
     }
 }
 
-static void describe_component(ComponentFactoryBase &c, TextFormatter &f)
+static inline void print_value(TextFormatter &f,
+                               const string &key, const string &val)
+{
+    f << format::cyan << key << ": ";
+    f.inc_start_col(2, true);
+    f << format::reset << strip_last_nl(val) << "\n";
+}
+
+static void describe_module(ModuleFactoryBase &c, TextFormatter &f)
 {
     const Parameters & p = c.get_params();
+    ModuleFactoryBase::ExtraValues values;
+
+    f.set_max_len(80);
+
+    c.get_extra_values(values);
+    for (auto &v : values) {
+        f.set_start_col(2);
+        print_value(f, v.first, v.second);
+    }
 
     f.set_start_col(2);
-    f << format::cyan << "type: " << format::reset << c.get_type() << "\n";
-    f << format::cyan << "description: " << format::reset << strip_last_nl(c.get_description()) << "\n";
+    print_value(f, "description", c.get_description());
 
     if (p.empty()) {
         return;
     }
 
-    f << format::cyan << "parameters:\n" << format::reset;
-    describe_comp_params(p, f);
-}
-
-static void describe_plugin(PluginFactoryBase &c, TextFormatter &f)
-{
-    const Parameters & p = c.get_params();
-
     f.set_start_col(2);
-    f << format::cyan << "description: " << format::reset << strip_last_nl(c.get_description()) << "\n";
-
-    if (p.empty()) {
-        return;
-    }
-
     f << format::cyan << "parameters:\n" << format::reset;
     describe_comp_params(p, f);
 }
 
-void enum_components(ConfigManager &config, LogLevel::value lvl)
+void enum_modules(ConfigManager &config, const Namespace &ns, LogLevel::value lvl)
 {
-    ComponentManager &cm = config.get_component_manager();
-    ComponentManager::iterator it;
+    ModuleManagerBase &man = config.get_manager_by_namespace(ns);
 
     Logger &l = get_app_logger();
 
@@ -504,12 +526,17 @@ void enum_components(ConfigManager &config, LogLevel::value lvl)
 
     TextFormatter f(l, lvl);
 
-    f << format::white_b << "Available components:\n\n" << format::reset;
+    f << format::white_b << "Available " << ns.get_name() << ":\n\n"
+      << format::reset;
 
-    for (it = cm.begin(); it != cm.end(); it++) {
+    for (auto &m : man) {
         f.set_start_col(0);
-        f << format::cyan_b << "* " << format::white_b << it->first << format::reset << "\n";
-        describe_component(*(it->second), f);
+        f << format::cyan_b << "* "
+          << format::white_b << m.first
+          << format::reset << "\n";
+
+        describe_module(*(m.second), f);
+
         f << "\n";
     }
 
@@ -517,29 +544,6 @@ void enum_components(ConfigManager &config, LogLevel::value lvl)
     l.enable_banner(banner_status);
 }
 
-void enum_plugins(ConfigManager &config, LogLevel::value lvl)
-{
-    PluginManager &cm = config.get_plugin_manager();
-    PluginManager::iterator it;
-
-    Logger &l = get_app_logger();
-
-    bool banner_status = l.enable_banner(false);
-
-    TextFormatter f(l, lvl);
-
-    f << format::white_b << "Available plugins:\n\n" << format::reset;
-
-    for (it = cm.begin(); it != cm.end(); it++) {
-        f.set_start_col(0);
-        f << format::cyan_b << "* " << format::white_b << it->first << format::reset << "\n";
-        describe_plugin(*(it->second), f);
-        f << "\n";
-    }
-
-    l << "\n";
-    l.enable_banner(banner_status);
-}
 
 static void add_aliases(ConfigManager &conf, UsageFormatter &usage, bool advanced)
 {
@@ -553,40 +557,45 @@ static void add_aliases(ConfigManager &conf, UsageFormatter &usage, bool advance
     }
 }
 
-static void add_global_parameters(ConfigManager &conf, UsageFormatter &usage, bool advanced)
+static void add_parameters(const Parameters &params, UsageFormatter &usage,
+                           bool advanced)
 {
-    const Parameters & globals = conf.get_global_params();
-    usage.add_section("Rabbits global parameters");
-
-    for (const auto param : globals) {
+    for (const auto & param : params) {
         if (advanced || !param.second->is_advanced()) {
             usage.add_param(*param.second);
         }
     }
 }
 
-static void add_platform_parameters(PlatformBuilder &p, UsageFormatter &usage, bool advanced)
+static void add_global_parameters(ConfigManager &conf, UsageFormatter &usage,
+                                  bool advanced)
+{
+    const Parameters & globals = conf.get_global_params();
+    usage.add_section("Rabbits global parameters");
+
+    add_parameters(globals, usage, advanced);
+}
+
+static void add_platform_parameters(PlatformBuilder &p, UsageFormatter &usage,
+                                    bool advanced)
 {
     if (p.is_empty()) {
         return;
     }
 
     usage.add_section("Platform parameters");
-    for (auto it = p.comp_begin(); it != p.comp_end(); it++) {
-        for (auto param : it->second->get_params()) {
-            if (advanced || !param.second->is_advanced()) {
-                usage.add_param(*param.second);
-            }
-        }
+    for (auto & comp : p.get_components()) {
+        add_parameters(comp.second->get_params(), usage, advanced);
     }
 
-    for (auto plug : p.get_plugins()) {
-        for (auto param : plug.second->get_params()) {
-            if (advanced || !param.second->is_advanced()) {
-                usage.add_param(*param.second);
-            }
-        }
+    for (auto & plug : p.get_plugins()) {
+        add_parameters(plug.second->get_params(), usage, advanced);
     }
+
+    for (auto & be : p.get_backends()) {
+        add_parameters(be.second->get_params(), usage, advanced);
+    }
+
 }
 
 void print_usage(const char* arg0, ConfigManager &conf, PlatformBuilder &p)

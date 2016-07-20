@@ -23,6 +23,8 @@
 #include "rabbits/logger/has_logger.h"
 #include "rabbits/config/has_config.h"
 #include "parameters.h"
+#include "namespace.h"
+
 
 class ModuleIface
     : public HasParametersIface
@@ -34,6 +36,11 @@ public:
      * @brief Return the module name
      */
     virtual const std::string & get_name() const = 0;
+
+    /**
+     * @brief Return the module namespace
+     */
+    virtual const Namespace & get_namespace() const = 0;
 };
 
 #endif

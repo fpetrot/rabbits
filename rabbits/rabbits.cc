@@ -62,6 +62,11 @@ static void declare_global_params(ConfigManager &config)
                                             "with their description",
                                             false));
 
+    config.add_global_param("list-backends",
+                            Parameter<bool>("List available backends "
+                                            "with their description",
+                                            false));
+
     config.add_global_param("list-plugins",
                             Parameter<bool>("List available plugins "
                                             "with their description",
@@ -114,6 +119,7 @@ static void declare_aliases(ConfigManager &config)
     config.add_param_alias("help",              p["show-help"]);
     config.add_param_alias("help-advanced",     p["show-advanced-params"]);
     config.add_param_alias("list-components",   p["list-components"]);
+    config.add_param_alias("list-backends",     p["list-backends"]);
     config.add_param_alias("list-plugins",      p["list-plugins"]);
     config.add_param_alias("systemc-hierarchy", p["show-systemc-hierarchy"]);
     config.add_param_alias("debug",             p["debug"]);
@@ -289,12 +295,17 @@ int sc_main(int argc, char *argv[])
     dyn_loader.search_and_load_rabbits_dynlibs();
 
     if (globals["list-components"].as<bool>()) {
-        enum_components(config, LogLevel::INFO);
+        enum_modules(config, Namespace::get(Namespace::COMPONENT), LogLevel::INFO);
+        return 0;
+    }
+
+    if (globals["list-backends"].as<bool>()) {
+        enum_modules(config, Namespace::get(Namespace::BACKEND), LogLevel::INFO);
         return 0;
     }
 
     if (globals["list-plugins"].as<bool>()) {
-        enum_plugins(config, LogLevel::INFO);
+        enum_modules(config, Namespace::get(Namespace::PLUGIN), LogLevel::INFO);
         return 0;
     }
 

@@ -22,25 +22,48 @@
 
 #include <string>
 
+#include "rabbits/rabbits_exception.h"
+
+
+/**
+ * @brief Exception raised when a named namespace has not been found.
+ */
+class NamespaceNotFoundException : public RabbitsException {
+protected:
+    std::string make_what(std::string comp) { return "Namespace `" + comp + "` not found."; }
+public:
+    explicit NamespaceNotFoundException(const std::string & comp) : RabbitsException(make_what(comp)) {}
+    virtual ~NamespaceNotFoundException() throw() {}
+};
+
 class Namespace {
 public:
     enum eNamespace {
-        GLOBAL, COMPONENT, PLUGIN, BACKEND
+        GLOBAL, COMPONENT, PLUGIN, BACKEND,
+        LAST_NAMESPACE = BACKEND
     };
 
-private:
-    eNamespace m_id;
-    std::string m_name;
+    static const int COUNT = LAST_NAMESPACE + 1;
 
-    Namespace(eNamespace id, const std::string &name) : m_id(id), m_name(name) {}
+private:
+    Namespace(const Namespace &);
+    Namespace & operator= (const Namespace &);
+
+    eNamespace m_id;
+    std::string m_name, m_singular_name;
+
+    Namespace(eNamespace id, const std::string &name, const std::string &singular)
+        : m_id(id), m_name(name), m_singular_name(singular) {}
 
     static const Namespace namespaces[];
 
 public:
-    eNamespace get_id() const {return m_id; }
-    std::string get_name() const {return m_name; }
+    eNamespace get_id() const { return m_id; }
+    std::string get_name() const { return m_name; }
+    std::string get_singular() const { return m_singular_name; }
 
     static const Namespace & get(eNamespace id) { return namespaces[id]; }
+    static const Namespace & find_by_name(const std::string &name);
 };
 
 #endif

@@ -196,7 +196,9 @@ public:
 
     virtual ~Component() {}
 
+    /* ModuleIface */
     const std::string & get_name() const { return m_name; }
+    const Namespace & get_namespace() const { return *(m_params.get_namespace()); }
 
     /* HasPortIface */
     virtual void declare_port(Port &p, const std::string &name) { m_ports[name] = &p; }

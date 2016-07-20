@@ -59,20 +59,23 @@ PlatformBuilder::PlatformBuilder(sc_module_name name, PlatformDescription &descr
 {
     create_plugins(descr);
 
-    run_hooks(PluginHookBeforeBuild(&descr, this));
+    run_hooks(PluginHookBeforeBuild(descr, *this));
 
     create_components(descr, CreationStage::DISCOVER);
-    run_hooks(PluginHookAfterComponentDiscovery(&descr, this));
+    run_hooks(PluginHookAfterComponentDiscovery(descr, *this));
 
     create_components(descr, CreationStage::CREATE);
-    run_hooks(PluginHookAfterComponentInst(&descr, this));
+    run_hooks(PluginHookAfterComponentInst(descr, *this));
+
+    create_backends(descr);
+    run_hooks(PluginHookAfterBackendInst(descr, *this));
 
     do_bindings(descr);
-    run_hooks(PluginHookAfterBusConnections(&descr, this));
+    run_hooks(PluginHookAfterBusConnections(descr, *this));
 
     create_dbg_init();
 
-    run_hooks(PluginHookAfterBuild(&descr, this));
+    run_hooks(PluginHookAfterBuild(descr, *this));
 }
 
 PlatformBuilder::~PlatformBuilder()
@@ -137,7 +140,8 @@ void PlatformBuilder::create_plugins(PlatformDescription &descr)
         const string &name = d.first;
 
         if (!p_descr.exists("plugin")) {
-            LOG(APP, WRN) << "Missing `plugin` attribute for plugin `" << name << "`\n";
+            LOG(APP, WRN) << "Missing `plugin` attribute for plugin `"
+                          << name << "`\n";
             continue;
         }
 
@@ -147,7 +151,7 @@ void PlatformBuilder::create_plugins(PlatformDescription &descr)
 
         if (p_fact != NULL) {
             LOG(APP, DBG) << "Creating plugin instance `" << name
-                << "` of plugin `" << p_name << "`\n";
+                          << "` of plugin `" << p_name << "`\n";
             m_plugins[name] = p_fact->create(name, p_descr);
         } else {
             LOG(APP, WRN) << "Plugin `" << p_name << "` does not exists.\n";
@@ -169,49 +173,89 @@ void PlatformBuilder::create_components(PlatformDescription &descr, CreationStag
 {
     PlatformDescription::iterator it;
     ComponentManager &cm = m_config.get_component_manager();
+    const Namespace &ns = Namespace::get(Namespace::COMPONENT);
 
-    if ((!descr.exists("components")) || (descr["components"].type() != PlatformDescription::MAP)) {
+    if ((!descr.exists(ns.get_name())) || (!descr[ns.get_name()].is_map())) {
         LOG(APP, DBG) << "No component found in description\n";
         return;
     }
 
-    for (it = descr["components"].begin(); it != descr["components"].end(); it++) {
+    for (auto &d : descr[ns.get_name()]) {
         ComponentManager::Factory cf;
-        const string &name = it->first;
-        PlatformDescription &comp = it->second;
+        const string &name = d.first;
+        PlatformDescription &comp = d.second;
 
         if (!comp.exists("type")) {
-            LOG(APP, WRN) << "Missing `type` attribute for component `" << name << "`\n";
+            LOG(APP, WRN) << "Missing `type` attribute for component `"
+                          << name << "`\n";
             continue;
         }
 
         const string type = comp["type"].as<string>();
 
+        if (!cm.type_exists(type)) {
+            LOG(APP, WRN) << "No component type can provide `" << type << "`\n";
+            continue;
+        }
+
         cf = cm.find_by_type(type);
 
-        if (cf != NULL) {
-            switch (stage) {
-            case CreationStage::DISCOVER:
-                cf->discover(name, comp);
-                break;
-            case CreationStage::CREATE:
-                LOG(APP, DBG) << "Creating component " << name << " of type " << type << "\n";
-                m_components[name] = cf->create(name, comp);
-                break;
-            }
-        } else {
-            LOG(APP, WRN) << "No component type can provide `" << type << "`\n";
+        switch (stage) {
+        case CreationStage::DISCOVER:
+            cf->discover(name, comp);
+            break;
+        case CreationStage::CREATE:
+            LOG(APP, DBG) << "Creating component " << name
+                          << " of type " << type << "\n";
+            m_components[name] = cf->create(name, comp);
+            break;
         }
     }
 }
 
-void PlatformBuilder::find_comp_by_attr(const std::string &key, std::vector<ComponentBase*> &out)
+void PlatformBuilder::create_backends(PlatformDescription &descr)
+{
+    BackendManager &pm = m_config.get_backend_manager();
+    const Namespace &ns = Namespace::get(Namespace::BACKEND);
+
+    if ((!descr.exists(ns.get_name())) || (!descr[ns.get_name()].is_map())) {
+        LOG(APP, DBG) << "No backend instanciation in description\n";
+        return;
+    }
+
+    for (auto &d : descr[ns.get_name()]) {
+        PlatformDescription &p_descr = d.second;
+        const string &name = d.first;
+
+        if (!p_descr.exists("backend")) {
+            LOG(APP, WRN) << "Missing `backend` attribute for backend `"
+                          << name << "`\n";
+            continue;
+        }
+
+        const string p_name = p_descr["backend"].as<string>();
+
+        if (!pm.name_exists(p_name)) {
+            LOG(APP, WRN) << "Backend `" << p_name << "` does not exist\n";
+            continue;
+        }
+
+        BackendManager::Factory p_fact = pm.find_by_name(p_name);
+
+        LOG(APP, DBG) << "Creating backend instance `" << name
+                      << "` of backend `" << p_name << "`\n";
+        m_backends[name] = p_fact->create(name, p_descr);
+    }
+}
+
+void PlatformBuilder::find_comp_by_attr(const std::string &key,
+                                        std::vector<ComponentBase*> &out)
 {
     comp_iterator it;
 
-    for (it = comp_begin(); it != comp_end(); it++) {
-        if (it->second->has_attr(key)) {
-            out.push_back(it->second);
+    for (auto &comp : get_components()) {
+        if (comp.second->has_attr(key)) {
+            out.push_back(comp.second);
         }
     }
 }
@@ -245,57 +289,72 @@ void PlatformBuilder::do_bindings(ComponentBase &c, PlatformDescription &descr)
         const string &pname = it->first;
 
         if (!c.port_exists(pname)) {
-            report_parse_warning("Port `" + pname + "' in component `" + c.name() + "' not found", it->second);
+            report_parse_warning("Port `" + pname + "' in component `"
+                                 + c.name() + "' not found", it->second);
             continue;
         }
 
-        do_binding(c.get_port(pname), it->second);
+        do_binding(c, c.get_port(pname), it->second);
     }
 }
 
 class ParsedPeer {
 private:
-    string m_name_space;
+    const Namespace * m_ns;
     string m_name;
     string m_port;
 
-    bool name_ok, port_ok, name_space_ok;
+    bool name_ok = false;
+    bool port_ok = false;
+    bool ns_ok = false;
 
 public:
-    ParsedPeer() : name_ok(false), port_ok(false), name_space_ok(false) {}
+    ParsedPeer() {}
 
     void set_name(const string &n) { m_name = n; name_ok = true; }
-    void set_name_space(const string &n) { m_name_space = n; name_space_ok = true; }
+    void set_ns(const Namespace &n) { m_ns = &n; ns_ok = true; }
     void set_port(const string &n) { m_port = n; port_ok = true; }
 
-    bool is_valid() { return name_ok && port_ok; }
     bool has_name() { return name_ok; }
     bool has_port() { return port_ok; }
 
     const string & name() { return m_name; }
-    const string & name_space() { return m_name_space; }
+    const Namespace & ns() { return *m_ns; }
     const string & port() { return m_port; }
 };
 
-static bool parse_peer_name(const string name, ParsedPeer &peer)
+static bool parse_peer_name(PlatformDescription descr, const Namespace &cur_ns,
+                            ParsedPeer &peer)
 {
+    const string name = descr.as<string>();
+
     vector<string> toks;
     tokenize(name, toks);
 
     switch(toks.size()) {
     case 3:
         /* namespace.component.port */
-        report_parse_warning("n/i", PlatformDescription());
-        return false;
+        try {
+            peer.set_ns(Namespace::find_by_name(toks[0]));
+        } catch (NamespaceNotFoundException e) {
+            report_parse_warning("Unknown namespace " + toks[0], descr);
+            return false;
+        }
+
+        peer.set_name(toks[1]);
+        peer.set_port(toks[2]);
+        break;
 
     case 2:
         /* component.port (current namespace) */
+        peer.set_ns(cur_ns);
         peer.set_name(toks[0]);
         peer.set_port(toks[1]);
         break;
 
     case 1:
         /* component (current namespace, implicit port) */
+        peer.set_ns(cur_ns);
         peer.set_name(toks[0]);
         break;
 
@@ -306,14 +365,16 @@ static bool parse_peer_name(const string name, ParsedPeer &peer)
     return true;
 }
 
-void PlatformBuilder::do_binding(Port &p, PlatformDescription &descr)
+void PlatformBuilder::do_binding(ComponentBase &c, Port &p,
+                                 PlatformDescription &descr)
 {
     ParsedPeer peer;
+    const Namespace &cur_ns = c.get_namespace();
 
     switch (descr.type()) {
     case PlatformDescription::MAP:
         if (descr["peer"].is_scalar()) {
-            if (!parse_peer_name(descr["peer"].as<string>(), peer)) {
+            if (!parse_peer_name(descr["peer"], cur_ns, peer)) {
                 report_parse_warning("Invalid peer binding description", descr);
                 return;
             }
@@ -325,7 +386,7 @@ void PlatformBuilder::do_binding(Port &p, PlatformDescription &descr)
         break;
 
     case PlatformDescription::SCALAR:
-        if (!parse_peer_name(descr.as<string>(), peer)) {
+        if (!parse_peer_name(descr, cur_ns, peer)) {
             report_parse_warning("Invalid peer binding description", descr);
             return;
         }
@@ -336,17 +397,23 @@ void PlatformBuilder::do_binding(Port &p, PlatformDescription &descr)
         return;
     }
 
+    if ((peer.ns().get_id() != Namespace::COMPONENT)
+        && (peer.ns().get_id() != Namespace::BACKEND)) {
+        report_parse_warning("Invalid peer namespace " + peer.ns().get_name(), descr);
+        return;
+    }
+
     if (!peer.has_name()) {
         report_parse_warning("Invalid peer binding description", descr);
         return;
     }
 
-    if (!comp_exists(peer.name())) {
+    if (!comp_exists(peer.ns(), peer.name())) {
         report_parse_warning("Peer component `" + peer.name() + "' not found", descr);
         return;
     }
 
-    ComponentBase &peer_comp = get_comp(peer.name());
+    ComponentBase &peer_comp = get_comp(peer.ns(), peer.name());
 
     if (!peer.has_port()) {
         /* When no port is specified, we take the first available port */
