@@ -1,0 +1,12 @@
+plugin:
+  name: chardev-connection-helper
+  description: |
+    This plugin simplify the connection process of character based ports like UARTs.
+    Without this plugin, the user must specify, for each character port, a backend to connect to (or possibly another character port).
+    This can be tedious if the platform has multiple UARTs, that must be connected to different backends, depending on the use case.
+    This plugin acts in two ways:
+      - It auto-connects non-connected character port to an STDIO chardev backend if this one is not in use, or to a null chardev backend otherwise.
+      - It adds several parameters to simplify character port binding on the command line. For example, if the platform has a `uart0` component having a character port, it will add a `-connect-uart0-to` parameter that understand several values like stdio, serial, ...
+    See -help for more details.
+  class: CharDevConnectionHelperPlugin
+  include: chardev-connection-helper.h
