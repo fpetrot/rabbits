@@ -1,5 +1,5 @@
 plugin:
-  name: chardev-connection-helper
+  type: chardev-connection-helper
   description: |
     This plugin simplify the connection process of character based ports like UARTs.
     Without this plugin, the user must specify, for each character port, a backend to connect to (or possibly another character port).

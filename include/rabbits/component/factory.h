@@ -40,30 +40,30 @@ class ComponentBase;
  */
 class ComponentFactoryBase : public ModuleFactory<ComponentBase> {
 private:
-    std::string m_type;
+    std::string m_implem;
 
 protected:
-    ComponentFactoryBase(ConfigManager &config, const std::string & name,
-                         const std::string & description, const std::string & type) 
-        : ModuleFactory<ComponentBase>(config, name, description, Namespace::get(Namespace::COMPONENT))
-        , m_type(type)
+    ComponentFactoryBase(ConfigManager &config, const std::string & type,
+                         const std::string & description, const std::string & implem)
+        : ModuleFactory<ComponentBase>(config, type, description, Namespace::get(Namespace::COMPONENT))
+        , m_implem(implem)
     {}
 
 public:
     virtual ~ComponentFactoryBase() {}
 
     /**
-     * @brief Return the type of the component.
+     * @brief Return the implementation name of the component factory.
      *
-     * Return the type of the component associated to this factory.
+     * Return the implementation name of the component factory.
      *
-     * @return the type of the component.
+     * @return the implementation name of the component factory.
      */
-    std::string get_type() const { return m_type; }
+    std::string get_implem() const { return m_implem; }
 
     virtual void get_extra_values(ExtraValues &v) const
     {
-        v.push_back(std::make_pair("type", get_type()));
+        v.push_back(std::make_pair("implementation", get_implem()));
     }
 
     /**
@@ -86,7 +86,7 @@ public:
 template <class TComponent>
 class ComponentFactory : public ComponentFactoryBase {
 protected:
-    virtual TComponent * create(const std::string & name, Parameters & params) 
+    virtual TComponent * create(const std::string & name, Parameters & params)
     {
         TComponent *c = new TComponent(name.c_str(), params, get_config());
         return c;

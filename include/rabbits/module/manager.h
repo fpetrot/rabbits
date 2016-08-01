@@ -29,7 +29,7 @@
 #include "factory.h"
 
 /**
- * @brief Exception raised when a named component has not been found.
+ * @brief Exception raised when a typed component has not been found.
  */
 class FactoryNotFoundException : public RabbitsException {
 protected:
@@ -56,8 +56,8 @@ private:
 protected:
     void register_factory(Factory f)
     {
-        const std::string &name = f->get_name();
-        m_factories[name] = f;
+        const std::string &type = f->get_type();
+        m_factories[type] = f;
     }
     
 public:
@@ -65,26 +65,26 @@ public:
     virtual ~ModuleManagerBase() {}
 
 
-    bool name_exists(const std::string &name) const
+    bool type_exists(const std::string &type) const
     {
-        return m_factories.find(name) != m_factories.end();
+        return m_factories.find(type) != m_factories.end();
     }
 
     /**
-     * @brief Find a module factory given its name
+     * @brief Find a module factory given its type
      *
-     * @param name The module factory name.
+     * @param type The module factory type.
      *
-     * @return the module factory associated to the name.
+     * @return the module factory associated to the type.
      * @throw FactoryNotFoundException if the factory was not found.
      */
-    Factory find_by_name(const std::string &name)
+    Factory find_by_type(const std::string &type)
     {
-        if (!name_exists(name)) {
-            throw FactoryNotFoundException(name);
+        if (!type_exists(type)) {
+            throw FactoryNotFoundException(type);
         }
 
-        return m_factories[name];
+        return m_factories[type];
     }
 
     /**
@@ -137,38 +137,38 @@ public:
 
     virtual void register_factory(Factory f)
     {
-        if (name_exists(f->get_name())) {
+        if (type_exists(f->get_type())) {
             LOG(APP, WRN) << "Module " << f->get_full_name()
                 << " already exists. Overwriting\n";
         }
 
-        const std::string &name = f->get_name();
-        m_factories[name] = f;
+        const std::string &type = f->get_type();
+        m_factories[type] = f;
 
         ModuleManagerBase::register_factory(f);
         LOG(APP, DBG) << "Registering module " << f->get_full_name() << "\n";
     }
 
-    bool name_exists(const std::string &name) const
+    bool type_exists(const std::string &type) const
     {
-        return m_factories.find(name) != m_factories.end();
+        return m_factories.find(type) != m_factories.end();
     }
 
     /**
-     * @brief Find a module factory given its name
+     * @brief Find a module factory given its type
      *
-     * @param name The module factory name.
+     * @param type The module factory type.
      *
-     * @return the module factory associated to the name.
+     * @return the module factory associated to the type.
      * @throw FactoryNotFoundException if the factory was not found.
      */
-    Factory find_by_name(const std::string &name)
+    Factory find_by_type(const std::string &type)
     {
-        if (!name_exists(name)) {
-            throw FactoryNotFoundException(name);
+        if (!type_exists(type)) {
+            throw FactoryNotFoundException(type);
         }
 
-        return m_factories[name];
+        return m_factories[type];
     }
 
     /**

@@ -40,7 +40,7 @@ namespace %{kind} {
 class %{factory_class} : public %{Kind}Factory<%{class}> {
 public:
     %{factory_class}(ConfigManager &config)
-        : %{Kind}Factory<%{class}>(config, "%{name}", "%{description}" %{extra_ctor_params}) {
+        : %{Kind}Factory<%{class}>(config, "%{type}", "%{description}" %{extra_ctor_params}) {
 %{parameters}
     }
 
@@ -257,15 +257,15 @@ class Parameter
 end
 
 class RabbitsModule
-  attr_accessor :fn, :name, :description, :class, :include, :parameters
+  attr_accessor :fn, :type, :description, :class, :include, :parameters
 
   def initialize(fn, descr, args)
-    check_required(descr, ['name', 'description', 'class', 'include'])
+    check_required(descr, ['type', 'description', 'class', 'include'])
 
     @args = args
 
     @fn = fn
-    @name = descr['name']
+    @type = descr['type']
     @class = descr['class']
     @include = descr['include']
     @description = descr['description'].gsub("\n", '\n')
@@ -304,10 +304,10 @@ class RabbitsModule
 
   def get_print_args
     {
-      :name => @name,
+      :type => @type,
       :description => @description,
       :class => @class,
-      :factory_class => cc_ify(@name) + "Factory",
+      :factory_class => cc_ify(@type) + "Factory",
       :include => build_include,
       :self_include => build_self_include,
       :parameters => build_parameters,
@@ -320,14 +320,14 @@ class RabbitsModule
 end
 
 class Component < RabbitsModule
-  attr_accessor :type, :discover
+  attr_accessor :implem, :discover
 
   def initialize(fn, descr, args)
     super(fn, descr, args)
 
-    check_required(descr, ['type'])
+    check_required(descr, ['implementation'])
 
-    @type = descr['type']
+    @implem = descr['implementation']
     @discover = descr['discover']
   end
 
@@ -340,7 +340,7 @@ class Component < RabbitsModule
   end
 
   def build_extra_ctor_params
-    ', "' + @type + '"'
+    ', "' + @implem + '"'
   end
 
   def get_print_args
@@ -523,7 +523,7 @@ def hash_merge(h0, h1)
 end
 
 GENERIC_MODULE_YML='
-name: generic-module
+type: generic-module
 description: Generic Rabbits module
 parameters:
   debug:

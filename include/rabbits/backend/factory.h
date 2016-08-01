@@ -40,9 +40,9 @@ class ComponentBase;
  */
 class BackendFactoryBase : public ModuleFactory<ComponentBase> {
 protected:
-    BackendFactoryBase(ConfigManager &config, const std::string & name,
-                         const std::string & description) 
-        : ModuleFactory<ComponentBase>(config, name, description, Namespace::get(Namespace::BACKEND))
+    BackendFactoryBase(ConfigManager &config, const std::string & type,
+                       const std::string & description)
+        : ModuleFactory<ComponentBase>(config, type, description, Namespace::get(Namespace::BACKEND))
     {}
 
 public:
@@ -68,7 +68,7 @@ public:
 template <class TBackend>
 class BackendFactory : public BackendFactoryBase {
 protected:
-    virtual TBackend * create(const std::string & name, Parameters & params) 
+    virtual TBackend * create(const std::string & name, Parameters & params)
     {
         TBackend *c = new TBackend(name.c_str(), params, get_config());
         return c;

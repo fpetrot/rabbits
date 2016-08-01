@@ -98,7 +98,7 @@ public:
         return m_insts->end();
     }
 
-    TestFactory(const std::string & test_name) 
+    TestFactory(const std::string & test_name)
         : m_name(test_name)
     {
         register_test(this);
@@ -134,7 +134,7 @@ protected:
         throw TestFailureException(name(), what, get_current_file(), get_current_line());
     }
 
-    ComponentBase * create_component_by_name(const std::string name, const std::string yml_params);
+    ComponentBase * create_component_by_implem(const std::string name, const std::string yml_params);
 
     void test_assert(bool assertion, const std::string &lit_assert)
     {

@@ -1,5 +1,5 @@
 component:
-  name: generic-bus
+  implementation: generic-bus
   type: simple-bus
   class: BusInterconnect<32>
   include: bus_interconnect.h

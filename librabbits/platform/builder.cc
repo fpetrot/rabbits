@@ -132,7 +132,7 @@ void PlatformBuilder::create_plugins(PlatformParser &p)
         const string &name = plug.first;
         const string &type = plug.second->get_type();
 
-        PluginManager::Factory p_fact = pm.find_by_name(type);
+        PluginManager::Factory p_fact = pm.find_by_type(type);
 
         if (p_fact != NULL) {
             LOG(APP, DBG) << "Creating plugin instance `" << name
@@ -194,7 +194,7 @@ void PlatformBuilder::create_backends(PlatformParser &p)
         const string &name = plug.first;
         const string &type = plug.second->get_type();
 
-        BackendManager::Factory p_fact = pm.find_by_name(type);
+        BackendManager::Factory p_fact = pm.find_by_type(type);
 
         if (p_fact != NULL) {
             LOG(APP, DBG) << "Creating backend instance `" << name

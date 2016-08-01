@@ -23,11 +23,11 @@ namespace test {
 
 std::set<TestFactory*> * TestFactory::m_insts = NULL;
 
-ComponentBase * Test::create_component_by_name(const string name,
+ComponentBase * Test::create_component_by_implem(const string implem,
                                                const string yml_params)
 {
     ComponentManager &cm = get_config().get_component_manager();
-    ComponentManager::Factory cf = cm.find_by_name(name);
+    ComponentManager::Factory cf = cm.find_by_implem(implem);
     PlatformDescription descr;
 
     if (cf == NULL) {
@@ -36,7 +36,7 @@ ComponentBase * Test::create_component_by_name(const string name,
 
     descr.load_yaml(yml_params);
 
-    return cf->create(name, descr);
+    return cf->create(implem, descr);
 }
 
 static int do_test(TestFactory *tf, ConfigManager &config)

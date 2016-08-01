@@ -1,5 +1,5 @@
 backend:
-  name: chardev-stdio
+  type: chardev-stdio
   description: "Stdio character device"
   class: StdioCharBackend
   include: stdio.h

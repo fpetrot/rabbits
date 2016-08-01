@@ -36,12 +36,12 @@
 /**
  * @brief Component manager
  *
- * Handles the components collection. Allows for searching a component by type
- * or by name and returns the corresponding component factory.
+ * Handles the components collection. Allows for searching a component by implementation
+ * or by type and returns the corresponding component factory.
  */
 class ComponentManager : public ModuleManager<ComponentFactoryBase> {
 protected:
-    Factories m_by_type;
+    Factories m_by_implem;
 
 public:
     ComponentManager() {}
@@ -49,34 +49,38 @@ public:
 
     void register_factory(Factory f)
     {
-        ModuleManager<ComponentFactoryBase>::register_factory(f);
-
         if (type_exists(f->get_type())) {
-            LOG(APP, WRN) << "Two components with the same type, priority not yet implemented.\n";
+            LOG(APP, WRN) << "Two components with the same type. Priority not yet implemented.\n";
         }
 
-        m_by_type[f->get_type()] = f;
+        ModuleManager<ComponentFactoryBase>::register_factory(f);
+
+        if (implem_exists(f->get_implem())) {
+            LOG(APP, WRN) << "Two components with the same implementation name. Overwritting.\n";
+        }
+
+        m_by_implem[f->get_implem()] = f;
     }
 
-    bool type_exists(const std::string &type) const
+    bool implem_exists(const std::string &implem) const
     {
-        return m_by_type.find(type) != m_by_type.end();
+        return m_by_implem.find(implem) != m_by_implem.end();
     }
 
     /**
-     * @brief Find a component given its type
+     * @brief Find a component given its implem
      *
-     * @param name The component type.
+     * @param name The component implem.
      *
-     * @return the component factory associated to the type, NULL if not found.
+     * @return the component factory associated to the implem, NULL if not found.
      */
-    Factory find_by_type(const std::string & type)
+    Factory find_by_implem(const std::string & implem)
     {
-        if (!type_exists(type)) {
-            throw FactoryNotFoundException(type);
+        if (!implem_exists(implem)) {
+            throw FactoryNotFoundException(implem);
         }
 
-        return m_by_type[type];
+        return m_by_implem[implem];
     }
 };
 

@@ -40,8 +40,8 @@ class PluginBase;
  */
 class PluginFactoryBase : public ModuleFactory<PluginBase> {
 protected:
-    PluginFactoryBase(ConfigManager &config, const std::string & name, const std::string & description)
-        : ModuleFactory<PluginBase>(config, name, description, Namespace::get(Namespace::PLUGIN))
+    PluginFactoryBase(ConfigManager &config, const std::string & type, const std::string & description)
+        : ModuleFactory<PluginBase>(config, type, description, Namespace::get(Namespace::PLUGIN))
     {}
 
 public:

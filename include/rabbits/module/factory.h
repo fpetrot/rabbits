@@ -36,7 +36,7 @@ public:
 
 private:
     ConfigManager &m_config;
-    std::string m_name;
+    std::string m_type;
     std::string m_description;
     const Namespace & m_namespace;
     Parameters m_params;
@@ -45,9 +45,9 @@ protected:
     template <class T>
     void add_param(const std::string &name, const T &t) { m_params.add(name, t); }
 
-    ModuleFactoryBase(ConfigManager &config, const std::string & name,
+    ModuleFactoryBase(ConfigManager &config, const std::string & type,
                       const std::string & description, const Namespace & ns)
-        : m_config(config), m_name(name), m_description(description), m_namespace(ns)
+        : m_config(config), m_type(type), m_description(description), m_namespace(ns)
     {}
 
 public:
@@ -57,13 +57,13 @@ public:
     virtual ~ModuleFactoryBase() {}
 
     /**
-     * @brief Return the name of the module.
+     * @brief Return the type of the module.
      *
-     * Return the name of the module associated to this factory.
+     * Return the type of the module associated to this factory.
      *
-     * @return the name of the module.
+     * @return the type of the module.
      */
-    const std::string & get_name() const { return m_name; }
+    const std::string & get_type() const { return m_type; }
 
     /**
      * @brief Return the description of the module.
@@ -84,15 +84,14 @@ public:
     const Namespace & get_namespace() const { return m_namespace; }
 
     /**
-     * @brief Return the full name of the module.
+     * @brief Return the full name of the module factory.
      *
-     * Return the full name of the module associated to this factory.
      * The full name is composed of the namespace name, a dot, and the module
-     * name.
+     * type.
      *
-     * @return the full name of the module.
+     * @return the full name of the module factory.
      */
-    std::string get_full_name() const { return m_namespace.get_name() + "." + m_name; }
+    std::string get_full_name() const { return m_namespace.get_name() + "." + m_type; }
 
     /**
      * @brief Fill v with extra values associated to the module factory

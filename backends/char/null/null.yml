@@ -1,5 +1,5 @@
 backend:
-  name: chardev-null
+  type: chardev-null
   description: >
     Null character device.
     This character device backend discards data it receives and never sends any.
