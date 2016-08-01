@@ -36,6 +36,7 @@
 #include "rabbits/component/debug_initiator.h"
 
 class PlatformDescription;
+class PlatformParser;
 class AddressRange;
 
 /**
@@ -77,15 +78,13 @@ protected:
 
     DebugInitiator *m_dbg = nullptr;
 
-    void create_plugins(PlatformDescription &descr);
+    void create_plugins(PlatformParser &p);
     template <class HOOK> void run_hooks(HOOK &&hook);
 
-    void create_components(PlatformDescription &descr, CreationStage::value);
-    void create_backends(PlatformDescription &descr);
+    void create_components(PlatformParser &p, CreationStage::value);
+    void create_backends(PlatformParser &p);
 
-    void do_bindings(PlatformDescription &descr);
-    void do_bindings(ComponentBase &c, PlatformDescription &descr);
-    void do_binding(ComponentBase &c, Port &p, PlatformDescription &descr);
+    void do_bindings(PlatformParser &p);
     void do_binding(Port &p0, Port &p1, PlatformDescription &descr);
 
     void create_dbg_init();
@@ -99,7 +98,7 @@ public:
      * @param name Name of the SystemC module.
      * @param descr Platform description.
      */
-    PlatformBuilder(sc_core::sc_module_name name, PlatformDescription &descr, ConfigManager &config);
+    PlatformBuilder(sc_core::sc_module_name name, PlatformParser &platform, ConfigManager &config);
     virtual ~PlatformBuilder();
 
     /**

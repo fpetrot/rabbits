@@ -17,37 +17,16 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _RABBITS_MODULE_MODULE_H
-#define _RABBITS_MODULE_MODULE_H
+#ifndef _RABBITS_PLATFORM_PARSER_IMPL_PLUGIN_H
+#define _RABBITS_PLATFORM_PARSER_IMPL_PLUGIN_H
 
-#include "rabbits/logger/has_logger.h"
-#include "rabbits/config/has_config.h"
-#include "parameters.h"
-#include "namespace.h"
+#include "../plugin.h"
 
+inline ParserNodePlugin::ParserNodePlugin(PlatformDescription &d, const std::string &n, ParserNodePlatform &root)
+    : ParserNodeModule(d, n, root, Namespace::get(Namespace::PLUGIN))
+{}
 
-class ModuleIface
-    : public HasParametersIface
-    , public HasLoggerIface
-    , public HasConfigIface
-{
-public:
-    /**
-     * @brief Return the module name
-     */
-    virtual const std::string & get_name() const = 0;
-
-    /**
-     * @brief Return the module namespace
-     */
-    virtual const Namespace & get_namespace() const = 0;
-
-    /* @brief Return the full name of the module
-     *
-     * The full name is composed of the name of the namespace, a ".", and the
-     * name of the module.
-     */
-    virtual const std::string get_full_name() const = 0;
-};
+inline ParserNodePlugin::~ParserNodePlugin()
+{}
 
 #endif

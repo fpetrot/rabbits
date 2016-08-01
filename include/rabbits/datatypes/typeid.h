@@ -17,37 +17,35 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _RABBITS_MODULE_MODULE_H
-#define _RABBITS_MODULE_MODULE_H
+#ifndef _RABBITS_DATATYPES_TYPEID_H
+#define _RABBITS_DATATYPES_TYPEID_H
 
-#include "rabbits/logger/has_logger.h"
-#include "rabbits/config/has_config.h"
-#include "parameters.h"
-#include "namespace.h"
+#include <string>
+#include <typeindex>
+#include <unordered_map>
 
-
-class ModuleIface
-    : public HasParametersIface
-    , public HasLoggerIface
-    , public HasConfigIface
-{
+class TypeId {
 public:
-    /**
-     * @brief Return the module name
-     */
-    virtual const std::string & get_name() const = 0;
+    static constexpr const char * const UNKNOWN_TYPE = "?";
 
-    /**
-     * @brief Return the module namespace
-     */
-    virtual const Namespace & get_namespace() const = 0;
+private:
+    static std::unordered_map<std::type_index, const char * const> m_ids;
 
-    /* @brief Return the full name of the module
-     *
-     * The full name is composed of the name of the namespace, a ".", and the
-     * name of the module.
-     */
-    virtual const std::string get_full_name() const = 0;
+public:
+    static const char * get_typeid(std::type_index index)
+    {
+        if (m_ids.find(index) == m_ids.end()) {
+            return UNKNOWN_TYPE;
+        }
+
+        return m_ids[index];
+    }
+
+    template <class T>
+    static const char * get_typeid()
+    {
+        return get_typeid(typeid(T));
+    }
 };
 
 #endif

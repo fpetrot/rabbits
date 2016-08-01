@@ -25,6 +25,7 @@
 
 #include "rabbits/logger.h"
 #include "rabbits/platform/description.h"
+#include "rabbits/platform/parser.h"
 #include "rabbits/component/factory.h"
 #include "rabbits/datatypes/address_range.h"
 
@@ -43,34 +44,28 @@ static inline void report_parse_warning(const string &msg, const PlatformDescrip
     LOG(APP, WRN) << msg << " (at " << descr.origin() << ")\n";
 }
 
-static void tokenize(const string s, vector<string>& toks, const char sep = '.')
-{
-    std::istringstream ss(s);
-    string tok;
-
-    while(std::getline(ss, tok, sep)) {
-        toks.push_back(tok);
-    }
-}
-
-PlatformBuilder::PlatformBuilder(sc_module_name name, PlatformDescription &descr,
+PlatformBuilder::PlatformBuilder(sc_module_name name, PlatformParser &platform,
                                  ConfigManager &config)
     : sc_module(name), m_config(config)
 {
-    create_plugins(descr);
+    PlatformDescription descr = platform.get_descr();
+
+    create_plugins(platform);
 
     run_hooks(PluginHookBeforeBuild(descr, *this));
 
-    create_components(descr, CreationStage::DISCOVER);
+    create_components(platform, CreationStage::DISCOVER);
     run_hooks(PluginHookAfterComponentDiscovery(descr, *this));
 
-    create_components(descr, CreationStage::CREATE);
+    create_components(platform, CreationStage::CREATE);
     run_hooks(PluginHookAfterComponentInst(descr, *this));
 
-    create_backends(descr);
+    create_backends(platform);
     run_hooks(PluginHookAfterBackendInst(descr, *this));
 
-    do_bindings(descr);
+    platform.instanciation_done();
+
+    do_bindings(platform);
     run_hooks(PluginHookAfterBusConnections(descr, *this));
 
     create_dbg_init();
@@ -83,6 +78,10 @@ PlatformBuilder::~PlatformBuilder()
     delete m_dbg;
 
     for (auto &p : m_components) {
+        delete p.second;
+    }
+
+    for (auto &p : m_backends) {
         delete p.second;
     }
 
@@ -125,36 +124,23 @@ void PlatformBuilder::create_dbg_init()
     }
 }
 
-void PlatformBuilder::create_plugins(PlatformDescription &descr)
+void PlatformBuilder::create_plugins(PlatformParser &p)
 {
     PluginManager &pm = m_config.get_plugin_manager();
-    const Namespace &ns = Namespace::get(Namespace::PLUGIN);
 
-    if ((!descr.exists(ns.get_name())) || (!descr[ns.get_name()].is_map())) {
-        LOG(APP, DBG) << "No plugin instanciation in description\n";
-        return;
-    }
+    for (auto &plug : p.get_root().get_plugins()) {
+        const string &name = plug.first;
+        const string &type = plug.second->get_type();
 
-    for (auto &d : descr[ns.get_name()]) {
-        PlatformDescription &p_descr = d.second;
-        const string &name = d.first;
-
-        if (!p_descr.exists("plugin")) {
-            LOG(APP, WRN) << "Missing `plugin` attribute for plugin `"
-                          << name << "`\n";
-            continue;
-        }
-
-        const string p_name = p_descr["plugin"].as<string>();
-
-        PluginManager::Factory p_fact = pm.find_by_name(p_name);
+        PluginManager::Factory p_fact = pm.find_by_name(type);
 
         if (p_fact != NULL) {
             LOG(APP, DBG) << "Creating plugin instance `" << name
-                          << "` of plugin `" << p_name << "`\n";
-            m_plugins[name] = p_fact->create(name, p_descr);
+                          << "` of plugin `" << type << "`\n";
+            m_plugins[name] = p_fact->create(name, plug.second->get_descr());
+            plug.second->set_inst(m_plugins[name]);
         } else {
-            LOG(APP, WRN) << "Plugin `" << p_name << "` does not exists.\n";
+            LOG(APP, WRN) << "Plugin `" << type << "` does not exists.\n";
         }
     }
 }
@@ -169,82 +155,55 @@ void PlatformBuilder::run_hooks(HOOK &&hook)
     }
 }
 
-void PlatformBuilder::create_components(PlatformDescription &descr, CreationStage::value stage)
+void PlatformBuilder::create_components(PlatformParser &parser, CreationStage::value stage)
 {
     PlatformDescription::iterator it;
     ComponentManager &cm = m_config.get_component_manager();
-    const Namespace &ns = Namespace::get(Namespace::COMPONENT);
 
-    if ((!descr.exists(ns.get_name())) || (!descr[ns.get_name()].is_map())) {
-        LOG(APP, DBG) << "No component found in description\n";
-        return;
-    }
-
-    for (auto &d : descr[ns.get_name()]) {
-        ComponentManager::Factory cf;
-        const string &name = d.first;
-        PlatformDescription &comp = d.second;
-
-        if (!comp.exists("type")) {
-            LOG(APP, WRN) << "Missing `type` attribute for component `"
-                          << name << "`\n";
-            continue;
-        }
-
-        const string type = comp["type"].as<string>();
+    for (auto &comp : parser.get_root().get_components()) {
+        const string &name = comp.first;
+        const string &type = comp.second->get_type();
 
         if (!cm.type_exists(type)) {
             LOG(APP, WRN) << "No component type can provide `" << type << "`\n";
             continue;
         }
 
-        cf = cm.find_by_type(type);
+        ComponentManager::Factory c_fact = cm.find_by_type(type);
 
         switch (stage) {
         case CreationStage::DISCOVER:
-            cf->discover(name, comp);
+            c_fact->discover(name, comp.second->get_descr());
             break;
+
         case CreationStage::CREATE:
             LOG(APP, DBG) << "Creating component " << name
                           << " of type " << type << "\n";
-            m_components[name] = cf->create(name, comp);
+            m_components[name] = c_fact->create(name, comp.second->get_descr());
+            comp.second->set_inst(m_components[name]);
             break;
         }
     }
 }
 
-void PlatformBuilder::create_backends(PlatformDescription &descr)
+void PlatformBuilder::create_backends(PlatformParser &p)
 {
     BackendManager &pm = m_config.get_backend_manager();
-    const Namespace &ns = Namespace::get(Namespace::BACKEND);
 
-    if ((!descr.exists(ns.get_name())) || (!descr[ns.get_name()].is_map())) {
-        LOG(APP, DBG) << "No backend instanciation in description\n";
-        return;
-    }
+    for (auto &plug : p.get_root().get_backends()) {
+        const string &name = plug.first;
+        const string &type = plug.second->get_type();
 
-    for (auto &d : descr[ns.get_name()]) {
-        PlatformDescription &p_descr = d.second;
-        const string &name = d.first;
+        BackendManager::Factory p_fact = pm.find_by_name(type);
 
-        if (!p_descr.exists("backend")) {
-            LOG(APP, WRN) << "Missing `backend` attribute for backend `"
-                          << name << "`\n";
-            continue;
+        if (p_fact != NULL) {
+            LOG(APP, DBG) << "Creating backend instance `" << name
+                          << "` of backend `" << type << "`\n";
+            m_backends[name] = p_fact->create(name, plug.second->get_descr());
+            plug.second->set_inst(m_backends[name]);
+        } else {
+            LOG(APP, WRN) << "Backend `" << type << "` does not exists.\n";
         }
-
-        const string p_name = p_descr["backend"].as<string>();
-
-        if (!pm.name_exists(p_name)) {
-            LOG(APP, WRN) << "Backend `" << p_name << "` does not exist\n";
-            continue;
-        }
-
-        BackendManager::Factory p_fact = pm.find_by_name(p_name);
-
-        LOG(APP, DBG) << "Creating backend instance `" << name
-                      << "` of backend `" << p_name << "`\n";
-        m_backends[name] = p_fact->create(name, p_descr);
     }
 }
 
@@ -260,180 +219,17 @@ void PlatformBuilder::find_comp_by_attr(const std::string &key,
     }
 }
 
-void PlatformBuilder::do_bindings(PlatformDescription &descr)
+void PlatformBuilder::do_bindings(PlatformParser &p)
 {
-    PlatformDescription::iterator it;
+    for (auto &comp : p.get_root().get_components()) {
+        for (auto &binding : comp.second->get_bindings()) {
+            Port &p0 = binding.second->get_local_port();
+            Port &p1 = binding.second->get_peer_port();
+            PlatformDescription descr = binding.second->get_descr();
 
-    if (!descr["components"].is_map()) {
-        return;
-    }
-
-    for (it = descr["components"].begin(); it != descr["components"].end(); it++) {
-        if (m_components.find(it->first) == m_components.end()) {
-            continue;
-        }
-
-        do_bindings(*m_components[it->first], it->second);
-    }
-}
-
-void PlatformBuilder::do_bindings(ComponentBase &c, PlatformDescription &descr)
-{
-    PlatformDescription::iterator it;
-
-    if (!descr["bindings"].is_map()) {
-        return;
-    }
-
-    for (it = descr["bindings"].begin(); it != descr["bindings"].end(); it++) {
-        const string &pname = it->first;
-
-        if (!c.port_exists(pname)) {
-            report_parse_warning("Port `" + pname + "' in component `"
-                                 + c.name() + "' not found", it->second);
-            continue;
-        }
-
-        do_binding(c, c.get_port(pname), it->second);
-    }
-}
-
-class ParsedPeer {
-private:
-    const Namespace * m_ns;
-    string m_name;
-    string m_port;
-
-    bool name_ok = false;
-    bool port_ok = false;
-    bool ns_ok = false;
-
-public:
-    ParsedPeer() {}
-
-    void set_name(const string &n) { m_name = n; name_ok = true; }
-    void set_ns(const Namespace &n) { m_ns = &n; ns_ok = true; }
-    void set_port(const string &n) { m_port = n; port_ok = true; }
-
-    bool has_name() { return name_ok; }
-    bool has_port() { return port_ok; }
-
-    const string & name() { return m_name; }
-    const Namespace & ns() { return *m_ns; }
-    const string & port() { return m_port; }
-};
-
-static bool parse_peer_name(PlatformDescription descr, const Namespace &cur_ns,
-                            ParsedPeer &peer)
-{
-    const string name = descr.as<string>();
-
-    vector<string> toks;
-    tokenize(name, toks);
-
-    switch(toks.size()) {
-    case 3:
-        /* namespace.component.port */
-        try {
-            peer.set_ns(Namespace::find_by_name(toks[0]));
-        } catch (NamespaceNotFoundException e) {
-            report_parse_warning("Unknown namespace " + toks[0], descr);
-            return false;
-        }
-
-        peer.set_name(toks[1]);
-        peer.set_port(toks[2]);
-        break;
-
-    case 2:
-        /* component.port (current namespace) */
-        peer.set_ns(cur_ns);
-        peer.set_name(toks[0]);
-        peer.set_port(toks[1]);
-        break;
-
-    case 1:
-        /* component (current namespace, implicit port) */
-        peer.set_ns(cur_ns);
-        peer.set_name(toks[0]);
-        break;
-
-    default:
-        return false;
-    }
-
-    return true;
-}
-
-void PlatformBuilder::do_binding(ComponentBase &c, Port &p,
-                                 PlatformDescription &descr)
-{
-    ParsedPeer peer;
-    const Namespace &cur_ns = c.get_namespace();
-
-    switch (descr.type()) {
-    case PlatformDescription::MAP:
-        if (descr["peer"].is_scalar()) {
-            if (!parse_peer_name(descr["peer"], cur_ns, peer)) {
-                report_parse_warning("Invalid peer binding description", descr);
-                return;
-            }
-        }
-
-        if (descr["port"].is_scalar()) {
-            peer.set_port(descr["port"].as<string>());
-        }
-        break;
-
-    case PlatformDescription::SCALAR:
-        if (!parse_peer_name(descr, cur_ns, peer)) {
-            report_parse_warning("Invalid peer binding description", descr);
-            return;
-        }
-        break;
-
-    default:
-        report_parse_warning("Invalid binding description for port `" + p.name() + "'", descr);
-        return;
-    }
-
-    if ((peer.ns().get_id() != Namespace::COMPONENT)
-        && (peer.ns().get_id() != Namespace::BACKEND)) {
-        report_parse_warning("Invalid peer namespace " + peer.ns().get_name(), descr);
-        return;
-    }
-
-    if (!peer.has_name()) {
-        report_parse_warning("Invalid peer binding description", descr);
-        return;
-    }
-
-    if (!comp_exists(peer.ns(), peer.name())) {
-        report_parse_warning("Peer component `" + peer.name() + "' not found", descr);
-        return;
-    }
-
-    ComponentBase &peer_comp = get_comp(peer.ns(), peer.name());
-
-    if (!peer.has_port()) {
-        /* When no port is specified, we take the first available port */
-        auto p = peer_comp.port_begin();
-        if (p != peer_comp.port_end()) {
-            peer.set_port(p->first);
-        } else {
-            report_parse_warning("No port found on component `" + peer.name() + "'", descr);
-            return;
+            do_binding(p0, p1, descr);
         }
     }
-
-    if (!peer_comp.port_exists(peer.port())) {
-        report_parse_warning("Port `" + peer.port() + "' on peer component `" + peer.name() + "' not found", descr);
-        return;
-    }
-
-    Port &peer_port = peer_comp.get_port(peer.port());
-
-    do_binding(p, peer_port, descr);
 }
 
 void PlatformBuilder::do_binding(Port &p0, Port &p1, PlatformDescription &descr)

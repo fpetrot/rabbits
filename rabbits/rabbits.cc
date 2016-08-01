@@ -22,6 +22,7 @@
 
 #include <rabbits/platform/description.h>
 #include <rabbits/platform/builder.h>
+#include <rabbits/platform/parser.h>
 
 #include <rabbits/component/factory.h>
 
@@ -313,7 +314,8 @@ int sc_main(int argc, char *argv[])
 
     if (pname.empty()) {
         if (globals["show-help"].as<bool>() || globals["show-advanced-params"].as<bool>()) {
-            PlatformBuilder empty("", PlatformDescription::INVALID_DESCRIPTION, config);
+            PlatformParser platform("", PlatformDescription::INVALID_DESCRIPTION, config);
+            PlatformBuilder empty("", platform, config);
             print_usage(argv[0], config, empty);
             return 0;
         }
@@ -329,7 +331,10 @@ int sc_main(int argc, char *argv[])
     LOG(APP, DBG) << "Selected platform is " << pname << "\n";
 
     PlatformDescription platform = config.apply_platform(pname);
-    PlatformBuilder builder(pname.c_str(), platform, config);
+
+    PlatformParser parser(pname, platform, config);
+    PlatformBuilder builder(pname.c_str(), parser, config);
+
 
     if (globals["show-help"].as<bool>() || globals["show-advanced-params"].as<bool>()) {
         print_usage(argv[0], config, builder);

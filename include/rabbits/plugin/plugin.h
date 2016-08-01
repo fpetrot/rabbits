@@ -111,6 +111,7 @@ public:
     /* ModuleIface */
     const std::string & get_name() const { return m_name; }
     const Namespace & get_namespace() const { return *(m_params.get_namespace()); }
+    const std::string get_full_name() const { return m_params.get_namespace()->get_name() + "." + get_name(); }
 
     /* HasParametersIface */
     const Parameters & get_params() const { return m_params; }

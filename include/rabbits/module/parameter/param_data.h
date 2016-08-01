@@ -25,9 +25,7 @@
 #ifndef _UTILS_COMPONENT_PARAMETER_PARAM_DATA_H
 #define _UTILS_COMPONENT_PARAMETER_PARAM_DATA_H
 
-#include <typeindex>
-#include <unordered_map>
-#include <cstdint>
+#include "rabbits/datatypes/typeid.h"
 
 /**
  * @brief ParamData, base class.
@@ -47,7 +45,7 @@ public:
 
     bool is_inited() const { return m_inited; }
 
-    virtual std::string get_typeid() const = 0;
+    virtual const char * get_typeid() const = 0;
 };
 
 /**
@@ -82,30 +80,9 @@ public:
     /**
      * @brief Get the type ID associated to the data of the internal storage
      */
-    std::string get_typeid() const
+    const char * get_typeid() const
     {
-        std::unordered_map<std::type_index, std::string> id_map;
-        std::string ret = "?";
-
-        id_map[typeid(int)] = "int";
-        id_map[typeid(bool)] = "bool";
-        id_map[typeid(std::string)] = "string";
-
-        id_map[typeid(uint8_t)] = "uint8";
-        id_map[typeid(uint16_t)] = "uint16";
-        id_map[typeid(uint32_t)] = "uint32";
-        id_map[typeid(uint64_t)] = "uint64";
-
-        id_map[typeid(int8_t)] = "int8";
-        id_map[typeid(int16_t)] = "int16";
-        id_map[typeid(int32_t)] = "int32";
-        id_map[typeid(int64_t)] = "int64";
-
-        if (id_map.find(typeid(T)) != id_map.end()) {
-            ret = id_map[typeid(T)];
-        }
-
-        return ret;
+        return TypeId::get_typeid<T>();
     }
 };
 

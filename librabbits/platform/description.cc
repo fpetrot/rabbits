@@ -263,7 +263,7 @@ PlatformDescription PlatformDescription::merge(PlatformDescription &p)
         if (p.is_map()) {
             DBG_MERGE("this and p are map\n");
 
-            NodeMap *n = new NodeMap;
+            NodeMap *n = new NodeMap(m_node->origin());
 
             iterator it;
             set<string> to_merge;

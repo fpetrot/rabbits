@@ -188,7 +188,7 @@ public:
     /**
      * @brief Get the type ID associated to the data of this paramater
      */
-    std::string get_typeid() const { return m_data->get_typeid(); }
+    const char * get_typeid() const { return m_data->get_typeid(); }
 };
 
 /**

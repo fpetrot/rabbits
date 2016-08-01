@@ -199,6 +199,7 @@ public:
     /* ModuleIface */
     const std::string & get_name() const { return m_name; }
     const Namespace & get_namespace() const { return *(m_params.get_namespace()); }
+    const std::string get_full_name() const { return m_params.get_namespace()->get_name() + "." + get_name(); }
 
     /* HasPortIface */
     virtual void declare_port(Port &p, const std::string &name) { m_ports[name] = &p; }

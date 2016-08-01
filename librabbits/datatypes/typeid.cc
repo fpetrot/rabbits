@@ -17,37 +17,22 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _RABBITS_MODULE_MODULE_H
-#define _RABBITS_MODULE_MODULE_H
-
-#include "rabbits/logger/has_logger.h"
-#include "rabbits/config/has_config.h"
-#include "parameters.h"
-#include "namespace.h"
+#include "rabbits/datatypes/typeid.h"
 
 
-class ModuleIface
-    : public HasParametersIface
-    , public HasLoggerIface
-    , public HasConfigIface
-{
-public:
-    /**
-     * @brief Return the module name
-     */
-    virtual const std::string & get_name() const = 0;
+std::unordered_map<std::type_index, const char * const> TypeId::m_ids {
+    { typeid(int), "int" },
 
-    /**
-     * @brief Return the module namespace
-     */
-    virtual const Namespace & get_namespace() const = 0;
+    { typeid(bool), "bool" },
+    { typeid(std::string), "string" },
 
-    /* @brief Return the full name of the module
-     *
-     * The full name is composed of the name of the namespace, a ".", and the
-     * name of the module.
-     */
-    virtual const std::string get_full_name() const = 0;
+    { typeid(uint8_t), "uint8" },
+    { typeid(uint16_t), "uint16" },
+    { typeid(uint32_t), "uint32" },
+    { typeid(uint64_t), "uint64" },
+
+    { typeid(int8_t), "int8" },
+    { typeid(int16_t), "int16" },
+    { typeid(int32_t), "int32" },
+    { typeid(int64_t), "int64" },
 };
-
-#endif

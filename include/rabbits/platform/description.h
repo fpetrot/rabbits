@@ -112,14 +112,18 @@ public:
     public:
         struct Origin {
             enum eOrigin { FILE, CMDLINE, UNKNOWN };
-            eOrigin origin;
+            eOrigin origin = UNKNOWN;
             std::string filename;
-            int line;
-            int column;
+            int line = 0;
+            int column = 0;
 
-            Origin() : origin(UNKNOWN), line(0), column(0) {}
-            explicit Origin(eOrigin o) : origin(o), line(0), column(0) {}
-            Origin(std::string fn, int l, int c) : origin(FILE), filename(fn), line(l), column(c) {}
+            Origin() {}
+            explicit Origin(eOrigin o) : origin(o) {}
+
+            Origin(std::string fn, int l, int c)
+                : origin(FILE), filename(fn)
+                , line(l), column(c)
+            {}
 
             std::string format() const {
                 std::stringstream res;

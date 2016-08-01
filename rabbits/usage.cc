@@ -291,7 +291,7 @@ public:
         int ret = m_name.size() + 1;
 
         if (!m_param.is_convertible_to<bool>()) {
-            ret += 3 + m_param.get_typeid().size();
+            ret += 3 + std::strlen(m_param.get_typeid());
         }
 
         return ret;
@@ -544,6 +544,10 @@ void enum_modules(ConfigManager &config, const Namespace &ns, LogLevel::value lv
     l.enable_banner(banner_status);
 }
 
+void enum_platforms(ConfigManager &config, LogLevel::value lvl)
+{
+
+}
 
 static void add_aliases(ConfigManager &conf, UsageFormatter &usage, bool advanced)
 {
