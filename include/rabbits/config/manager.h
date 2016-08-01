@@ -53,6 +53,8 @@ private:
 
     Parameters m_global_params;
 
+    DynamicLoader m_dynloader;
+
     ComponentManager m_components;
     BackendManager m_backends;
     PluginManager m_plugins;
@@ -63,8 +65,6 @@ private:
         [Namespace::PLUGIN] = &m_plugins,
         [Namespace::BACKEND] = &m_backends,
     };
-
-    DynamicLoader m_dynloader;
 
     PlatformDescription m_root_descr;
     PlatformDescription m_cmdline_descr;
