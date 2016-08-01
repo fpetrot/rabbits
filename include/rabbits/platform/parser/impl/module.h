@@ -21,12 +21,18 @@
 #define _RABBITS_PLATFORM_PARSER_IMPL_MODULE_H
 
 #include "../module.h"
+#include "../platform.h"
+#include "rabbits/config/manager.h"
 
 inline ParserNodeModule::ParserNodeModule(PlatformDescription &d, const std::string n,
                                    ParserNodePlatform &root, const Namespace &ns)
     : ParserNode(d, root), m_name(n), m_ns(ns)
 {
     add_field<std::string>("type", m_type);
+
+    if (!get_root().get_config().get_manager_by_namespace(ns).type_exists(m_type)) {
+        throw ModuleTypeNotFoundParseException(d, ns, m_type);
+    }
 }
 
 inline ParserNodeModule::~ParserNodeModule() {}

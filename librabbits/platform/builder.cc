@@ -134,14 +134,12 @@ void PlatformBuilder::create_plugins(PlatformParser &p)
 
         PluginManager::Factory p_fact = pm.find_by_type(type);
 
-        if (p_fact != NULL) {
-            LOG(APP, DBG) << "Creating plugin instance `" << name
-                          << "` of plugin `" << type << "`\n";
-            m_plugins[name] = p_fact->create(name, plug.second->get_descr());
-            plug.second->set_inst(m_plugins[name]);
-        } else {
-            LOG(APP, WRN) << "Plugin `" << type << "` does not exists.\n";
-        }
+        assert(p_fact != nullptr);
+
+        LOG(APP, DBG) << "Creating plugin instance `" << name
+            << "` of plugin `" << type << "`\n";
+        m_plugins[name] = p_fact->create(name, plug.second->get_descr());
+        plug.second->set_inst(m_plugins[name]);
     }
 }
 
@@ -164,12 +162,9 @@ void PlatformBuilder::create_components(PlatformParser &parser, CreationStage::v
         const string &name = comp.first;
         const string &type = comp.second->get_type();
 
-        if (!cm.type_exists(type)) {
-            LOG(APP, WRN) << "No component type can provide `" << type << "`\n";
-            continue;
-        }
-
         ComponentManager::Factory c_fact = cm.find_by_type(type);
+
+        assert(c_fact != nullptr);
 
         switch (stage) {
         case CreationStage::DISCOVER:
@@ -196,14 +191,12 @@ void PlatformBuilder::create_backends(PlatformParser &p)
 
         BackendManager::Factory p_fact = pm.find_by_type(type);
 
-        if (p_fact != NULL) {
-            LOG(APP, DBG) << "Creating backend instance `" << name
-                          << "` of backend `" << type << "`\n";
-            m_backends[name] = p_fact->create(name, plug.second->get_descr());
-            plug.second->set_inst(m_backends[name]);
-        } else {
-            LOG(APP, WRN) << "Backend `" << type << "` does not exists.\n";
-        }
+        assert(p_fact != nullptr);
+
+        LOG(APP, DBG) << "Creating backend instance `" << name
+            << "` of backend `" << type << "`\n";
+        m_backends[name] = p_fact->create(name, plug.second->get_descr());
+        plug.second->set_inst(m_backends[name]);
     }
 }
 

@@ -142,6 +142,24 @@ public:
 
 };
 
+class ModuleTypeNotFoundParseException : public PlatformParseException {
+protected:
+    std::string make_what(const PlatformDescription &node,
+                          const Namespace &ns, const std::string &mod)
+    {
+        return "Module type `" + ns.get_name() + "." + mod
+            + "` not found" + get_origin(node);
+    }
+
+public:
+    ModuleTypeNotFoundParseException(const PlatformDescription &node,
+                                     const Namespace &ns, const std::string &mod)
+        : PlatformParseException(node, make_what(node, ns, mod))
+    {}
+
+    virtual ~ModuleTypeNotFoundParseException() throw() {}
+};
+
 class ModuleNotFoundParseException : public PlatformParseException {
 protected:
     const Namespace &m_ns;
