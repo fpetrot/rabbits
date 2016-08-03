@@ -61,7 +61,7 @@ class HasAttributesIface
 public:
     virtual void add_attr(const std::string & key, const std::string & value) = 0;
     virtual bool has_attr(const std::string & key) = 0;
-    virtual std::string get_attr(const std::string & key) = 0;
+    virtual std::vector<std::string> get_attr(const std::string & key) = 0;
 };
 
 
@@ -92,7 +92,7 @@ public:
  */
 class Component : public ComponentBase {
 public:
-    typedef std::map<std::string, std::string> Attributes;
+    typedef std::map< std::string, std::vector<std::string> > Attributes;
 
     SC_HAS_PROCESS(Component);
 
@@ -232,7 +232,7 @@ public:
     /* HasAttributesIface */
     void add_attr(const std::string & key, const std::string & value)
     {
-        m_attributes[key] = value;
+        m_attributes[key].push_back(value);
     }
 
     bool has_attr(const std::string & key)
@@ -240,10 +240,10 @@ public:
         return (m_attributes.find(key) != m_attributes.end());
     }
 
-    std::string get_attr(const std::string & key)
+    std::vector<std::string> get_attr(const std::string & key)
     {
         if (!has_attr(key)) {
-            return "";
+            return std::vector<std::string>();
         }
 
         return m_attributes[key];

@@ -22,6 +22,7 @@
 
 #include "node.h"
 #include "rabbits/module/namespace.h"
+#include "rabbits/module/parameters.h"
 
 class HasPortIface;
 
@@ -29,15 +30,21 @@ class ParserNodeModule : public ParserNode {
     std::string m_name;
     const Namespace &m_ns;
     std::string m_type;
+    Parameters m_params;
 
 public:
     ParserNodeModule(PlatformDescription &d, const std::string n,
                      ParserNodePlatform &root, const Namespace &ns);
+    ParserNodeModule(const std::string name, const std::string &type,
+                     const Parameters &params, ParserNodePlatform &root,
+                     const Namespace &ns);
+    ParserNodeModule(ParserNodePlatform &root, const Namespace &ns);
     virtual ~ParserNodeModule();
 
     const std::string & get_name() const;
     const std::string & get_type() const;
     const Namespace & get_namespace() const;
+    const Parameters & get_params() const;
 
     template <class T>
     void add_field(const std::string &name, T& storage);
@@ -53,6 +60,11 @@ protected:
 public:
     ParserNodeModuleWithPorts(PlatformDescription &d, const std::string n,
                               ParserNodePlatform &root, const Namespace &ns);
+    ParserNodeModuleWithPorts(const std::string &name, const std::string &type,
+                              const Parameters &params, ParserNodePlatform &root,
+                              const Namespace &ns);
+    ParserNodeModuleWithPorts(HasPortIface *m, ParserNodePlatform &root,
+                              const Namespace &ns);
 
     HasPortIface * get_inst() const { return m_inst; }
 };

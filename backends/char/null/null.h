@@ -41,7 +41,7 @@ private:
 
 public:
     SC_HAS_PROCESS(NullCharBackend);
-    NullCharBackend(sc_core::sc_module_name n, Parameters &p, ConfigManager &c)
+    NullCharBackend(sc_core::sc_module_name n, const Parameters &p, ConfigManager &c)
         : Component(n, p, c), m_port("char")
     {
         SC_THREAD(recv_thread);

@@ -42,13 +42,19 @@ class ParserNodeBinding : public ParserNode {
 public:
     ParserNodeBinding(PlatformDescription &descr, const std::string &n,
                       ParserNodePlatform &root, ParserNodeModuleWithPorts &parent);
+    ParserNodeBinding(const std::string &local_port,
+                      std::shared_ptr<ParserNodeModuleWithPorts> peer,
+                      const std::string &peer_port,
+                      PlatformDescription &params,
+                      ParserNodePlatform &root,
+                      ParserNodeModuleWithPorts &parent);
     virtual ~ParserNodeBinding();
 
     void second_pass();
     void instanciation_done();
 
     ParserNodeModuleWithPorts & get_peer() const;
-    
+
     Port & get_local_port() const
     {
         assert(m_local_port != nullptr);

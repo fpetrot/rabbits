@@ -23,10 +23,15 @@
 #include "node.h"
 #include "rabbits/config/has_config.h"
 
+class ParserNodeModule;
 class ParserNodeComponent;
 class ParserNodeBackend;
 class ParserNodePlugin;
 class ParserNodeModuleWithPorts;
+
+class ComponentBase;
+class PluginBase;
+class Parameters;
 
 class ParserNodePlatform : public ParserNode, public HasConfigIface {
 protected:
@@ -50,10 +55,36 @@ public:
     NamedSubnodes<ParserNodeBackend> & get_backends();
     NamedSubnodes<ParserNodePlugin> & get_plugins();
 
+    bool module_exists(const Namespace &ns, const std::string &name) const;
+    std::shared_ptr<ParserNodeModule> get_module(const Namespace &ns, const std::string &name);
+
     bool module_with_ports_exists(const Namespace &ns, const std::string &name) const;
     std::shared_ptr<ParserNodeModuleWithPorts> get_module_with_ports(const Namespace &ns, const std::string &name);
 
+    bool component_exists(const std::string & name) const;
+    std::shared_ptr<ParserNodeComponent> get_component(const std::string & name);
+    bool backend_exists(const std::string & name) const;
+    std::shared_ptr<ParserNodeBackend> get_backend(const std::string & name);
+    bool plugin_exists(const std::string & name) const;
+    std::shared_ptr<ParserNodePlugin> get_plugin(const std::string & name);
+
+    void find_component_by_attr(const std::string &key, Subnodes<ParserNodeComponent> &out);
+    void find_backend_by_attr(const std::string &key, Subnodes<ParserNodeBackend> &out);
+
     ConfigManager & get_config() const { return m_config; }
+
+    std::shared_ptr<ParserNodeComponent> create_component(const std::string name, const std::string type,
+                                                          const Parameters &params);
+
+    std::shared_ptr<ParserNodeBackend> create_backend(const std::string name, const std::string type,
+                                                      const Parameters &params);
+
+    std::shared_ptr<ParserNodePlugin> create_plugin(const std::string name, const std::string type,
+                                                     const Parameters &params);
+
+    void add_component(ComponentBase *c);
+    void add_backend(ComponentBase *c);
+    void add_plugin(PluginBase *c);
 };
 
 #endif

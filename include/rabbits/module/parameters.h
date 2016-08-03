@@ -73,6 +73,8 @@ public:
         }
     }
 
+    Parameters& operator= (const Parameters&);
+
     /**
      * @brief Add a parameter to the collection
      *
@@ -82,7 +84,16 @@ public:
     void add(const std::string name, const ParameterBase &p) {
         m_pool[name] = p.clone();
         m_pool[name]->set_name(name);
-        m_pool[name]->set_namespace(*m_namespace);
+
+        if (m_namespace != nullptr) {
+            m_pool[name]->set_namespace(*m_namespace);
+        }
+
+        if (m_module != nullptr) {
+            m_pool[name]->set_module(*m_module);
+        }
+
+        fill_from_description(m_descr);
     }
 
     void set_namespace(const Namespace &_namespace) {
@@ -157,7 +168,34 @@ public:
      * @return the parameter.
      * @throw ParameterNotFoundException if the parameter does not exists.
      */
+    ParameterBase& at(const std::string & name) const {
+        if (!exists(name)) {
+            throw ParameterNotFoundException(name);
+        }
+        return *m_pool.at(name);
+    }
+
+    /**
+     * @brief Return the parameter associated with the given name.
+     *
+     * @param[in] name the name of the parameter.
+     *
+     * @return the parameter.
+     * @throw ParameterNotFoundException if the parameter does not exists.
+     */
     ParameterBase& operator[] (const std::string & name) {
+        return at(name);
+    }
+
+    /**
+     * @brief Return the parameter associated with the given name.
+     *
+     * @param[in] name the name of the parameter.
+     *
+     * @return the parameter.
+     * @throw ParameterNotFoundException if the parameter does not exists.
+     */
+    ParameterBase& operator[] (const std::string & name) const {
         return at(name);
     }
 

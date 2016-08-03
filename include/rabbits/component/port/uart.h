@@ -44,6 +44,7 @@ public:
     {
         add_connection_strategy(m_chardev_cs);
         declare_parent(tx.get_parent_object());
+        add_attr_to_parent("char-port", name);
     }
 
     virtual ~UartPort() {}

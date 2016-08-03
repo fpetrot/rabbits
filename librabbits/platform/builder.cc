@@ -25,7 +25,6 @@
 
 #include "rabbits/logger.h"
 #include "rabbits/platform/description.h"
-#include "rabbits/platform/parser.h"
 #include "rabbits/component/factory.h"
 #include "rabbits/datatypes/address_range.h"
 
@@ -44,33 +43,30 @@ static inline void report_parse_warning(const string &msg, const PlatformDescrip
     LOG(APP, WRN) << msg << " (at " << descr.origin() << ")\n";
 }
 
-PlatformBuilder::PlatformBuilder(sc_module_name name, PlatformParser &platform,
+PlatformBuilder::PlatformBuilder(sc_module_name name, PlatformDescription &descr,
                                  ConfigManager &config)
-    : sc_module(name), m_config(config)
+    : sc_module(name), m_config(config), m_parser(string(name), descr, config)
 {
-    PlatformDescription descr = platform.get_descr();
+    create_plugins(m_parser);
+    run_hooks(PluginHookBeforeBuild(descr, *this, m_parser));
 
-    create_plugins(platform);
+    create_components(m_parser, CreationStage::DISCOVER);
+    run_hooks(PluginHookAfterComponentDiscovery(descr, *this, m_parser));
 
-    run_hooks(PluginHookBeforeBuild(descr, *this));
+    create_components(m_parser, CreationStage::CREATE);
+    run_hooks(PluginHookAfterComponentInst(descr, *this, m_parser));
 
-    create_components(platform, CreationStage::DISCOVER);
-    run_hooks(PluginHookAfterComponentDiscovery(descr, *this));
+    create_backends(m_parser);
+    run_hooks(PluginHookAfterBackendInst(descr, *this, m_parser));
 
-    create_components(platform, CreationStage::CREATE);
-    run_hooks(PluginHookAfterComponentInst(descr, *this));
+    m_parser.instanciation_done();
 
-    create_backends(platform);
-    run_hooks(PluginHookAfterBackendInst(descr, *this));
+    do_bindings(m_parser);
+    run_hooks(PluginHookAfterBindings(descr, *this, m_parser));
 
-    platform.instanciation_done();
+    create_dbg_init(m_parser);
 
-    do_bindings(platform);
-    run_hooks(PluginHookAfterBusConnections(descr, *this));
-
-    create_dbg_init();
-
-    run_hooks(PluginHookAfterBuild(descr, *this));
+    run_hooks(PluginHookAfterBuild(descr, *this, m_parser));
 }
 
 PlatformBuilder::~PlatformBuilder()
@@ -90,7 +86,7 @@ PlatformBuilder::~PlatformBuilder()
     }
 }
 
-void PlatformBuilder::create_dbg_init()
+void PlatformBuilder::create_dbg_init(PlatformParser &parser)
 {
     /*
      * To create the debug initiator, we must know which component is the main
@@ -99,27 +95,35 @@ void PlatformBuilder::create_dbg_init()
      * updated to know which bus must be considered.
      */
 
-    vector<ComponentBase*> buses;
+    ParserNode::Subnodes<ParserNodeComponent> buses;
 
-    find_comp_by_attr("tlm-bus", buses);
+    parser.get_root().find_component_by_attr("tlm-bus", buses);
 
     if (buses.size() > 1) {
         LOG(APP, ERR) << "Multiple buses in platform is not yet correctly handled. Except failures\n";
         return;
     }
 
-    for (ComponentBase* bus : buses) {
+    for (auto & pbus : buses) {
         m_dbg = new DebugInitiator("dbg-initiator", m_config);
+        ComponentBase *bus = pbus->get_inst();
 
+        assert(bus != nullptr);
         assert(bus->has_attr("tlm-bus-port"));
         assert(m_dbg->has_attr("tlm-initiator-port"));
 
-        const string &bus_port_name = bus->get_attr("tlm-bus-port");
-        const string &dbg_port_name = m_dbg->get_attr("tlm-initiator-port");
+        const vector<string> bus_port_name = bus->get_attr("tlm-bus-port");
+        const vector<string> dbg_port_name = m_dbg->get_attr("tlm-initiator-port");
+
+        assert(dbg_port_name.size() == 1);
+
+        if (bus_port_name.size() > 1) {
+            LOG(APP, WRN) << "Bus component has multiple tlm bus port. Considering the first one.\n";
+        }
 
         LOG(APP, DBG) << "Connecting the debug initiator to the main system bus\n";
-        do_binding(bus->get_port(bus_port_name),
-                   m_dbg->get_port(dbg_port_name),
+        do_binding(bus->get_port(bus_port_name.front()),
+                   m_dbg->get_port(dbg_port_name.front()),
                    PlatformDescription::INVALID_DESCRIPTION);
     }
 }
@@ -138,7 +142,7 @@ void PlatformBuilder::create_plugins(PlatformParser &p)
 
         LOG(APP, DBG) << "Creating plugin instance `" << name
             << "` of plugin `" << type << "`\n";
-        m_plugins[name] = p_fact->create(name, plug.second->get_descr());
+        m_plugins[name] = p_fact->create(name, plug.second->get_params());
         plug.second->set_inst(m_plugins[name]);
     }
 }
@@ -174,7 +178,7 @@ void PlatformBuilder::create_components(PlatformParser &parser, CreationStage::v
         case CreationStage::CREATE:
             LOG(APP, DBG) << "Creating component " << name
                           << " of type " << type << "\n";
-            m_components[name] = c_fact->create(name, comp.second->get_descr());
+            m_components[name] = c_fact->create(name, comp.second->get_params());
             comp.second->set_inst(m_components[name]);
             break;
         }
@@ -195,20 +199,8 @@ void PlatformBuilder::create_backends(PlatformParser &p)
 
         LOG(APP, DBG) << "Creating backend instance `" << name
             << "` of backend `" << type << "`\n";
-        m_backends[name] = p_fact->create(name, plug.second->get_descr());
+        m_backends[name] = p_fact->create(name, plug.second->get_params());
         plug.second->set_inst(m_backends[name]);
-    }
-}
-
-void PlatformBuilder::find_comp_by_attr(const std::string &key,
-                                        std::vector<ComponentBase*> &out)
-{
-    comp_iterator it;
-
-    for (auto &comp : get_components()) {
-        if (comp.second->has_attr(key)) {
-            out.push_back(comp.second);
-        }
     }
 }
 
@@ -234,3 +226,27 @@ void PlatformBuilder::do_binding(Port &p0, Port &p1, PlatformDescription &descr)
     }
 }
 
+void PlatformBuilder::add_component(ComponentBase *c)
+{
+    const string & name = c->get_name();
+
+    m_parser.get_root().add_component(c);
+    m_components[name] = c;
+}
+
+
+void PlatformBuilder::add_backend(ComponentBase *c)
+{
+    const string & name = c->get_name();
+
+    m_parser.get_root().add_backend(c);
+    m_backends[name] = c;
+}
+
+void PlatformBuilder::add_plugin(PluginBase *p)
+{
+    const string & name = p->get_name();
+
+    m_parser.get_root().add_plugin(p);
+    m_plugins[name] = p;
+}

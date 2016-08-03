@@ -22,6 +22,7 @@
 
 #include "module.h"
 
+
 class ParserNodeBinding;
 class ComponentBase;
 
@@ -33,6 +34,9 @@ protected:
 
 public:
     ParserNodeComponent(PlatformDescription &descr, const std::string &n, ParserNodePlatform &root);
+    ParserNodeComponent(const std::string &name, const std::string &type,
+                        const Parameters &params, ParserNodePlatform &root);
+    ParserNodeComponent(ComponentBase *inst, ParserNodePlatform &root);
     virtual ~ParserNodeComponent();
 
     bool implem_is_set() const;
@@ -42,6 +46,15 @@ public:
     ComponentBase *get_inst() const { return m_inst; }
 
     NamedSubnodes<ParserNodeBinding> & get_bindings() { return m_bindings; }
+
+    bool binding_exists(const std::string &port) const;
+
+    void add_binding(const std::string local_port,
+                     std::shared_ptr<ParserNodeModuleWithPorts> peer,
+                     const std::string &peer_port,
+                     PlatformDescription &params);
+
+    void remove_binding_if_exists(const std::string local_port);
 };
 
 #endif

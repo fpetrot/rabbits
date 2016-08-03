@@ -56,13 +56,15 @@ private:
 
 public:
     SC_HAS_PROCESS(StdioCharBackend);
-    StdioCharBackend(sc_core::sc_module_name n, Parameters &p, ConfigManager &c)
+    StdioCharBackend(sc_core::sc_module_name n, const Parameters &p, ConfigManager &c)
         : Component(n, p, c), m_port("char")
     {
         if (in_use) {
             LOG(APP, ERR) << "Only one stdio char backend allowed\n";
             return;
         }
+
+        add_attr("stdio-locked", "");
 
         setup_tty();
 

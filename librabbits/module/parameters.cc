@@ -23,20 +23,35 @@ Parameters Parameters::EMPTY;
 
 Parameters::Parameters(const Parameters &p)
 {
-    const_iterator it;
-    
     m_descr = p.m_descr;
     m_namespace = p.m_namespace;
+    m_module = p.m_module;
 
-    for(it = p.m_pool.begin(); it != p.m_pool.end(); it++) {
-        add(it->first, *(it->second));
+    for (auto param : p.m_pool) {
+        add(param.first, *param.second);
     }
+}
+
+Parameters& Parameters::operator= (const Parameters& p)
+{
+    m_descr = p.m_descr;
+    m_namespace = p.m_namespace;
+    m_module = p.m_module;
+
+    for (auto param : p.m_pool) {
+        add(param.first, *param.second);
+    }
+
+    return *this;
 }
 
 void Parameters::fill_from_description(const PlatformDescription &p)
 {
     PlatformDescription::const_iterator it;
-    m_descr = p;
+
+    if (&p != &m_descr) {
+        m_descr = p;
+    }
 
     if (!p.is_map()) {
         return;
@@ -48,4 +63,3 @@ void Parameters::fill_from_description(const PlatformDescription &p)
         }
     }
 }
-

@@ -86,7 +86,7 @@ public:
 template <class TComponent>
 class ComponentFactory : public ComponentFactoryBase {
 protected:
-    virtual TComponent * create(const std::string & name, Parameters & params)
+    virtual TComponent * create(const std::string & name, const Parameters & params)
     {
         TComponent *c = new TComponent(name.c_str(), params, get_config());
         return c;

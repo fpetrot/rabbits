@@ -26,15 +26,17 @@
 
 class PlatformDescription;
 class PlatformBuilder;
+class PlatformParser;
 
 class PluginHook {
 protected:
     PlatformDescription &m_descr;
     PlatformBuilder &m_builder;
+    PlatformParser &m_parser;
 
 public:
-    PluginHook(PlatformDescription &descr, PlatformBuilder &builder) 
-        : m_descr(descr), m_builder(builder) {}
+    PluginHook(PlatformDescription &descr, PlatformBuilder &builder, PlatformParser &parser)
+        : m_descr(descr), m_builder(builder), m_parser(parser) {}
 
     /**
      * @brief Get the platform description.
@@ -49,6 +51,13 @@ public:
      * @return the platform builder.
      */
     PlatformBuilder& get_builder() const { return m_builder; }
+
+    /**
+     * @brief Get the platform parser.
+     *
+     * @return the platform parser.
+     */
+    PlatformParser& get_parser() const { return m_parser; }
 };
 
 /**
@@ -56,8 +65,9 @@ public:
  */
 class PluginHookBeforeBuild : public PluginHook {
 public:
-    PluginHookBeforeBuild(PlatformDescription &descr, PlatformBuilder &builder) 
-        : PluginHook(descr, builder) {}
+    PluginHookBeforeBuild(PlatformDescription &descr, PlatformBuilder &builder,
+                          PlatformParser &parser)
+        : PluginHook(descr, builder, parser) {}
 };
 
 /**
@@ -65,8 +75,9 @@ public:
  */
 class PluginHookAfterComponentDiscovery : public PluginHook {
 public:
-    PluginHookAfterComponentDiscovery (PlatformDescription &descr, PlatformBuilder &builder) 
-        : PluginHook(descr, builder) {}
+    PluginHookAfterComponentDiscovery (PlatformDescription &descr, PlatformBuilder &builder,
+                                       PlatformParser &parser)
+        : PluginHook(descr, builder, parser) {}
 };
 
 /**
@@ -75,8 +86,8 @@ public:
 class PluginHookAfterComponentInst : public PluginHook {
 public:
     PluginHookAfterComponentInst (PlatformDescription &descr,
-                                  PlatformBuilder &builder) 
-        : PluginHook(descr, builder) {}
+                                  PlatformBuilder &builder, PlatformParser &parser)
+        : PluginHook(descr, builder, parser) {}
 };
 
 /**
@@ -85,18 +96,18 @@ public:
 class PluginHookAfterBackendInst : public PluginHook {
 public:
     PluginHookAfterBackendInst (PlatformDescription &descr,
-                                PlatformBuilder &builder) 
-        : PluginHook(descr, builder) {}
+                                PlatformBuilder &builder, PlatformParser &parser)
+        : PluginHook(descr, builder, parser) {}
 };
 
 /**
- * @brief Hook context used after the components connection step.
+ * @brief Hook context used after the ports binding step.
  */
-class PluginHookAfterBusConnections : public PluginHook {
+class PluginHookAfterBindings : public PluginHook {
 public:
-    PluginHookAfterBusConnections (PlatformDescription &descr,
-                                   PlatformBuilder &builder) 
-        : PluginHook(descr, builder) {}
+    PluginHookAfterBindings (PlatformDescription &descr,
+                                   PlatformBuilder &builder, PlatformParser &parser)
+        : PluginHook(descr, builder, parser) {}
 };
 
 /**
@@ -104,8 +115,9 @@ public:
  */
 class PluginHookAfterBuild : public PluginHook {
 public:
-    PluginHookAfterBuild(PlatformDescription &descr, PlatformBuilder &builder) 
-        : PluginHook(descr, builder) {}
+    PluginHookAfterBuild(PlatformDescription &descr, PlatformBuilder &builder,
+                         PlatformParser &parser)
+        : PluginHook(descr, builder, parser) {}
 };
 
 #endif

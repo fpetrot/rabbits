@@ -34,9 +34,9 @@
 #include "rabbits/component/manager.h"
 #include "rabbits/component/component.h"
 #include "rabbits/component/debug_initiator.h"
+#include "rabbits/platform/parser.h"
 
 class PlatformDescription;
-class PlatformParser;
 class AddressRange;
 
 /**
@@ -46,7 +46,7 @@ class AddressRange;
  * The instance of this class will be the top-level SystemC module, instancing
  * and connecting the components altogether during elaboration.
  */
-class PlatformBuilder : public sc_core::sc_module {
+class PlatformBuilder : public sc_core::sc_module, public HasConfigIface {
 public:
     typedef std::map<std::string, ComponentBase*>::iterator comp_iterator;
     typedef std::map<std::string, ComponentBase*>::const_iterator const_comp_iterator;
@@ -68,6 +68,8 @@ protected:
 
     ConfigManager &m_config;
 
+    PlatformParser m_parser;
+
     /* Instanciated modules */
     Plugins m_plugins;
     Components m_components;
@@ -87,7 +89,7 @@ protected:
     void do_bindings(PlatformParser &p);
     void do_binding(Port &p0, Port &p1, PlatformDescription &descr);
 
-    void create_dbg_init();
+    void create_dbg_init(PlatformParser&);
 
 public:
     SC_HAS_PROCESS(PlatformBuilder);
@@ -98,7 +100,7 @@ public:
      * @param name Name of the SystemC module.
      * @param descr Platform description.
      */
-    PlatformBuilder(sc_core::sc_module_name name, PlatformParser &platform, ConfigManager &config);
+    PlatformBuilder(sc_core::sc_module_name name, PlatformDescription &platform, ConfigManager &config);
     virtual ~PlatformBuilder();
 
     /**
@@ -141,8 +143,6 @@ public:
     {
         return comp_exists(Namespace::get(Namespace::COMPONENT), name);
     }
-
-    void find_comp_by_attr(const std::string &key, std::vector<ComponentBase*> &out);
 
     /**
      * @brief Return the component of the given namespace and name.
@@ -196,6 +196,13 @@ public:
     const Components get_components() const { return m_components; }
     const Components get_backends() const { return m_backends; }
     const Plugins get_plugins() const { return m_plugins; }
+
+    void add_component(ComponentBase *c);
+    void add_backend(ComponentBase *c);
+    void add_plugin(PluginBase *p);
+
+    /* HasConfigIface */
+    ConfigManager & get_config() const { return m_config; }
 };
 
 #endif

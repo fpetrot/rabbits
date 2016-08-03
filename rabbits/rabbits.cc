@@ -314,8 +314,7 @@ int sc_main(int argc, char *argv[])
 
     if (pname.empty()) {
         if (globals["show-help"].as<bool>() || globals["show-advanced-params"].as<bool>()) {
-            PlatformParser platform("", PlatformDescription::INVALID_DESCRIPTION, config);
-            PlatformBuilder empty("", platform, config);
+            PlatformBuilder empty("", PlatformDescription::INVALID_DESCRIPTION, config);
             print_usage(argv[0], config, empty);
             return 0;
         }
@@ -332,8 +331,7 @@ int sc_main(int argc, char *argv[])
 
     PlatformDescription platform = config.apply_platform(pname);
 
-    PlatformParser parser(pname, platform, config);
-    PlatformBuilder builder(pname.c_str(), parser, config);
+    PlatformBuilder builder(pname.c_str(), platform, config);
 
 
     if (globals["show-help"].as<bool>() || globals["show-advanced-params"].as<bool>()) {

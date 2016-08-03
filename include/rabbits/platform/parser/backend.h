@@ -29,6 +29,10 @@ protected:
     ComponentBase *m_inst = nullptr;
 public:
     ParserNodeBackend(PlatformDescription &d, const std::string &n, ParserNodePlatform &root);
+    ParserNodeBackend(const std::string &name, const std::string &type,
+                        const Parameters &params, ParserNodePlatform &root);
+    ParserNodeBackend(ComponentBase *c, ParserNodePlatform &root);
+
     virtual ~ParserNodeBackend();
 
     void set_inst(ComponentBase *inst);

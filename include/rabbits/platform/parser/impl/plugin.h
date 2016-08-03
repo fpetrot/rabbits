@@ -26,6 +26,18 @@ inline ParserNodePlugin::ParserNodePlugin(PlatformDescription &d, const std::str
     : ParserNodeModule(d, n, root, Namespace::get(Namespace::PLUGIN))
 {}
 
+inline ParserNodePlugin::ParserNodePlugin(const std::string name, const std::string &type,
+                                          const Parameters &params, ParserNodePlatform &root)
+    : ParserNodeModule(name, type, params, root, Namespace::get(Namespace::PLUGIN))
+{}
+
+inline ParserNodePlugin::ParserNodePlugin(PluginBase *p, ParserNodePlatform &root)
+    : ParserNodeModule(PlatformDescription::INVALID_DESCRIPTION, p->get_name(),
+                       root, Namespace::get(Namespace::PLUGIN))
+{
+    set_inst(p);
+}
+
 inline ParserNodePlugin::~ParserNodePlugin()
 {}
 

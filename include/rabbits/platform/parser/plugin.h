@@ -30,6 +30,9 @@ protected:
 
 public:
     ParserNodePlugin(PlatformDescription &d, const std::string &n, ParserNodePlatform &root);
+    ParserNodePlugin(const std::string name, const std::string &type,
+                     const Parameters &params, ParserNodePlatform &root);
+    ParserNodePlugin(PluginBase *p, ParserNodePlatform &root);
     virtual ~ParserNodePlugin();
 
     void set_inst(PluginBase *inst) { m_inst = inst; }

@@ -65,12 +65,22 @@ inline void ParserNodeBinding::parse_peer(std::string s_peer)
     }
 }
 
-inline ParserNodeBinding::ParserNodeBinding(PlatformDescription &descr, const std::string &n,
-                                     ParserNodePlatform &root, ParserNodeModuleWithPorts &parent)
-    : ParserNode(descr, root), m_parent(parent)
-{
-    m_local_port_s = n;
-}
+inline ParserNodeBinding::ParserNodeBinding(PlatformDescription &descr,
+                                            const std::string &n,
+                                            ParserNodePlatform &root,
+                                            ParserNodeModuleWithPorts &parent)
+    : ParserNode(descr, root), m_parent(parent), m_local_port_s(n)
+{}
+
+inline ParserNodeBinding::ParserNodeBinding(const std::string &local_port,
+                                            std::shared_ptr<ParserNodeModuleWithPorts> peer,
+                                            const std::string &peer_port,
+                                            PlatformDescription &params,
+                                            ParserNodePlatform &root,
+                                            ParserNodeModuleWithPorts &parent)
+    : ParserNode(root), m_parent(parent), m_local_port_s(local_port)
+    , m_peer(peer), m_peer_port_s(peer_port)
+{}
 
 inline ParserNodeBinding::~ParserNodeBinding() {}
 

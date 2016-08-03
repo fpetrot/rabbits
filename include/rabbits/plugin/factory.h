@@ -51,7 +51,7 @@ public:
 template <class TPlugin>
 class PluginFactory : public PluginFactoryBase {
 protected:
-    virtual TPlugin * create(const std::string & name, Parameters & params)
+    virtual TPlugin * create(const std::string & name, const Parameters & params)
     {
         return new TPlugin(name, params, get_config());
     }

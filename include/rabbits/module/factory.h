@@ -48,7 +48,9 @@ protected:
     ModuleFactoryBase(ConfigManager &config, const std::string & type,
                       const std::string & description, const Namespace & ns)
         : m_config(config), m_type(type), m_description(description), m_namespace(ns)
-    {}
+    {
+        m_params.set_namespace(ns);
+    }
 
 public:
     ModuleFactoryBase(const ModuleFactoryBase &) = delete;
@@ -113,8 +115,6 @@ public:
 template <class Type>
 class ModuleFactory : public ModuleFactoryBase {
 protected:
-    virtual Type * create(const std::string & name, Parameters & params) = 0;
-
     ModuleFactory(ConfigManager &config, const std::string & name, const std::string & description,
                   const Namespace & ns)
         : ModuleFactoryBase(config, name, description, ns) {}
@@ -122,11 +122,12 @@ protected:
     virtual ~ModuleFactory() {}
 
 public:
+    virtual Type * create(const std::string & name, const Parameters & params) = 0;
+
     Type * create(const std::string & name, const PlatformDescription &p)
     {
         Parameters cp = get_params();
         cp.fill_from_description(p);
-        cp.set_namespace(get_namespace());
 
         Type *t = create(name, cp);
 

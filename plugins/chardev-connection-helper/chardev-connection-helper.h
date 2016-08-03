@@ -22,7 +22,20 @@
 
 #include <rabbits/plugin/plugin.h>
 
+#include <rabbits/platform/parser.h>
+
+class Port;
+
 class CharDevConnectionHelperPlugin : public Plugin {
+private:
+    bool m_stdio_locked = false;
+    int m_unique_idx = 0;
+
+    ParserNode::Subnodes<ParserNodeComponent> m_char_nodes;
+
+protected:
+    bool stdio_is_locked(PlatformParser &p);
+
 public:
     CharDevConnectionHelperPlugin(const std::string &name,
                                   const Parameters &params,
@@ -33,7 +46,17 @@ public:
     virtual ~CharDevConnectionHelperPlugin() {}
 
     virtual void hook(const PluginHookBeforeBuild &);
+    virtual void hook(const PluginHookAfterComponentInst &);
     virtual void hook(const PluginHookAfterBuild &);
+
+    std::string get_param(const std::string comp) const;
+    std::string gen_unique_name(const std::string & type);
+
+    void create_params(const PluginHookAfterComponentInst &);
+    void parse_params(const PluginHookAfterComponentInst &);
+
+    void autoconnect(const PluginHookAfterBuild &h, ParserNodeComponent &);
+    void autoconnect(const PluginHookAfterBuild &h, Port &);
 };
 
 #endif

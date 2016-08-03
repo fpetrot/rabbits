@@ -30,9 +30,29 @@ inline ParserNodeModule::ParserNodeModule(PlatformDescription &d, const std::str
 {
     add_field<std::string>("type", m_type);
 
-    if (!get_root().get_config().get_manager_by_namespace(ns).type_exists(m_type)) {
+    ModuleManagerBase &m = get_root().get_config().get_manager_by_namespace(ns);
+
+    if (!m.type_exists(m_type)) {
         throw ModuleTypeNotFoundParseException(d, ns, m_type);
     }
+
+    m_params = m.find_by_type(m_type)->get_params();
+    m_params.fill_from_description(d);
+}
+
+inline ParserNodeModule::ParserNodeModule(const std::string name, const std::string &type,
+                                          const Parameters &params, ParserNodePlatform &root,
+                                          const Namespace &ns)
+    : ParserNode(root), m_name(name), m_ns(ns), m_type(type), m_params(params)
+{
+    if (!get_root().get_config().get_manager_by_namespace(ns).type_exists(m_type)) {
+        throw ModuleTypeNotFoundParseException(get_descr(), ns, m_type);
+    }
+}
+
+inline ParserNodeModule::ParserNodeModule(ParserNodePlatform &root, const Namespace &ns)
+    : ParserNode(root), m_ns(ns)
+{
 }
 
 inline ParserNodeModule::~ParserNodeModule() {}
@@ -52,6 +72,11 @@ inline const Namespace & ParserNodeModule::get_namespace() const
     return m_ns;
 }
 
+inline const Parameters & ParserNodeModule::get_params() const
+{
+    return m_params;
+}
+
 template <class T>
 inline void ParserNodeModule::add_field(const std::string &name, T& storage)
 {
@@ -66,6 +91,19 @@ inline ParserNodeModuleWithPorts::
 ParserNodeModuleWithPorts(PlatformDescription &d, const std::string n,
                           ParserNodePlatform &root, const Namespace &ns)
     : ParserNodeModule(d, n, root, ns)
+{}
+
+inline ParserNodeModuleWithPorts::
+    ParserNodeModuleWithPorts(const std::string &name, const std::string &type,
+                              const Parameters &params, ParserNodePlatform &root,
+                              const Namespace &ns)
+    : ParserNodeModule(name, type, params, root, ns)
+{}
+
+inline ParserNodeModuleWithPorts::
+ParserNodeModuleWithPorts(HasPortIface *m, ParserNodePlatform &root,
+                          const Namespace &ns)
+    : ParserNodeModule(root, ns), m_inst(m)
 {}
 
 #endif

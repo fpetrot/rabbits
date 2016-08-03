@@ -20,6 +20,8 @@
 #ifndef _RABBITS_PLATFORM_PARSER_NODE_H
 #define _RABBITS_PLATFORM_PARSER_NODE_H
 
+#include <vector>
+#include <set>
 #include <map>
 #include <string>
 #include <memory>
@@ -33,13 +35,16 @@ class ParserNodePlatform;
 class ParserNode {
 public:
     template <class SUBNODE>
+    using Subnodes = std::vector< std::shared_ptr<SUBNODE> >;
+
+    template <class SUBNODE>
     using NamedSubnodes = std::map< std::string, std::shared_ptr<SUBNODE> >;
 
 private:
     PlatformDescription m_descr;
     ParserNodePlatform &m_root;
 
-    std::vector< std::shared_ptr<ParserNode> > m_subnodes;
+    std::set< std::shared_ptr<ParserNode> > m_subnodes;
 
 protected:
     template <class T>
@@ -55,8 +60,13 @@ protected:
     void add_optional_named_subnodes(const std::string &name,
                             NamedSubnodes<T> &storage,
                             Args&... args);
+
+    void add_subnode(std::shared_ptr<ParserNode> node);
+    void remove_subnode(std::shared_ptr<ParserNode> node);
+
 public:
     ParserNode(PlatformDescription &descr, ParserNodePlatform &root);
+    ParserNode(ParserNodePlatform &root);
     virtual ~ParserNode();
 
     virtual void second_pass();

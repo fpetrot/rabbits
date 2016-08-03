@@ -73,7 +73,7 @@ public:
      *
      * @param[in] h Hook context.
      */
-    virtual void hook(const PluginHookAfterBusConnections& h) = 0;
+    virtual void hook(const PluginHookAfterBindings& h) = 0;
 
     /**
      * @brief Hook called at the end of the build.
@@ -105,7 +105,7 @@ public:
     virtual void hook(const PluginHookAfterComponentDiscovery& h) {}
     virtual void hook(const PluginHookAfterComponentInst& h) {}
     virtual void hook(const PluginHookAfterBackendInst& h) {}
-    virtual void hook(const PluginHookAfterBusConnections& h) {}
+    virtual void hook(const PluginHookAfterBindings& h) {}
     virtual void hook(const PluginHookAfterBuild& h) {}
 
     /* ModuleIface */

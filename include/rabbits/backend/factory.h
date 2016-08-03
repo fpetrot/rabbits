@@ -68,7 +68,7 @@ public:
 template <class TBackend>
 class BackendFactory : public BackendFactoryBase {
 protected:
-    virtual TBackend * create(const std::string & name, Parameters & params)
+    virtual TBackend * create(const std::string & name, const Parameters & params)
     {
         TBackend *c = new TBackend(name.c_str(), params, get_config());
         return c;

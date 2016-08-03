@@ -23,11 +23,15 @@
 #include <map>
 #include <string>
 #include <memory>
+#include <cassert>
 
 #include "../node.h"
 
 inline ParserNode::ParserNode(PlatformDescription &descr, ParserNodePlatform &root)
     : m_descr(descr), m_root(root) {}
+
+inline ParserNode::ParserNode(ParserNodePlatform &root)
+    : m_root(root) {}
 
 inline ParserNode::~ParserNode() {}
 
@@ -78,7 +82,7 @@ inline void ParserNode::add_named_subnodes(const std::string &name,
 
     for (auto &p: m_descr[name]) {
         storage[p.first] = std::make_shared<T>(p.second, p.first, get_root(), args...);
-        m_subnodes.push_back(storage[p.first]);
+        add_subnode(storage[p.first]);
     }
 }
 
@@ -87,6 +91,19 @@ inline void ParserNode::add_optional_named_subnodes(const std::string &name,
                                              NamedSubnodes<T> &storage, Args&... args)
 {
     add_named_subnodes(name, storage, true, args...);
+}
+
+inline void ParserNode::add_subnode(std::shared_ptr<ParserNode> node)
+{
+    m_subnodes.insert(node);
+}
+
+inline void ParserNode::remove_subnode(std::shared_ptr<ParserNode> node)
+{
+    auto it = m_subnodes.find(node);
+
+    assert(it != m_subnodes.end());
+    m_subnodes.erase(it);
 }
 
 inline void ParserNode::second_pass()

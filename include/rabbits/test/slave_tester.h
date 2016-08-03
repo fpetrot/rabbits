@@ -37,16 +37,21 @@ public:
                                        "on tested component. "
                                        "Can't connect it to the slave tester.");
         }
-        
+
         if (!c.has_attr("tlm-target-port")) {
             throw TestFailureException("Missing tlm-target-port attribute "
                                        "on tested component. "
                                        "Can't connect it to the slave tester.");
         }
 
-        const std::string &pname = c.get_attr("tlm-target-port");
+        const std::vector<std::string> &pname = c.get_attr("tlm-target-port");
 
-        p_bus.connect(c.get_port(pname));
+        if (pname.size() > 1) {
+            throw TestFailureException("Tested component has multiple tlm target ports. "
+                                       "Not supported yet.");
+        }
+
+        p_bus.connect(c.get_port(pname.front()));
     }
 
     void bus_write_u8(uint64_t addr, uint8_t data) {
@@ -82,8 +87,8 @@ public:
     void debug_access_nofail(tlm::tlm_command cmd, uint64_t addr,
                              uint8_t *data, unsigned int len) {
         unsigned int ret;
-        
-	ret = p_bus.debug_access(cmd, addr, data, len);
+
+        ret = p_bus.debug_access(cmd, addr, data, len);
 
         if (ret != len) {
             throw TestFailureException("Debug access length failed");
@@ -103,7 +108,7 @@ public:
     }
 
     bool get_dmi_info(DmiInfo &dmi_info) {
-	return p_bus.dmi_probe(AddressRange(0,0), dmi_info);
+        return p_bus.dmi_probe(AddressRange(0,0), dmi_info);
     }
 
     bool last_access_failed() { return p_bus.get_last_access_status().is_error(); }

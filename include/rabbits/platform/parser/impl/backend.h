@@ -28,6 +28,15 @@ inline ParserNodeBackend::ParserNodeBackend(PlatformDescription &d, const std::s
     : ParserNodeModuleWithPorts(d, n, root, Namespace::get(Namespace::BACKEND))
 {}
 
+inline ParserNodeBackend:: ParserNodeBackend(const std::string &name, const std::string &type,
+                                             const Parameters &params, ParserNodePlatform &root)
+    : ParserNodeModuleWithPorts(name, type, params, root, Namespace::get(Namespace::BACKEND))
+{}
+
+inline ParserNodeBackend::ParserNodeBackend(ComponentBase *c, ParserNodePlatform &root)
+    : ParserNodeModuleWithPorts(c, root, Namespace::get(Namespace::BACKEND)), m_inst(c)
+{}
+
 inline ParserNodeBackend::~ParserNodeBackend()
 {}
 
