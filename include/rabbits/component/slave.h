@@ -45,7 +45,7 @@ class SlaveTraits: public tlm::tlm_fw_transport_if<>
 public:
     TlmTargetPort<BUSWIDTH> p_bus;
 
-    SlaveTraits() : p_bus("bus", *this) {}
+    SlaveTraits() : p_bus("mem", *this) {}
 
     virtual ~SlaveTraits() {}
 

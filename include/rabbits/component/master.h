@@ -42,7 +42,7 @@ class MasterTraits: public tlm::tlm_bw_transport_if<>
 public:
     TlmInitiatorPort<BUSWIDTH> p_bus;
 
-    MasterTraits() : p_bus("bus", *this) {}
+    MasterTraits() : p_bus("mem", *this) {}
 
     virtual ~MasterTraits() {}
 
