@@ -45,11 +45,6 @@ bool CharDevConnectionHelperPlugin::stdio_is_locked(PlatformParser &p)
     return m_stdio_locked;
 }
 
-void CharDevConnectionHelperPlugin::hook(const PluginHookBeforeBuild &h)
-{
-}
-
-
 string CharDevConnectionHelperPlugin::get_param(const string comp) const
 {
     return "connect-" + comp + "-to";
