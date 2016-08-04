@@ -159,6 +159,8 @@ static LogLevel::value get_log_level(const string level_s)
         return LogLevel::WARNING;
     } else if (level_s == "error") {
         return LogLevel::ERROR;
+    } else if (level_s == "trace") {
+        return LogLevel::TRACE;
     }
 
     LOG(APP, ERR) << "Ignoring invalid log level " << level_s << "\n";
