@@ -45,7 +45,6 @@ public:
 
     virtual ~CharDevConnectionHelperPlugin() {}
 
-    virtual void hook(const PluginHookBeforeBuild &);
     virtual void hook(const PluginHookAfterComponentInst &);
     virtual void hook(const PluginHookAfterBuild &);
 
