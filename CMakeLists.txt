@@ -1,6 +1,9 @@
 cmake_minimum_required (VERSION 2.6)
 project (Rabbits)
 
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(RABBITS_FACTORY_SCRIPT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen-factory.rb")
 include(rabbits_add_files)
