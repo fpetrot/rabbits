@@ -40,6 +40,10 @@ inline ParserNodePlatform::ParserNodePlatform(PlatformDescription &descr, Config
     add_optional_named_subnodes<ParserNodePlugin>("plugins", m_plugins);
 }
 
+inline ParserNodePlatform::ParserNodePlatform(ConfigManager &config)
+    : ParserNode(*this), m_config(config)
+{}
+
 inline const std::string& ParserNodePlatform::get_description() const
 {
     return m_description;

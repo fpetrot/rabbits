@@ -69,6 +69,10 @@ PlatformBuilder::PlatformBuilder(sc_module_name name, PlatformDescription &descr
     run_hooks(PluginHookAfterBuild(descr, *this, m_parser));
 }
 
+PlatformBuilder::PlatformBuilder(sc_module_name name, ConfigManager &config)
+    : sc_module(name), m_config(config), m_parser(string(name), config)
+{}
+
 PlatformBuilder::~PlatformBuilder()
 {
     delete m_dbg;

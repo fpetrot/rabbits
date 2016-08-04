@@ -20,10 +20,9 @@
 #ifndef _RABBITS_RABBITS_H
 #define _RABBITS_RABBITS_H
 
-#include "config.h"
+#include "rabbits/config.h"
 #include "component/slave.h"
 #include "component/master.h"
-#include "component/bus.h"
 #include "component/manager.h"
 #include "loader/bootloader.h"
 #include "simu.h"
@@ -37,5 +36,11 @@
 #include "datatypes/address_range.h"
 #include "dynloader/dynloader.h"
 #include "dynloader/dynlib.h"
+
+#include "component/port/in.h"
+#include "component/port/out.h"
+#include "component/port/tlm_target.h"
+#include "component/port/tlm_initiator.h"
+#include "component/port/vector.h"
 
 #endif

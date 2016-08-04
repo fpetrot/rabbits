@@ -46,6 +46,8 @@ protected:
 
 public:
     ParserNodePlatform(PlatformDescription &descr, ConfigManager &config);
+    ParserNodePlatform(ConfigManager &config);
+
     const std::string& get_description() const;
     bool is_generic() const;
     bool has_parent() const;

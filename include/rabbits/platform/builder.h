@@ -100,7 +100,11 @@ public:
      * @param name Name of the SystemC module.
      * @param descr Platform description.
      */
-    PlatformBuilder(sc_core::sc_module_name name, PlatformDescription &platform, ConfigManager &config);
+    PlatformBuilder(sc_core::sc_module_name name, PlatformDescription &platform,
+                    ConfigManager &config);
+
+    PlatformBuilder(sc_core::sc_module_name name, ConfigManager &config);
+
     virtual ~PlatformBuilder();
 
     /**

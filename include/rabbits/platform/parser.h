@@ -37,11 +37,16 @@ protected:
     ParserNodePlatform m_root;
 
 public:
-    PlatformParser(const std::string &name, PlatformDescription &d, ConfigManager &c)
+    PlatformParser(const std::string &name, PlatformDescription &d,
+                   ConfigManager &c)
         : m_name(name), m_descr(d), m_root(d, c)
     {
         m_root.second_pass();
     }
+
+    PlatformParser(const std::string &name, ConfigManager &c)
+        : m_name(name), m_root(c)
+    {}
 
     virtual ~PlatformParser() {}
 

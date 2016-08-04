@@ -314,7 +314,7 @@ int sc_main(int argc, char *argv[])
 
     if (pname.empty()) {
         if (globals["show-help"].as<bool>() || globals["show-advanced-params"].as<bool>()) {
-            PlatformBuilder empty("", PlatformDescription::INVALID_DESCRIPTION, config);
+            PlatformBuilder empty("", config);
             print_usage(argv[0], config, empty);
             return 0;
         }
