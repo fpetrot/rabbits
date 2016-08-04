@@ -51,7 +51,9 @@ public:
 
     void recv(std::vector<uint8_t> &data)
     {
-        sc_core::wait(m_recv_ev);
+        if (m_buffer.empty()) {
+            sc_core::wait(m_recv_ev);
+        }
 
         /* TODO: avoid data copy */
         data.clear();
