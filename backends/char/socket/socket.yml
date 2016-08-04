@@ -1,0 +1,22 @@
+backend:
+  type: chardev-socket
+  description: "Host socket character device"
+  class: SocketCharBackend
+  include: socket.h
+  parameters:
+    kind:
+      type: string
+      default: "tcp"
+      description: "Type of the socket: tcp, udp or unix"
+    address:
+      type: string
+      default: "127.0.0.1:4001"
+      description: "Address of the socket: IP:PORT for tcp and udp sockets, pathname for unix socket"
+    server:
+      type: boolean
+      default: "true"
+      description: "Server or client socket"
+    nowait:
+      type: boolean
+      default: "false"
+      description: "Wait or not the connection establishment before starting the simulation"

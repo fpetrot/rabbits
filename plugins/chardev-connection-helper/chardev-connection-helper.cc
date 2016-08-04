@@ -18,6 +18,7 @@
  */
 
 #include <sstream>
+#include <boost/algorithm/string.hpp>
 
 #include "chardev-connection-helper.h"
 #include "rabbits/platform/parser.h"
@@ -71,7 +72,7 @@ void CharDevConnectionHelperPlugin::create_params(const PluginHookAfterComponent
         const string param = get_param(node->get_name());
         const string descr = "Connect the character port of component `" + node->get_name()
             + "` to a character backend "
-            "(valid values are `null`, `stdio`, `serial,/path/to/tty`)";
+            "(valid values are `null`, `stdio`, `serial,/path/to/tty`, `socket,tcp|udp|unix,address[,server][,nowait]`)";
 
         m_params.add(param, Parameter<string>(descr, ""));
         h.get_builder().get_config().add_param_alias(param, m_params[param]);
@@ -88,20 +89,20 @@ void CharDevConnectionHelperPlugin::parse_params(const PluginHookAfterComponentI
         }
 
         const string val = m_params[param].as<string>();
+
         string type;
-        string device;
+        std::vector<string> strs;
+        boost::split(strs, val, boost::is_any_of(","));
 
-        if (val == "null") {
+        string arg0 = strs[0];
+        if (arg0 == "null") {
             type = "chardev-null";
-        } else if (val == "stdio") {
+        } else if (arg0 == "stdio") {
             type = "chardev-stdio";
-        } else if (val.find("serial") == 0) {
+        } else if (arg0 == "serial") {
             type = "chardev-serial";
-
-            string::size_type p;
-            if ((p = val.find(",")) != string::npos) {
-                device = val.substr(p+1);
-            }
+        } else if(arg0 == "socket") {
+            type = "chardev-socket";
         } else {
             MLOG(APP, ERR) << "Invalid value `" << val << "` for parameter `-"
                 << param << "`. Ignoring. See -help\n";
@@ -111,10 +112,38 @@ void CharDevConnectionHelperPlugin::parse_params(const PluginHookAfterComponentI
         MLOG(APP, TRC) << "Connecting component `" << node->get_name()
             << "` to a " << type << "\n";
 
+        BackendManager &bm = h.get_builder().get_config().get_backend_manager();
+        BackendManager::Factory f = bm.find_by_type(type);
+        if (f == nullptr) {
+            MLOG(APP, ERR) << type << " backend is unavailable. Broken Rabbits installation?\n";
+            continue;
+        }
+
+        Parameters b_params = f->get_params();
+        if(arg0 == "serial") {
+            if(strs.size() > 1) {
+                b_params["path"].set(strs[1]);
+            }
+        }
+        else if(arg0 == "socket") {
+            if(strs.size() >= 3) {
+                b_params["kind"].set(strs[1]);
+                b_params["address"].set(strs[2]);
+            }
+            if(strs.size() >= 4) {
+                bool server = strs[3] == "server";
+                b_params["server"].set(server);
+            }
+            if(strs.size() >= 5) {
+                bool nowait = strs[3] == "nowait" || strs[4] == "nowait";
+                b_params["nowait"].set(nowait);
+            }
+        }
+
         const string name = gen_unique_name(type);
 
         std::shared_ptr<ParserNodeBackend> b
-            = h.get_parser().get_root().create_backend(name, type, Parameters::EMPTY);
+            = h.get_parser().get_root().create_backend(name, type, b_params);
 
         const string port_s = node->get_inst()->get_attr("char-port").front();
 

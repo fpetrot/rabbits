@@ -1,0 +1,10 @@
+backend:
+  type: chardev-serial
+  description: "Host serial character device"
+  class: SerialCharBackend
+  include: serial.h
+  parameters:
+    path:
+      type: string
+      default: "/dev/ttyS0"
+      description: Host device
