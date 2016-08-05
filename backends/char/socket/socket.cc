@@ -52,7 +52,7 @@ void SocketCharBackend::recv_thread()
 
         m_port.recv(data);
 
-        MLOG(SIM, INF) << "Got " << int(data[0]) << "(" << data[0] << ")\n";
+        MLOG(SIM, TRC) << "Got " << int(data[0]) << "(" << data[0] << ")\n";
 
         ::write(m_socket, &data[0], data.size());
     }
@@ -94,7 +94,7 @@ void SocketCharBackend::send_thread()
             inet_ntop(AF_INET, &(client_addr.sin_addr), str, INET_ADDRSTRLEN);
             int cport = ntohs(client_addr.sin_port);
 
-            MLOG(APP, INF) << "incoming connection from  " << str << ":" << cport << "\n";
+            MLOG(APP, DBG) << "incoming connection from  " << str << ":" << cport << "\n";
         }
         else if(m_nowait && !m_server && m_socket < 0) {
             // TODO
@@ -122,7 +122,7 @@ void SocketCharBackend::setup_tcp_server(string ip, string port)
     int iport;
     int flag;
 
-    MLOG(APP, INF) << "setting up TCP server on " << ip << ":" << port << "\n";
+    MLOG(APP, DBG) << "setting up TCP server on " << ip << ":" << port << "\n";
 
     socklen_t addr_len = sizeof(struct sockaddr_in);
 
@@ -148,7 +148,7 @@ void SocketCharBackend::setup_tcp_server(string ip, string port)
         m_srv_socket = -1;
         MLOG(APP, ERR) << "bind failed: " << std::strerror(errno) << "\n";
         return;
-    } 
+    }
 
     ret = listen(m_srv_socket, 1);
     if (ret < 0) {
@@ -194,7 +194,7 @@ void SocketCharBackend::setup_tcp_server(string ip, string port)
         inet_ntop(AF_INET, &(client_addr.sin_addr), str, INET_ADDRSTRLEN);
         int cport = ntohs(client_addr.sin_port);
 
-        MLOG(APP, INF) << "incoming connection from  " << str << ":" << cport << "\n";
+        MLOG(APP, DBG) << "incoming connection from  " << str << ":" << cport << "\n";
     }
 }
 
