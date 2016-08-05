@@ -552,7 +552,7 @@ static void enum_platform(PlatformParser &parser, TextFormatter &f)
     print_value(f, "description", parser.get_root().get_description());
 
     if (parser.get_root().has_parent()) {
-        print_value(f, "inherit from", parser.get_root().get_parent_name());
+        print_value(f, "inherits from", parser.get_root().get_parent_name());
     }
 
     if (parser.get_root().is_generic()) {
