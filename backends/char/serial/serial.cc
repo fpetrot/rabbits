@@ -47,7 +47,7 @@ void SerialCharBackend::recv_thread()
 void SerialCharBackend::send_thread()
 {
     struct pollfd fd;
-    
+
     if(m_fd < 0) {
         return;
     }

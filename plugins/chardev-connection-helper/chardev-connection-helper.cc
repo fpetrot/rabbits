@@ -161,7 +161,7 @@ void CharDevConnectionHelperPlugin::hook(const PluginHookAfterComponentInst &h)
     parse_params(h);
 }
 
-void CharDevConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, Port &p)
+void CharDevConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, Port &p, bool to_stdio)
 {
     if (p.is_connected()) {
         MLOG(APP, TRC) << "Port " << p.full_name() << " already connected. Skipping.\n";
@@ -171,7 +171,7 @@ void CharDevConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, P
     ComponentBase *backend = nullptr;
     BackendManager &bm = h.get_builder().get_config().get_backend_manager();
 
-    if (!stdio_is_locked(h.get_parser())) {
+    if (to_stdio && (!stdio_is_locked(h.get_parser()))) {
         MLOG(APP, DBG) << "Auto-connecting " << p.full_name() << " to a chardev-stdio instance\n";
         BackendManager::Factory f = bm.find_by_type("chardev-stdio");
 
@@ -203,24 +203,41 @@ void CharDevConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, P
     p.connect(backend->get_port(char_ports.front()), PlatformDescription::INVALID_DESCRIPTION);
 }
 
+void CharDevConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, ComponentBase &comp, bool to_stdio)
+{
+    const vector<string> char_ports = comp.get_attr("char-port");
+
+    MLOG(APP, TRC) << "Module " << comp.get_full_name() << " has "
+        << char_ports.size() << " char port(s)\n";
+
+    for (auto &port_name : char_ports) {
+        autoconnect(h, comp.get_port(port_name), to_stdio);
+    }
+}
+
 void CharDevConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, ParserNodeComponent &node)
 {
     ComponentBase *comp = node.get_inst();
     assert(comp != nullptr);
 
-    const vector<string> char_ports = comp->get_attr("char-port");
+    autoconnect(h, *comp, true);
+}
 
-    MLOG(APP, TRC) << "Component " << comp->get_full_name() << " has "
-        << char_ports.size() << " char port(s)\n";
+void CharDevConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, ParserNodeBackend &node)
+{
+    ComponentBase *comp = node.get_inst();
+    assert(comp != nullptr);
 
-    for (auto &port_name : char_ports) {
-        autoconnect(h, comp->get_port(port_name));
-    }
+    autoconnect(h, *comp, false);
 }
 
 void CharDevConnectionHelperPlugin::hook(const PluginHookAfterBuild &h)
 {
     for (auto &node : m_char_nodes) {
         autoconnect(h, *node);
+    }
+
+    for (auto &node : h.get_parser().get_root().get_backends()) {
+        autoconnect(h, *(node.second));
     }
 }

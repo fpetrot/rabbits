@@ -46,7 +46,7 @@ public:
         : Component(n, p, c), m_port("char")
     {
         std::string dev = p["path"].as<std::string>();
-        
+
         open(dev);
 
         SC_THREAD(recv_thread);

@@ -69,7 +69,7 @@ public:
                 MLOG(APP, ERR) << "malformed address, expecting IP:PORT (e.g 127.0.0.1:4001)\n";
                 return;
             }
-            
+
             MLOG(APP, DBG) << "IP: " << ip << ", PORT: " << port << "\n";
 
             if(m_server) {

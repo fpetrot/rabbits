@@ -25,6 +25,7 @@
 #include <rabbits/platform/parser.h>
 
 class Port;
+class ComponentBase;
 
 class CharDevConnectionHelperPlugin : public Plugin {
 private:
@@ -54,8 +55,10 @@ public:
     void create_params(const PluginHookAfterComponentInst &);
     void parse_params(const PluginHookAfterComponentInst &);
 
+    void autoconnect(const PluginHookAfterBuild &h, ParserNodeBackend &);
     void autoconnect(const PluginHookAfterBuild &h, ParserNodeComponent &);
-    void autoconnect(const PluginHookAfterBuild &h, Port &);
+    void autoconnect(const PluginHookAfterBuild &h, ComponentBase &, bool to_stdio);
+    void autoconnect(const PluginHookAfterBuild &h, Port &, bool to_stdio);
 };
 
 #endif
