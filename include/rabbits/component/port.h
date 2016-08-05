@@ -25,6 +25,7 @@
 #include <string>
 #include <map>
 #include <functional>
+#include <vector>
 
 #include <systemc>
 
@@ -57,6 +58,14 @@ public:
     virtual void push_sc_thread(std::function<void()> thread_callback) = 0;
 };
 
+
+class PortBindingListener {
+public:
+    virtual ~PortBindingListener() {}
+    virtual void port_binding_event(Port &this_port, Port &peer_port) = 0;
+};
+
+
 class Port : public HasLoggerIface {
 public:
     typedef std::pair<ConnectionStrategyBase*, ConnectionStrategyBase*> CSPair;
@@ -65,6 +74,7 @@ public:
 private:
     std::list<ConnectionStrategyBase*> m_cs;
     bool m_is_connected;
+    std::vector<PortBindingListener*> m_listeners;
 
 protected:
     std::string m_name;
@@ -92,6 +102,48 @@ protected:
         }
 
         m_parent->push_sc_thread(std::function<void()>(c));
+    }
+
+    virtual void connect(Port& p, CSPairs pairs, PlatformDescription &d)
+    {
+
+        ConnectionStrategyBase::BindingResult r = ConnectionStrategyBase::BINDING_TRY_NEXT;
+
+        while (r == ConnectionStrategyBase::BINDING_TRY_NEXT && !pairs.empty()) {
+            CSPair pair = pairs.front();
+            pairs.pop_front();
+
+            r = pair.first->bind(*pair.second, ConnectionStrategyBase::PEER, d);
+
+            switch (r) {
+            case ConnectionStrategyBase::BINDING_OK:
+                selected_strategy(*pair.first);
+                p.selected_strategy(*pair.second);
+                m_is_connected = p.m_is_connected = true;
+                return;
+
+            case ConnectionStrategyBase::BINDING_HIERARCHICAL_TYPE_MISMATCH:
+                /* Should not happen for peer binding */
+                abort();
+
+            case ConnectionStrategyBase::BINDING_ERROR:
+                MLOG(APP, WRN) << "Error while binding " << full_name()
+                              << " to " << p.full_name() << "\n";
+                break;
+
+            case ConnectionStrategyBase::BINDING_TRY_NEXT:
+                break;
+            }
+
+        }
+
+    }
+
+    void dispatch_binding_ev(Port &peer)
+    {
+        for (auto l: m_listeners) {
+            l->port_binding_event(*this, peer);
+        }
     }
 
 public:
@@ -131,41 +183,6 @@ public:
         return pairs.size() != 0;
     }
 
-    virtual void connect(Port& p, CSPairs pairs, PlatformDescription &d)
-    {
-
-        ConnectionStrategyBase::BindingResult r = ConnectionStrategyBase::BINDING_TRY_NEXT;
-
-        while (r == ConnectionStrategyBase::BINDING_TRY_NEXT && !pairs.empty()) {
-            CSPair pair = pairs.front();
-            pairs.pop_front();
-
-            r = pair.first->bind(*pair.second, ConnectionStrategyBase::PEER, d);
-
-            switch (r) {
-            case ConnectionStrategyBase::BINDING_OK:
-                selected_strategy(*pair.first);
-                p.selected_strategy(*pair.second);
-                m_is_connected = p.m_is_connected = true;
-                return;
-
-            case ConnectionStrategyBase::BINDING_HIERARCHICAL_TYPE_MISMATCH:
-                /* Should not happen for peer binding */
-                abort();
-
-            case ConnectionStrategyBase::BINDING_ERROR:
-                MLOG(APP, WRN) << "Error while binding " << full_name()
-                              << " to " << p.full_name() << "\n";
-                break;
-
-            case ConnectionStrategyBase::BINDING_TRY_NEXT:
-                break;
-            }
-
-        }
-
-    }
-
     virtual bool connect(Port &p,
                          PlatformDescription &d = PlatformDescription::INVALID_DESCRIPTION)
     {
@@ -176,6 +193,8 @@ public:
         }
 
         connect(p, pairs, d);
+        dispatch_binding_ev(p);
+        p.dispatch_binding_ev(*this);
         return true;
     }
 
@@ -199,6 +218,8 @@ public:
             switch (r) {
             case ConnectionStrategyBase::BINDING_OK:
                 m_is_connected = true;
+                dispatch_binding_ev(parent);
+                parent.dispatch_binding_ev(*this);
                 return;
 
             case ConnectionStrategyBase::BINDING_HIERARCHICAL_TYPE_MISMATCH:
@@ -241,6 +262,11 @@ public:
         } else {
             return get_logger(context);
         }
+    }
+
+    void register_binding_listener(PortBindingListener &l)
+    {
+        m_listeners.push_back(&l);
     }
 
     virtual void before_end_of_elaboration() {}
