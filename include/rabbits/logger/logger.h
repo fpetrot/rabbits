@@ -391,34 +391,39 @@ public:
     Logger & operator << (const T& t)
     {
         std::ostream &s = get_sink(m_next_lvl);
-
         emit_banner(s);
-
         s << t;
-
         return *this;
     }
 
     Logger & operator << (std::ostream& (*pf)(std::ostream&))
     {
-        get_sink(m_next_lvl) << *pf;
+        std::ostream &s = get_sink(m_next_lvl);
+        emit_banner(s);
+        s << *pf;
         return *this;
     }
 
     Logger & operator << (std::ios& (*pf)(std::ios&))
     {
-        get_sink(m_next_lvl) << *pf;
+        std::ostream &s = get_sink(m_next_lvl);
+        emit_banner(s);
+        s << *pf;
         return *this;
     }
 
     Logger & operator << (std::ios_base& (*pf)(std::ios_base&))
     {
-        get_sink(m_next_lvl) << *pf;
+        std::ostream &s = get_sink(m_next_lvl);
+        emit_banner(s);
+        s << *pf;
         return *this;
     }
 
     Logger & operator << (Logger & (*pf)(Logger &))
     {
+        std::ostream &s = get_sink(m_next_lvl);
+        emit_banner(s);
         return (*pf)(*this);
     }
 
