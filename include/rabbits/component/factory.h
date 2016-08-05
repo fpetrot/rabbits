@@ -41,12 +41,14 @@ class ComponentBase;
 class ComponentFactoryBase : public ModuleFactory<ComponentBase> {
 private:
     std::string m_implem;
+    int m_prio;
 
 protected:
     ComponentFactoryBase(ConfigManager &config, const std::string & type,
-                         const std::string & description, const std::string & implem)
+                         const std::string & description, const std::string & implem,
+                         int prio)
         : ModuleFactory<ComponentBase>(config, type, description, Namespace::get(Namespace::COMPONENT))
-        , m_implem(implem)
+        , m_implem(implem), m_prio(prio)
     {}
 
 public:
@@ -60,6 +62,15 @@ public:
      * @return the implementation name of the component factory.
      */
     std::string get_implem() const { return m_implem; }
+
+    /**
+     * @brief Return the priority of the component factory.
+     *
+     * Return the priority of the component factory.
+     *
+     * @return the priority of the component factory.
+     */
+    int get_prio() const { return m_prio; }
 
     virtual void get_extra_values(ExtraValues &v) const
     {
@@ -93,8 +104,9 @@ protected:
     }
 
     ComponentFactory(ConfigManager &config, const std::string & name,
-                     const std::string & description, const std::string & type)
-        : ComponentFactoryBase(config, name, description, type)
+                     const std::string & description, const std::string & type,
+                     int prio)
+        : ComponentFactoryBase(config, name, description, type, prio)
     {}
 
 public:

@@ -137,11 +137,6 @@ public:
 
     virtual void register_factory(Factory f)
     {
-        if (type_exists(f->get_type())) {
-            LOG(APP, WRN) << "Module " << f->get_full_name()
-                << " already exists. Overwriting\n";
-        }
-
         const std::string &type = f->get_type();
         m_factories[type] = f;
 

@@ -49,11 +49,27 @@ public:
 
     void register_factory(Factory f)
     {
+        bool parent_register = true;
+
         if (type_exists(f->get_type())) {
-            LOG(APP, WRN) << "Two components with the same type. Priority not yet implemented.\n";
+            Factory of = find_by_type(f->get_type());
+
+            if (of->get_prio() > f->get_prio()) {
+                LOG(APP, DBG) << "Ignoring factory for component type `" << f->get_type() << "`"
+                    " with lower priority than the one we already have\n";
+                parent_register = false;
+
+            } else if (of->get_prio() == f->get_prio()){
+                LOG(APP, WRN) << "Two components `" << of->get_implem() << "` and `"
+                    << f->get_implem()
+                    << "` with the same type and priority. "
+                    "Using the latter one.\n";
+            }
         }
 
-        ModuleManager<ComponentFactoryBase>::register_factory(f);
+        if (parent_register) {
+            ModuleManager<ComponentFactoryBase>::register_factory(f);
+        }
 
         if (implem_exists(f->get_implem())) {
             LOG(APP, WRN) << "Two components with the same implementation name. Overwritting.\n";

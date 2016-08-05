@@ -320,7 +320,7 @@ class RabbitsModule
 end
 
 class Component < RabbitsModule
-  attr_accessor :implem, :discover
+  attr_accessor :implem, :discover, :prio
 
   def initialize(fn, descr, args)
     super(fn, descr, args)
@@ -329,6 +329,8 @@ class Component < RabbitsModule
 
     @implem = descr['implementation']
     @discover = descr['discover']
+    @prio = descr['priority']
+    @prio = 0 unless @prio
   end
 
   def build_discover
@@ -340,7 +342,7 @@ class Component < RabbitsModule
   end
 
   def build_extra_ctor_params
-    ', "' + @implem + '"'
+    ', "' + @implem + '", ' + @prio.to_s()
   end
 
   def get_print_args
