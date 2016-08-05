@@ -21,66 +21,38 @@
 #include <poll.h>
 #include <errno.h>
 #include <cstring>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
-#include "stdio.h"
+#include "serial.h"
 
-bool StdioCharBackend::in_use = false;
-
-void StdioCharBackend::recv_thread()
+void SerialCharBackend::recv_thread()
 {
     std::vector<uint8_t> data;
+
+    if(m_fd < 0) {
+        return;
+    }
 
     for(;;) {
         m_port.recv(data);
 
         MLOG(SIM, TRC) << "Got " << int(data[0]) << "(" << data[0] << ")\n";
 
-        write(1, &data[0], data.size());
+        ::write(m_fd, &data[0], data.size());
     }
 }
 
-void StdioCharBackend::send_char(uint8_t c)
-{
-    std::vector<uint8_t> data;
-    data.push_back(c);
-
-    m_port.send(data);
-}
-
-void StdioCharBackend::handle_escape(uint8_t c)
-{
-    MLOG(SIM, TRC) << "Got escape: " << c << "\n";
-
-    if (c == 'x') {
-        sc_core::sc_stop();
-    } else if (c == ESCAPE) {
-        /* When hitting ctrl-a ctrl-a, just forward 'ctrl-a' */
-        send_char(ESCAPE);
-    }
-}
-
-void StdioCharBackend::send_buf()
-{
-    for (uint8_t c : m_buf) {
-        if ((!m_got_escape) && (c == ESCAPE)) {
-            m_got_escape = true;
-            continue;
-        }
-
-        if (m_got_escape) {
-            handle_escape(c);
-            m_got_escape = false;
-        } else {
-            send_char(c);
-        }
-    }
-}
-
-void StdioCharBackend::send_thread()
+void SerialCharBackend::send_thread()
 {
     struct pollfd fd;
+    
+    if(m_fd < 0) {
+        return;
+    }
 
-    fd.fd = 0;
+    fd.fd = m_fd;
     fd.events = POLLIN | POLLPRI;
 
     m_buf.resize(256);
@@ -91,7 +63,7 @@ void StdioCharBackend::send_thread()
         int ret = poll(&fd, 1, 0);
 
         if (ret > 0) {
-            int ret = read(0, &m_buf[0], m_buf.size());
+            int ret = ::read(m_fd, &m_buf[0], m_buf.size());
 
             if (ret < 0 && errno != EINTR) {
                 MLOG(APP, ERR) << "read failed: " << std::strerror(errno) << "\n";
@@ -99,7 +71,7 @@ void StdioCharBackend::send_thread()
             }
             else if(ret > 0) {
                 m_buf.resize(ret);
-                send_buf();
+                m_port.send(m_buf);
                 m_buf.resize(256);
             }
         } else if (ret == EINVAL) {
@@ -109,32 +81,22 @@ void StdioCharBackend::send_thread()
     }
 }
 
-void StdioCharBackend::setup_tty()
+void SerialCharBackend::open(std::string dev)
 {
-    termios tty;
+    m_fd = ::open(dev.c_str(), O_RDWR);
 
-    tcgetattr(0, &m_tty_all_save);
+    if(m_fd < 0) {
+        MLOG(APP, ERR) << "open failed (" << dev << "): " << std::strerror(errno) << "\n";
+        return;
+    }
 
-    tty = m_tty_all_save;
-
-    tty.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP
-                     |INLCR|IGNCR|ICRNL|IXON);
-
-    tty.c_oflag |= OPOST;
-
-    tty.c_lflag &= ~(ECHO|ECHONL|ICANON|IEXTEN|ISIG);
-
-    tty.c_cflag &= ~(CSIZE|PARENB);
-    tty.c_cflag |= CS8;
-
-    tty.c_cc[VMIN] = 1;
-    tty.c_cc[VTIME] = 0;
-
-    tcsetattr(0, TCSANOW, &tty);
+    MLOG(APP, INF) << "opened: " << dev << " --> " << m_fd << "\n";
 }
 
-void StdioCharBackend::restore_tty()
+void SerialCharBackend::close()
 {
-    MLOG(APP, DBG) << "Restoring tty state\n";
-    tcsetattr(0, TCSANOW, &m_tty_all_save);
+    if(m_fd >= 0) {
+        ::close(m_fd);
+    }
+    m_fd = -1;
 }
