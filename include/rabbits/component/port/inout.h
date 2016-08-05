@@ -25,7 +25,7 @@
 
 #include <systemc>
 
-template <typename T>
+template <class T>
 class InOutPort : public Port {
 public:
     typedef typename sc_core::sc_inout<T>::inout_if_type sc_if_type;
@@ -43,7 +43,7 @@ private:
     T m_auto_value;
 
 public:
-    InOutPort(const std::string &name) 
+    InOutPort(const std::string &name)
         : Port(name), sc_p(name.c_str()), m_cs(sc_p)
     {
         add_connection_strategy(m_cs);
@@ -68,10 +68,31 @@ public:
     }
 };
 
-template <typename T>
+template <class T>
 std::ostream & operator<< (std::ostream &o, const InOutPort<T> &p)
 {
     return o << p.sc_p;
 }
+
+template <class T>
+class InOutMultiPort : public Port {
+public:
+    typedef typename sc_core::sc_inout<T>::inout_if_type sc_if_type;
+
+    sc_core::sc_port<sc_if_type, 0, sc_core::SC_ZERO_OR_MORE_BOUND> sc_p;
+
+private:
+    SignalCS<T> m_cs;
+
+public:
+    InOutMultiPort(const std::string &name)
+        : Port(name), sc_p(name.c_str()), m_cs(sc_p)
+    {
+        add_connection_strategy(m_cs);
+        declare_parent(sc_p.get_parent_object());
+    }
+
+    virtual ~InOutMultiPort() {}
+};
 
 #endif

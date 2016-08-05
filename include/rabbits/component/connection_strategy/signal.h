@@ -29,27 +29,27 @@ template <typename T>
 class SignalCS : public ConnectionStrategy< SignalCS<T> > {
 public:
     using typename ConnectionStrategyBase::BindingResult;
+    typedef typename sc_core::sc_inout<T>::inout_if_type sc_inout_if_type;
+    typedef typename sc_core::sc_in<T>::in_if_type sc_in_if_type;
 
+    typedef typename sc_core::sc_port_b<sc_inout_if_type> sc_inout_p;
+    typedef typename sc_core::sc_port_b<sc_in_if_type> sc_in_p;
 private:
     enum direction_e {
-        IN, OUT, INOUT
+        IN, INOUT
     };
 
     sc_core::sc_signal_inout_if<T> *m_sig = nullptr;
 
     direction_e m_dir;
 
-    sc_core::sc_in<T> *m_in = nullptr;
-    sc_core::sc_out<T> *m_out = nullptr;
-    sc_core::sc_inout<T> *m_inout = nullptr;
+    sc_in_p *m_in = nullptr;
+    sc_inout_p *m_inout = nullptr;
 
     void bind(sc_core::sc_signal_inout_if<T> &sig) {
         switch (m_dir) {
         case IN:
             m_in->bind(sig);
-            break;
-        case OUT:
-            m_out->bind(sig);
             break;
         case INOUT:
             m_inout->bind(sig);
@@ -58,11 +58,8 @@ private:
     }
 
 public:
-    explicit SignalCS(sc_core::sc_in<T> & port) : m_dir(IN), m_in(&port) {}
-                                   
-    explicit SignalCS(sc_core::sc_out<T> & port) : m_dir(OUT), m_out(&port) {}
-                                   
-    explicit SignalCS(sc_core::sc_inout<T> & port) : m_dir(INOUT), m_inout(&port) {}
+    explicit SignalCS(sc_in_p & port) : m_dir(IN), m_in(&port) {}
+    explicit SignalCS(sc_inout_p & port) : m_dir(INOUT), m_inout(&port) {}
 
     virtual ~SignalCS() { delete m_sig; }
 
@@ -89,9 +86,6 @@ public:
         switch (m_dir) {
         case IN:
             (*m_in)(*parent_cs.m_in);
-            break;
-        case OUT:
-            (*m_out)(*parent_cs.m_out);
             break;
         case INOUT:
             (*m_inout)(*parent_cs.m_inout);
