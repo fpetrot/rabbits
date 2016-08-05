@@ -113,6 +113,7 @@ public:
 
     void get_dynlibs_to_load(std::vector<std::string> &dynlibs) const;
 
+    const Platforms & get_platforms() const;
     bool platform_exists(const std::string &name) const { return m_platforms.find(name) != m_platforms.end(); }
     PlatformDescription get_platform(const std::string &name) const;
     PlatformDescription apply_platform(const std::string &name);

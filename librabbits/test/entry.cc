@@ -48,10 +48,10 @@ static int do_test(TestFactory *tf, ConfigManager &config)
     try {
         t = tf->create(config);
     } catch (TestFailureException e) {
-        LOG(APP, ERR) << tf->get_name() << ": Failed during elaboration: " << e.what_without_bt() << "\n";
+        LOG(APP, ERR) << tf->get_name() << ": Failed during elaboration: " << e.what() << "\n";
         return 1;
     } catch (RabbitsException e) {
-        LOG(APP, ERR) << tf->get_name() << ": Rabbits exception during elaboration.\n" << e.what_without_bt() << "\n";
+        LOG(APP, ERR) << tf->get_name() << ": Rabbits exception during elaboration.\n" << e.what() << "\n";
         return 1;
     } catch (sc_core::sc_report e) {
         LOG(APP, ERR) << tf->get_name() << ": SystemC report during elaboration.\n" << e.what() << "\n";
@@ -67,10 +67,10 @@ static int do_test(TestFactory *tf, ConfigManager &config)
     try {
         sc_core::sc_start();
     } catch (TestFailureException e) {
-        LOG(APP, ERR) << tf->get_name() << ": Failed during test: " << e.what_without_bt() << "\n";
+        LOG(APP, ERR) << tf->get_name() << ": Failed during test: " << e.what() << "\n";
         return 1;
     } catch (RabbitsException e) {
-        LOG(APP, ERR) << tf->get_name() << ": Rabbits exception during test.\n" << e.what_without_bt() << "\n";
+        LOG(APP, ERR) << tf->get_name() << ": Rabbits exception during test.\n" << e.what() << "\n";
         return 1;
     } catch (sc_core::sc_report e) {
         LOG(APP, ERR) << tf->get_name() << ": SystemC report during test.\n" << e.what() << "\n";

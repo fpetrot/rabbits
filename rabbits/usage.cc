@@ -22,6 +22,7 @@
 
 #include <rabbits/platform/description.h>
 #include <rabbits/platform/builder.h>
+#include <rabbits/platform/parser.h>
 
 #include <rabbits/component/factory.h>
 #include <rabbits/plugin/plugin.h>
@@ -489,6 +490,7 @@ static inline void print_value(TextFormatter &f,
     f << format::cyan << key << ": ";
     f.inc_start_col(2, true);
     f << format::reset << strip_last_nl(val) << "\n";
+    f.dec_start_col(2);
 }
 
 static void describe_module(ModuleFactoryBase &c, TextFormatter &f)
@@ -544,9 +546,52 @@ void enum_modules(ConfigManager &config, const Namespace &ns, LogLevel::value lv
     l.enable_banner(banner_status);
 }
 
+static void enum_platform(PlatformParser &parser, TextFormatter &f)
+{
+    f.set_start_col(2);
+    print_value(f, "description", parser.get_root().get_description());
+
+    if (parser.get_root().has_parent()) {
+        print_value(f, "inherit from", parser.get_root().get_parent_name());
+    }
+
+    if (parser.get_root().is_generic()) {
+        f << format::green << "This is a generic platform\n";
+    }
+
+
+    f << "\n";
+}
+
 void enum_platforms(ConfigManager &config, LogLevel::value lvl)
 {
+    Logger &l = get_app_logger();
 
+    bool banner_status = l.enable_banner(false);
+
+    TextFormatter f(l, lvl);
+
+    f << format::white_b << "Available platforms:\n\n"
+      << format::reset;
+
+    for (auto p : config.get_platforms()) {
+        f.set_start_col(0);
+        f << format::cyan_b << "* "
+          << format::white_b << p.first
+          << format::reset << "\n";
+
+        try {
+            PlatformParser parser(p.first, p.second, config);
+            enum_platform(parser, f);
+        } catch (PlatformParseException e) {
+            f.set_start_col(2);
+            f << format::red_b << "Parsing error: " 
+              << format::red << e.what() << "\n";
+        }
+    }
+
+    l << "\n";
+    l.enable_banner(banner_status);
 }
 
 static void add_aliases(ConfigManager &conf, UsageFormatter &usage, bool advanced)

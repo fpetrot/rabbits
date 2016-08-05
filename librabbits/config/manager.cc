@@ -93,6 +93,7 @@ void ConfigManager::compute_platform(const string &name, const PlatformDescripti
         PlatformDescription parent = get_platform(parent_name);
 
         platform = platform.merge(parent);
+        platform.remove("generic");
     }
 
     m_platforms[name] = platform;
@@ -312,6 +313,11 @@ Parameters & ConfigManager::get_global_params()
 void ConfigManager::get_dynlibs_to_load(vector<string> &dynlibs) const
 {
     std::copy(m_dynlibs_to_load.begin(), m_dynlibs_to_load.end(), dynlibs.begin());
+}
+
+const ConfigManager::Platforms & ConfigManager::get_platforms() const
+{
+    return m_platforms;
 }
 
 PlatformDescription ConfigManager::get_platform(const string &name) const

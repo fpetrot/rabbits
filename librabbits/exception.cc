@@ -68,7 +68,7 @@ static void split_trace(string trace, string &obj, string &symbol, uint64_t &off
 }
 #endif
 
-std::string RabbitsException::make_backtrace() {
+void RabbitsException::make_backtrace() {
 #ifdef GNU_BACKTRACE
         const int SIZE = 100;
         void *buf[SIZE];
@@ -82,11 +82,10 @@ std::string RabbitsException::make_backtrace() {
         strings = backtrace_symbols(buf, nptrs);
 
         if (strings == NULL) {
-            return "<backtrace error>";
+            m_backtrace = "<backtrace error>";
+            return;
         }
         
-        bt << "\nbacktrace:\n";
-
         for (int i = 0; i < nptrs; i++) {
             int status;
             string obj, symbol;
@@ -112,8 +111,8 @@ std::string RabbitsException::make_backtrace() {
         free(strings);
         free(demangled);
 
-        return bt.str();
+        m_backtrace = bt.str();
 #else
-        return "";
+        m_backtrace = "";
 #endif
 }

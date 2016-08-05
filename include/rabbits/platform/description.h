@@ -169,6 +169,7 @@ public:
         virtual const_iterator end() const = 0;
         virtual const std::string & raw_data() const { throw InvalidConversionException("Invalid rawdata use"); }
         virtual bool exists(const std::string &key) const { throw InvalidConversionException("Non-map node as no child"); }
+        virtual void remove(const std::string &key) { throw InvalidConversionException("Non-map node as no child"); }
 
         const Origin& origin() { return m_origin; }
 
@@ -255,6 +256,8 @@ public:
         virtual size_type size() const { return m_child.size(); }
 
         virtual bool exists(const std::string &key) const { return m_child.find(key) != m_child.end(); }
+
+        virtual void remove(const std::string &key) { m_child.erase(key); }
 
         virtual iterator begin() {
             return m_child.begin();
@@ -467,6 +470,21 @@ public:
         if (!is_map()) { return false; }
 
         return m_node->exists(k);
+    }
+
+    /**
+     * @brief Remove the child node given by key k.
+     *
+     * If the node type is not a map, or if the key does not exists,
+     * this method does nothing.
+     *
+     * @param[in] k the key to remove.
+     */
+    void remove(const std::string& k) {
+        if (!is_map()) { return; }
+        if (!exists(k)) { return; }
+
+        m_node->remove(k);
     }
 
     void alias(const std::string& root, const std::string& child);

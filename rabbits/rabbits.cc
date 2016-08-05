@@ -73,6 +73,11 @@ static void declare_global_params(ConfigManager &config)
                                             "with their description",
                                             false));
 
+    config.add_global_param("list-platforms",
+                            Parameter<bool>("List available platforms "
+                                            "with their description",
+                                            false));
+
     config.add_global_param("show-systemc-hierarchy",
                             Parameter<bool>("Display the SystemC hierarchy "
                                             "at the end of elaboration and exit",
@@ -122,6 +127,7 @@ static void declare_aliases(ConfigManager &config)
     config.add_param_alias("list-components",   p["list-components"]);
     config.add_param_alias("list-backends",     p["list-backends"]);
     config.add_param_alias("list-plugins",      p["list-plugins"]);
+    config.add_param_alias("list-platforms",    p["list-platforms"]);
     config.add_param_alias("systemc-hierarchy", p["show-systemc-hierarchy"]);
     config.add_param_alias("debug",             p["debug"]);
     config.add_param_alias("version",           p["show-version"]);
@@ -312,6 +318,11 @@ int sc_main(int argc, char *argv[])
         return 0;
     }
 
+    if (globals["list-platforms"].as<bool>()) {
+        enum_platforms(config, LogLevel::INFO);
+        return 0;
+    }
+
     std::string pname = globals["selected-platform"].as<string>();
 
     if (pname.empty()) {
@@ -333,20 +344,33 @@ int sc_main(int argc, char *argv[])
 
     PlatformDescription platform = config.apply_platform(pname);
 
-    PlatformBuilder builder(pname.c_str(), platform, config);
+    try {
+        PlatformBuilder builder(pname.c_str(), platform, config);
 
+        if (globals["show-help"].as<bool>() || globals["show-advanced-params"].as<bool>()) {
+            print_usage(argv[0], config, builder);
+            return 0;
+        }
 
-    if (globals["show-help"].as<bool>() || globals["show-advanced-params"].as<bool>()) {
-        print_usage(argv[0], config, builder);
-        return 0;
+        if (globals["show-systemc-hierarchy"].as<bool>()) {
+            dump_systemc_hierarchy(builder, LogLevel::INFO);
+            return 0;
+        }
+
+        simu_manager().start();
+
+    } catch (PlatformParseException e) {
+        get_app_logger().enable_banner(false);
+        LOG(APP, ERR) << format::red_b << "Error while parsing platform " << pname << ": "
+                      << format::reset << e.what() << "\n";
+        return 1;
+    } catch (RabbitsException e) {
+        get_app_logger().enable_banner(false);
+        LOG(APP, ERR) << "Fatal Rabbits exception: " << e.what() << "\n"
+            << "\nbacktrace:\n" << e.get_backtrace();
+        return 1;
     }
 
-    if (globals["show-systemc-hierarchy"].as<bool>()) {
-        dump_systemc_hierarchy(builder, LogLevel::INFO);
-        return 0;
-    }
-
-    simu_manager().start();
 
     return 0;
 }
