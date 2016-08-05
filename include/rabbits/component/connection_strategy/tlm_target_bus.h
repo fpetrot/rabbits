@@ -49,7 +49,7 @@ private:
 
     std::vector<TlmTargetMappedListener*> m_listeners;
 
-    void mapped_ev_dispatch(const AddressRange &r) 
+    void mapped_ev_dispatch(const AddressRange &r)
     {
         for (TlmTargetMappedListener *l : m_listeners) {
             l->tlm_target_mapped_event(r);
