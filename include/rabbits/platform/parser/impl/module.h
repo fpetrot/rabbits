@@ -22,6 +22,7 @@
 
 #include "../module.h"
 #include "../platform.h"
+#include "../binding.h"
 #include "rabbits/config/manager.h"
 
 inline ParserNodeModule::ParserNodeModule(PlatformDescription &d, const std::string n,
@@ -91,7 +92,9 @@ inline ParserNodeModuleWithPorts::
 ParserNodeModuleWithPorts(PlatformDescription &d, const std::string n,
                           ParserNodePlatform &root, const Namespace &ns)
     : ParserNodeModule(d, n, root, ns)
-{}
+{
+    add_optional_named_subnodes<ParserNodeBinding>("bindings", m_bindings, *this);
+}
 
 inline ParserNodeModuleWithPorts::
     ParserNodeModuleWithPorts(const std::string &name, const std::string &type,
@@ -105,5 +108,34 @@ ParserNodeModuleWithPorts(HasPortIface *m, ParserNodePlatform &root,
                           const Namespace &ns)
     : ParserNodeModule(root, ns), m_inst(m)
 {}
+
+inline bool ParserNodeModuleWithPorts::binding_exists(const std::string &port) const
+{
+    return m_bindings.find(port) != m_bindings.end();
+}
+
+inline void ParserNodeModuleWithPorts::add_binding(const std::string local_port,
+                                             std::shared_ptr<ParserNodeModuleWithPorts> peer,
+                                             const std::string &peer_port,
+                                             PlatformDescription &params)
+{
+    if (binding_exists(local_port)) {
+        throw RabbitsException("Binding already exists for port " + local_port + " of component " + get_name());
+    }
+
+    auto binding = std::make_shared<ParserNodeBinding>(local_port, peer, peer_port,
+                                                       params, get_root(), *this);
+
+    m_bindings[local_port] = binding;
+    add_subnode(binding);
+}
+
+inline void ParserNodeModuleWithPorts::remove_binding_if_exists(const std::string local_port)
+{
+    if (binding_exists(local_port)) {
+        remove_subnode(m_bindings[local_port]);
+        m_bindings.erase(local_port);
+    }
+}
 
 #endif
