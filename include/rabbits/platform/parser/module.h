@@ -25,6 +25,7 @@
 #include "rabbits/module/parameters.h"
 
 class HasPortIface;
+class ParserNodeBinding;
 
 class ParserNodeModule : public ParserNode {
     std::string m_name;
@@ -53,6 +54,7 @@ public:
 class ParserNodeModuleWithPorts : public ParserNodeModule {
 private:
     HasPortIface * m_inst = nullptr;
+    NamedSubnodes<ParserNodeBinding> m_bindings;
 
 protected:
     void set_inst(HasPortIface *inst) { m_inst = inst; }
@@ -67,6 +69,17 @@ public:
                               const Namespace &ns);
 
     HasPortIface * get_inst() const { return m_inst; }
+
+    NamedSubnodes<ParserNodeBinding> & get_bindings() { return m_bindings; }
+
+    bool binding_exists(const std::string &port) const;
+
+    void add_binding(const std::string local_port,
+                     std::shared_ptr<ParserNodeModuleWithPorts> peer,
+                     const std::string &peer_port,
+                     PlatformDescription &params);
+
+    void remove_binding_if_exists(const std::string local_port);
 };
 
 #endif

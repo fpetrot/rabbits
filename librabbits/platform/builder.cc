@@ -210,14 +210,23 @@ void PlatformBuilder::create_backends(PlatformParser &p)
 
 void PlatformBuilder::do_bindings(PlatformParser &p)
 {
-    for (auto &comp : p.get_root().get_components()) {
-        for (auto &binding : comp.second->get_bindings()) {
-            Port &p0 = binding.second->get_local_port();
-            Port &p1 = binding.second->get_peer_port();
-            PlatformDescription descr = binding.second->get_descr();
+    for (auto &node : p.get_root().get_components()) {
+        do_bindings(node.second);
+    }
 
-            do_binding(p0, p1, descr);
-        }
+    for (auto &node : p.get_root().get_backends()) {
+        do_bindings(node.second);
+    }
+}
+
+void PlatformBuilder::do_bindings(std::shared_ptr<ParserNodeModuleWithPorts> node)
+{
+    for (auto &binding : node->get_bindings()) {
+        Port &p0 = binding.second->get_local_port();
+        Port &p1 = binding.second->get_peer_port();
+        PlatformDescription descr = binding.second->get_descr();
+
+        do_binding(p0, p1, descr);
     }
 }
 

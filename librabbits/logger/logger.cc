@@ -118,11 +118,12 @@ void Logger::restore_flags()
     }
 
     std::vector< std::ios::fmtflags > &flags = m_state_stack.top();
-    m_state_stack.pop();
 
     for (it = flags.begin(), i = 0; it != flags.end(); it++, i++) {
         get_sink(LogLevel::value(i)).flags(*it);
     }
+
+    m_state_stack.pop();
 }
 
 

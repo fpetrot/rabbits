@@ -87,6 +87,7 @@ protected:
     void create_backends(PlatformParser &p);
 
     void do_bindings(PlatformParser &p);
+    void do_bindings(std::shared_ptr<ParserNodeModuleWithPorts> node);
     void do_binding(Port &p0, Port &p1, PlatformDescription &descr);
 
     void create_dbg_init(PlatformParser&);
