@@ -115,17 +115,26 @@ PlatformDescription::load_yaml_req(YAML::Node root, Node::Origin &origin)
 
 void PlatformDescription::load_file_yaml(const string &file)
 {
-    YAML::Node y_root = YAML::LoadFile(file);
-    Node::Origin origin(file, 0, 0);
+    try {
+        YAML::Node y_root = YAML::LoadFile(file);
+        Node::Origin origin(file, 0, 0);
 
-    *this = PlatformDescription(load_yaml_req(y_root, origin));
+        *this = PlatformDescription(load_yaml_req(y_root, origin));
+    } catch (YAML::ParserException e) {
+        throw YamlParsingException(e.what());
+    }
 }
 
 void PlatformDescription::load_yaml(const string &yaml)
 {
-    YAML::Node y_root = YAML::Load(yaml);
-    Node::Origin origin;
-    *this = PlatformDescription(load_yaml_req(y_root, origin));
+    try {
+        YAML::Node y_root = YAML::Load(yaml);
+
+        Node::Origin origin;
+        *this = PlatformDescription(load_yaml_req(y_root, origin));
+    } catch (YAML::ParserException e) {
+        throw YamlParsingException(e.what());
+    }
 }
 
 void PlatformDescription::tokenize_arg(const string arg, list<string>& toks)

@@ -78,13 +78,13 @@ function(rabbits_generate_descr_symlinks)
     get_property(PLATFORM_DESCR GLOBAL PROPERTY RABBITS_PLATFORMS_LIST)
 
     foreach(p IN LISTS PLATFORM_DESCR)
-        install(FILES ${p} DESTINATION ${RABBITS_DESCRIPTION_DIR})
+        install(FILES ${p} DESTINATION ${RABBITS_CONFIG_DIR}/platforms)
 
-        if(RABBITS_CREATE_DESCR_SYMLINK)
+        if(RABBITS_CREATE_PLATFORM_SYMLINK)
             get_filename_component(p_name "${p}" NAME_WE)
             get_filename_component(rabbits_app_name "${RABBITS_EXECUTABLE}" NAME)
 
-            set(__sym ${CMAKE_CURRENT_BINARY_DIR}/${RABBITS_DESCR_SYMLINK_PREFIX}${p_name})
+            set(__sym ${CMAKE_CURRENT_BINARY_DIR}/${RABBITS_PLATFORM_SYMLINK_PREFIX}${p_name})
             add_custom_target(
                 ${p_name}_symlink
                 ALL

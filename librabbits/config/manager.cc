@@ -39,9 +39,9 @@ ConfigManager::ConfigManager()
     , m_global_params(Namespace::get(Namespace::GLOBAL))
     , m_dynloader(*this)
 {
-    add_global_param("configuration-directory",
-                     Parameter<string>("Where to find configuration files",
-                                       RABBITS_DESCR_SEARCH_PATH));
+    add_global_param("config-dir",
+                     Parameter<string>("Global configuration directory",
+                                       RABBITS_CONFIG_PATH));
 
     add_global_param("selected-platform",
                      Parameter<string>("The selected platform",
@@ -83,17 +83,16 @@ void ConfigManager::compute_platform(const string &name, const PlatformDescripti
     if (platform["inherit"].is_scalar()) {
         const string parent_name = platform["inherit"].as<string>();
 
-        if (!platform_exists(parent_name)) {
-            LOG(APP, ERR) << "Platform " << name << " inherits from unknown platform " << parent_name << "\n";
-            return;
+        LOG(APP, DBG) << "Platform " << name << " inherits from `" << parent_name << "`\n";
+
+        if (platform_exists(parent_name)) {
+            PlatformDescription parent = get_platform(parent_name);
+
+            platform = platform.merge(parent);
+            platform.remove("generic");
+        } else {
+            LOG(APP, DBG) << "Platform " << name << " inherits from unknown platform `" << parent_name << "`\n";
         }
-
-        LOG(APP, DBG) << "Platform " << name << " inherits from " << parent_name << "\n";
-
-        PlatformDescription parent = get_platform(parent_name);
-
-        platform = platform.merge(parent);
-        platform.remove("generic");
     }
 
     m_platforms[name] = platform;
@@ -175,7 +174,7 @@ void ConfigManager::parse_basename(const char *arg0)
 
     if (basename != RABBITS_APP_NAME) {
         LOG(APP, DBG) << "Trying to deduce selected platform from basename\n";
-        const string prefix(RABBITS_DESCR_SYMLINK_PREFIX);
+        const string prefix(RABBITS_PLATFORM_SYMLINK_PREFIX);
 
         if (basename.find(prefix) != 0) {
             LOG(APP, DBG) << "basename seems invalid. Giving up.\n";
@@ -239,7 +238,7 @@ void ConfigManager::add_cmdline(int argc, const char * const argv[])
 
     recompute_config();
 
-    path conf_dir(m_global_params["configuration-directory"].as<string>());
+    path conf_dir(m_global_params["config-dir"].as<string>());
     load_config_directory(conf_dir);
 }
 
@@ -261,6 +260,8 @@ void ConfigManager::add_yml_file(const string &filename)
 
     try {
         d.load_file_yaml(filename);
+    } catch (PlatformDescription::YamlParsingException e) {
+        LOG(APP, ERR) << "Failed to parse YAML config file " << filename << ": " << e.what() << "\n";
     } catch (std::exception e) {
         LOG(APP, ERR) << "Failed to load YAML config file " << filename << ": " << e.what() << "\n";
         return;

@@ -38,6 +38,11 @@ inline ParserNodePlatform::ParserNodePlatform(PlatformDescription &descr, Config
     add_optional_named_subnodes<ParserNodeComponent>("components", m_components);
     add_optional_named_subnodes<ParserNodeBackend>("backends", m_backends);
     add_optional_named_subnodes<ParserNodePlugin>("plugins", m_plugins);
+
+    if (has_parent() && (!config.platform_exists(get_parent_name()))) {
+        throw PlatformParseException(get_descr(), std::string("Platform inherits from unknown platform `")
+                                     + get_parent_name() + "`");
+    }
 }
 
 inline ParserNodePlatform::ParserNodePlatform(ConfigManager &config)

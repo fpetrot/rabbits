@@ -19,8 +19,8 @@ find_package(Doxygen)
 option(USE_SDL "Use SDL1.2 for framebuffer devices" ON)
 option(BUILD_DOCUMENTATION "Build the Doxygen HTML documentation (requires Doxygen)" OFF)
 
-if(NOT RABBITS_DESCR_SEARCH_PATH)
-    set(RABBITS_DESCR_SEARCH_PATH "${CMAKE_INSTALL_PREFIX}/share/rabbits/platforms")
+if(NOT RABBITS_CONFIG_PATH)
+    set(RABBITS_CONFIG_PATH "${CMAKE_INSTALL_PREFIX}/share/rabbits/config")
 endif()
 
 if(USE_SDL)
@@ -39,17 +39,17 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(RABBITS_DEBUG ON)
 else()
     if(NOT RABBITS_LOGLEVEL)
-        set(RABBITS_LOGLEVEL 1) # Errors and warnings
+        set(RABBITS_LOGLEVEL 3) # Debug level
     endif()
 endif()
 
 if(UNIX)
     set(RABBITS_CONFIG_POSIX 1)
-    option(RABBITS_CREATE_DESCR_SYMLINK
-        "Create one symlink per platform description pointing on rabbits executable"
+    option(RABBITS_CREATE_PLATFORM_SYMLINK
+        "Create one symlink per platform pointing on rabbits executable"
         ON)
-    if(NOT RABBITS_DESCR_SYMLINK_PREFIX)
-        set(RABBITS_DESCR_SYMLINK_PREFIX "rabbits-")
+    if(NOT RABBITS_PLATFORM_SYMLINK_PREFIX)
+        set(RABBITS_PLATFORM_SYMLINK_PREFIX "rabbits-")
     endif()
 elseif(WIN32)
     set(RABBITS_CONFIG_WIN32 1)
@@ -88,7 +88,7 @@ set(RABBITS_BIN_DIR bin)
 set(RABBITS_LIB_DIR lib)
 set(RABBITS_INCLUDE_DIR include)
 set(RABBITS_DOC_DIR share/doc/rabbits)
-set(RABBITS_DESCRIPTION_DIR share/rabbits/platforms)
+set(RABBITS_CONFIG_DIR share/rabbits/config)
 set(RABBITS_EXECUTABLE ${RABBITS_BIN_DIR}/${RABBITS_APP_NAME})
 set(RABBITS_LIBRARIES rabbits)
 set(RABBITS_TEST_LIBRARY rabbits-test)
@@ -139,7 +139,7 @@ configure_package_config_file(RabbitsConfig.cmake.in
     PATH_VARS RABBITS_INCLUDE_DIR
     RABBITS_LIB_DIR
     RABBITS_BIN_DIR
-    RABBITS_DESCRIPTION_DIR
+    RABBITS_CONFIG_DIR
     RABBITS_EXECUTABLE
     NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 
@@ -154,7 +154,7 @@ install(EXPORT rabbits-targets DESTINATION ${RABBITS_LIB_DIR}/rabbits/cmake)
 install(DIRECTORY include/ DESTINATION ${RABBITS_INCLUDE_DIR} FILES_MATCHING PATTERN "*.h")
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/rabbits/config.h" DESTINATION ${RABBITS_INCLUDE_DIR}/rabbits)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen-factory.rb" DESTINATION ${RABBITS_LIB_DIR}/rabbits)
-install(DIRECTORY DESTINATION ${RABBITS_DESCRIPTION_DIR})
+install(DIRECTORY DESTINATION ${RABBITS_CONFIG_DIR})
 
 # cmake files installation
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/RabbitsConfig.cmake

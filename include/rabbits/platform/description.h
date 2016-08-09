@@ -106,6 +106,14 @@ public:
     };
 
     /**
+     * @brief Raised when a YAML parsing error occured */
+    class YamlParsingException : public RabbitsException {
+    public:
+        explicit YamlParsingException(const std::string & what) : RabbitsException(what) {}
+        virtual ~YamlParsingException() throw() {}
+    };
+
+    /**
      * @brief The PlatformDescription internal node
      */
     class Node {
