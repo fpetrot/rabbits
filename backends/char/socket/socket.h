@@ -48,11 +48,22 @@ public:
     SC_HAS_PROCESS(SocketCharBackend);
     SocketCharBackend(sc_core::sc_module_name n, const Parameters &p, ConfigManager &c)
         : Component(n, p, c), m_port("char")
+    { 
+        SC_THREAD(recv_thread);
+        SC_THREAD(send_thread);
+    }
+
+    virtual ~SocketCharBackend()
     {
-        std::string type = p["kind"].as<std::string>();
-        std::string address = p["address"].as<std::string>();
-        m_server = p["server"].as<bool>();
-        m_nowait = p["nowait"].as<bool>();
+        close();
+    }
+
+    virtual void start_of_simulation()
+    {
+        std::string type = m_params["kind"].as<std::string>();
+        std::string address = m_params["address"].as<std::string>();
+        m_server = m_params["server"].as<bool>();
+        m_nowait = m_params["nowait"].as<bool>();
 
         if(type == "tcp") {
             std::string ip = "127.0.0.1";
@@ -92,13 +103,6 @@ public:
             return;
         }
 
-        SC_THREAD(recv_thread);
-        SC_THREAD(send_thread);
-    }
-
-    virtual ~SocketCharBackend()
-    {
-        close();
     }
 };
 
