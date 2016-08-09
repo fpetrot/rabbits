@@ -62,6 +62,11 @@ function(rabbits_add_platforms)
         "List of platforms"
         "List of platform description files"
         ${ARGN})
+    rabbits_add_files_to_collection(
+        RABBITS_ALL_PLATFORMS_LIST
+        "List of all platforms"
+        "List of all platform description files"
+        ${ARGN})
 endfunction(rabbits_add_platforms)
 
 function(rabbits_add_tests)
