@@ -586,7 +586,7 @@ void enum_platforms(ConfigManager &config, LogLevel::value lvl)
         } catch (PlatformParseException e) {
             f.set_start_col(2);
             f << format::red_b << "Parsing error: " 
-              << format::red << e.what() << "\n";
+              << format::red << e.what() << "\n\n";
         }
     }
 
