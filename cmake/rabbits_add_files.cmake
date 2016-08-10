@@ -69,16 +69,18 @@ function(rabbits_add_platforms)
         ${ARGN})
 endfunction(rabbits_add_platforms)
 
-function(rabbits_add_config)
+function(rabbits_add_configs)
     rabbits_add_files_to_collection(
         RABBITS_CONFIGS_LIST
         "List of config files"
-        "List of other configuration files")
+        "List of other configuration files"
+        ${ARGN})
     rabbits_add_files_to_collection(
         RABBITS_ALL_CONFIGS_LIST
         "List of all config files"
-        "List of all other configuration files")
-endfunction(rabbits_add_config)
+        "List of all other configuration files"
+        ${ARGN})
+endfunction(rabbits_add_configs)
 
 function(rabbits_add_tests)
     rabbits_add_files_to_collection(
