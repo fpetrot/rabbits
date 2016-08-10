@@ -60,14 +60,25 @@ function(rabbits_add_platforms)
     rabbits_add_files_to_collection(
         RABBITS_PLATFORMS_LIST
         "List of platforms"
-        "List of platform description files"
+        "List of platform configuration files"
         ${ARGN})
     rabbits_add_files_to_collection(
         RABBITS_ALL_PLATFORMS_LIST
         "List of all platforms"
-        "List of all platform description files"
+        "List of all platform configuration files"
         ${ARGN})
 endfunction(rabbits_add_platforms)
+
+function(rabbits_add_config)
+    rabbits_add_files_to_collection(
+        RABBITS_CONFIGS_LIST
+        "List of config files"
+        "List of other configuration files")
+    rabbits_add_files_to_collection(
+        RABBITS_ALL_CONFIGS_LIST
+        "List of all config files"
+        "List of all other configuration files")
+endfunction(rabbits_add_config)
 
 function(rabbits_add_tests)
     rabbits_add_files_to_collection(
@@ -84,8 +95,9 @@ function(rabbits_add_executable n)
     get_property(__libs GLOBAL PROPERTY RABBITS_LIBS_LIST)
     add_executable(${n} ${__srcs})
     target_link_libraries(${n} ${__libs})
-    rabbits_generate_descr_symlinks()
+    rabbits_generate_platform_symlinks(${n})
     rabbits_generate_tests(${n})
+    rabbits_install_configs(${n})
     rabbits_clear_files_collections()
     install(TARGETS ${n} DESTINATION ${RABBITS_BIN_DIR})
 endfunction(rabbits_add_executable)
@@ -98,8 +110,9 @@ function(rabbits_add_dynlib n)
     add_library(${n} SHARED ${__srcs})
     target_link_libraries(${n} ${__libs})
     set_property(TARGET ${n} PROPERTY PREFIX "")
-    rabbits_generate_descr_symlinks()
+    rabbits_generate_platform_symlinks(${n})
     rabbits_generate_tests(${n})
+    rabbits_install_configs(${n})
     rabbits_clear_files_collections()
     install(TARGETS ${n} DESTINATION ${RABBITS_LIB_DIR}/rabbits)
 endfunction(rabbits_add_dynlib)
@@ -117,6 +130,7 @@ function(rabbits_clear_files_collections)
         RABBITS_COMPONENTS_LIST
         RABBITS_PLUGINS_LIST
         RABBITS_PLATFORMS_LIST
+        RABBITS_CONFIGS_LIST
         RABBITS_TESTS_LIST)
 endfunction(rabbits_clear_files_collections)
 

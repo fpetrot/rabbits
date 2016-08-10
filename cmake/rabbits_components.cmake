@@ -74,11 +74,11 @@ function(rabbits_generate_objects n)
 
 endfunction(rabbits_generate_objects)
 
-function(rabbits_generate_descr_symlinks)
-    get_property(PLATFORM_DESCR GLOBAL PROPERTY RABBITS_PLATFORMS_LIST)
+function(rabbits_generate_platform_symlinks n)
+    get_property(__platforms GLOBAL PROPERTY RABBITS_PLATFORMS_LIST)
 
-    foreach(p IN LISTS PLATFORM_DESCR)
-        install(FILES ${p} DESTINATION ${RABBITS_CONFIG_DIR}/platforms)
+    foreach(p IN LISTS __platforms)
+        install(FILES ${p} DESTINATION ${RABBITS_CONFIG_DIR}/${n}/platforms)
 
         if(RABBITS_CREATE_PLATFORM_SYMLINK)
             get_filename_component(p_name "${p}" NAME_WE)
@@ -94,7 +94,7 @@ function(rabbits_generate_descr_symlinks)
             install(FILES ${__sym} DESTINATION ${RABBITS_BIN_DIR})
         endif()
     endforeach()
-endfunction(rabbits_generate_descr_symlinks)
+endfunction(rabbits_generate_platform_symlinks)
 
 function(rabbits_generate_tests n)
     get_property(_tests GLOBAL PROPERTY RABBITS_TESTS_LIST)
@@ -119,5 +119,12 @@ function(rabbits_generate_tests n)
         add_test(NAME ${_test_name} COMMAND ${_test_name})
     endif()
 endfunction(rabbits_generate_tests)
+
+function(rabbits_install_configs n)
+    get_property(__configs GLOBAL PROPERTY RABBITS_CONFIGS_LIST)
+    if(__configs)
+        install(FILES ${__configs} DESTINATION ${RABBITS_CONFIG_PATH}/${n}/config)
+    endif()
+endfunction(rabbits_install_configs)
 
 # vim: ts=4 sts=4 sw=4 expandtab
