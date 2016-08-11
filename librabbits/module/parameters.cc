@@ -47,8 +47,6 @@ Parameters& Parameters::operator= (const Parameters& p)
 
 void Parameters::fill_from_description(const PlatformDescription &p)
 {
-    PlatformDescription::const_iterator it;
-
     if (&p != &m_descr) {
         m_descr = p;
     }
@@ -57,9 +55,9 @@ void Parameters::fill_from_description(const PlatformDescription &p)
         return;
     }
 
-    for (it = p.begin(); it != p.end(); it++) {
-        if(exists(it->first)) {
-            at(it->first).set(it->second);
+    for (auto param: p) {
+        if(exists(param.first)) {
+            at(param.first).set(param.second);
         }
     }
 }

@@ -17,37 +17,19 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _RABBITS_MODULE_MODULE_H
-#define _RABBITS_MODULE_MODULE_H
+#ifndef _RABBITS_MODULE_HAS_PARAMS_H
+#define _RABBITS_MODULE_HAS_PARAMS_H
 
-#include "rabbits/logger/has_logger.h"
-#include "rabbits/config/has_config.h"
-#include "has_params.h"
-#include "namespace.h"
+class Parameters;
 
-
-class ModuleIface
-    : public HasParametersIface
-    , public HasLoggerIface
-    , public HasConfigIface
-{
+class HasParametersIface {
 public:
     /**
-     * @brief Return the module name
-     */
-    virtual const std::string & get_name() const = 0;
-
-    /**
-     * @brief Return the module namespace
-     */
-    virtual const Namespace & get_namespace() const = 0;
-
-    /* @brief Return the full name of the module
+     * @brief Return the component parameters.
      *
-     * The full name is composed of the name of the namespace, a ".", and the
-     * name of the module.
+     * @return the component parameters.
      */
-    virtual const std::string get_full_name() const = 0;
+    virtual const Parameters & get_params() const = 0;
 };
 
 #endif

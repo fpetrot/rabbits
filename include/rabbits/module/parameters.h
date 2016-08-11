@@ -28,6 +28,7 @@
 #include "parameter/parameter.h"
 #include "rabbits/platform/description.h"
 #include "rabbits/rabbits_exception.h"
+#include "has_params.h"
 
 class ModuleIface;
 class Namespace;
@@ -238,17 +239,6 @@ public:
      * @brief The empty parameters collection.
      */
     static Parameters EMPTY;
-};
-
-
-class HasParametersIface {
-public:
-    /**
-     * @brief Return the component parameters.
-     *
-     * @return the component parameters.
-     */
-    virtual const Parameters & get_params() const = 0;
 };
 
 #endif
