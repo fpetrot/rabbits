@@ -114,6 +114,12 @@ public:
         virtual ~YamlParsingException() throw() {}
     };
 
+    class NodeVisitor {
+    public:
+        virtual void operator() (PlatformDescription &node,
+                                 const std::vector<std::string> &names) = 0;
+    };
+
     /**
      * @brief The PlatformDescription internal node
      */
@@ -160,6 +166,7 @@ public:
     protected:
         NodeType m_type;
         Origin m_origin;
+        bool m_converted = false;
 
     public:
         Node() : m_ref_count(0), m_is_static(false) {}
@@ -181,6 +188,9 @@ public:
         virtual void remove(const std::string &key) { throw InvalidConversionException("Non-map node as no child"); }
 
         const Origin& origin() { return m_origin; }
+
+        void mark_converted() { m_converted = true; }
+        bool has_been_converted() { return m_converted; }
 
         /* Memory management */
         void inc_ref() { m_ref_count++; }
@@ -564,10 +574,35 @@ public:
             throw InvalidConversionException("Invalid conversion");
         }
 
+        m_node->mark_converted();
+
         return ret;
     }
 
     std::string origin() const { return m_node->origin().format(); }
+
+    const Node::Origin & get_origin() const { return m_node->origin(); }
+
+    void visit_non_converted(NodeVisitor &v, std::vector<std::string> &names)
+    {
+        if (is_map()) {
+            for (auto &n : *this) {
+                names.push_back(n.first);
+                n.second.visit_non_converted(v, names);
+                names.pop_back();
+            }
+        }
+
+        if (is_scalar() && !m_node->has_been_converted()) {
+            v(*this, names);
+        }
+    }
+
+    void visit_non_converted(NodeVisitor &v)
+    {
+        std::vector<std::string> names;
+        visit_non_converted(v, names);
+    }
 
     /**
      * @brief Dump the content of the description.
