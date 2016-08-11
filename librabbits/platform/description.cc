@@ -252,6 +252,43 @@ PlatformDescription& PlatformDescription::operator=(const PlatformDescription& p
 # define DBG_MERGE(...) do {} while(0)
 #endif
 
+PlatformDescription PlatformDescription::clone() const
+{
+    const Node::Origin & origin = m_node->origin();
+
+    switch(type()) {
+    case NIL:
+        return PlatformDescription(new NodeNil(origin));
+
+    case MAP:
+        {
+            NodeMap *n = new NodeMap(origin);
+            for (auto &sub : *m_node) {
+                (*n)[sub.first] = sub.second.clone();
+            }
+            return PlatformDescription(n);
+        }
+
+    case VECTOR:
+        assert(false); /* n/i */
+        return INVALID_DESCRIPTION;
+
+    case SCALAR:
+        {
+            NodeScalar *n = new NodeScalar(m_node->raw_data(), origin);
+            if (m_node->has_been_converted()) {
+                n->mark_converted();
+            }
+            return PlatformDescription(n);
+        }
+
+    case INVALID:
+        return INVALID_DESCRIPTION;
+    }
+
+    return INVALID_DESCRIPTION;
+}
+
 PlatformDescription PlatformDescription::merge(PlatformDescription &p)
 {
     DBG_MERGE("--> Start merge\n");

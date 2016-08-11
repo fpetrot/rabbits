@@ -496,6 +496,14 @@ public:
         m_node->remove(k);
     }
 
+    /**
+     * @brief Deep copy this platform description and return the new one.
+     *
+     * Deep copy this platform description and return the new one.
+     *
+     * @return the copy of this description.
+     */
+    PlatformDescription clone() const;
 
     /**
      * @brief Merge two descriptions and return the now one.
