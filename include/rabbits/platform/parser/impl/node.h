@@ -87,10 +87,17 @@ inline void ParserNode::add_named_subnodes(const std::string &name,
 }
 
 template <class T, class... Args>
+inline void ParserNode::add_named_subnodes(const std::string &name,
+                                           NamedSubnodes<T> &storage, Args&... args)
+{
+    add_named_subnodes(name, storage, true, args...);
+}
+
+template <class T, class... Args>
 inline void ParserNode::add_optional_named_subnodes(const std::string &name,
                                              NamedSubnodes<T> &storage, Args&... args)
 {
-    add_named_subnodes(name, storage, true, args...);
+    add_named_subnodes(name, storage, false, args...);
 }
 
 inline void ParserNode::add_subnode(std::shared_ptr<ParserNode> node)

@@ -46,6 +46,10 @@ private:
 
     std::set< std::shared_ptr<ParserNode> > m_subnodes;
 
+    template <class T, class... Args>
+    void add_named_subnodes(const std::string &name,
+                            NamedSubnodes<T> &storage,
+                            bool optional, Args&... args);
 protected:
     template <class T>
     void add_optional_field(const std::string &name, const T& default_val, T& storage);
@@ -54,7 +58,6 @@ protected:
     template <class T, class... Args>
     void add_named_subnodes(const std::string &name,
                             NamedSubnodes<T> &storage,
-                            bool optional = false,
                             Args&... args);
     template <class T, class... Args>
     void add_optional_named_subnodes(const std::string &name,
