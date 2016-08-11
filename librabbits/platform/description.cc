@@ -155,7 +155,6 @@ PlatformDescription::parse_arg_req(list<string>& toks, Node::Origin &origin)
     if (toks.empty()) {
         if ((type() != NIL) && (type() != SCALAR)) {
             throw InvalidCmdLineException("");
-            abort();
         }
 
         NodeScalar *n = new NodeScalar("", origin);
@@ -245,11 +244,6 @@ PlatformDescription& PlatformDescription::operator=(const PlatformDescription& p
     m_node->inc_ref();
 
     return *this;
-}
-
-void PlatformDescription::alias(const string& root, const string& child)
-{
-    /* XXX */
 }
 
 #ifdef DEBUG_MERGE

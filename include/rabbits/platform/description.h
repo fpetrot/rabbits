@@ -106,7 +106,8 @@ public:
     };
 
     /**
-     * @brief Raised when a YAML parsing error occured */
+     * @brief Raised when a YAML parsing error occured
+     */
     class YamlParsingException : public RabbitsException {
     public:
         explicit YamlParsingException(const std::string & what) : RabbitsException(what) {}
@@ -495,7 +496,6 @@ public:
         m_node->remove(k);
     }
 
-    void alias(const std::string& root, const std::string& child);
 
     /**
      * @brief Merge two descriptions and return the now one.
