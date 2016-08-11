@@ -259,6 +259,62 @@ static void setup_loggers(ConfigManager &config, LogFiles &files)
     });
 }
 
+class WarnUnusedParams : public PlatformDescription::NodeVisitor {
+protected:
+    void from_cmdline(const PlatformDescription::Node::Origin &o,
+                        const vector<string> &names, string &s)
+    {
+        string prefix = "Unknown command line parameter `-";
+        for (auto &n: names) {
+            s += prefix + n;
+            prefix = ".";
+        }
+        s += "`";
+    }
+
+    void from_file(const PlatformDescription &d,
+                     const vector<string> &names, string &s)
+    {
+        s = "Unknown parameter `" + names.back() + "` at " + d.origin();
+    }
+
+    bool names_to_str(PlatformDescription &d,
+                        const vector<string> &names, string &s)
+    {
+        const PlatformDescription::Node::Origin &o = d.get_origin();
+
+        switch(o.origin) {
+        case PlatformDescription::Node::Origin::CMDLINE:
+            from_cmdline(o, names, s);
+            return true;
+        case PlatformDescription::Node::Origin::FILE:
+            from_file(d, names, s);
+            return true;
+        default:
+            return false;
+        }
+    }
+
+public:
+    void operator() (PlatformDescription &n,
+                     const std::vector<std::string> &names) {
+        string s;
+
+        if (names_to_str(n, names, s)) {
+            LOG(APP, WRN) << s << "\n";
+        }
+    }
+};
+
+void check_unused_params(PlatformDescription &d)
+{
+    PlatformDescription dc = d.clone();
+    dc.remove("platforms");
+
+    WarnUnusedParams warn_unused;
+    dc.visit_non_converted(warn_unused);
+}
+
 extern "C" {
 int sc_main(int argc, char *argv[])
 {
@@ -346,6 +402,8 @@ int sc_main(int argc, char *argv[])
 
     try {
         PlatformBuilder builder(pname.c_str(), platform, config);
+
+        check_unused_params(platform);
 
         if (globals["show-help"].as<bool>() || globals["show-advanced-params"].as<bool>()) {
             print_usage(argv[0], config, builder);
