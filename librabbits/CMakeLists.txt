@@ -41,3 +41,8 @@ target_link_libraries(${RABBITS_TEST_LIBRARY} -Wl,--whole-archive ${RABBITS_LIBR
 install(TARGETS ${RABBITS_TEST_LIBRARY} DESTINATION lib EXPORT rabbits-targets)
 
 rabbits_clear_files_collections()
+
+add_subdirectory(../tests ../tests)
+rabbits_generate_tests("librabbits")
+
+rabbits_clear_files_collections()

@@ -36,7 +36,7 @@ class Parameters;
 class ParserNodePlatform : public ParserNode, public HasConfigIface {
 protected:
     std::string m_description;
-    bool m_generic;
+    bool m_generic = false;
     std::string m_inherit;
     ConfigManager &m_config;
 
@@ -87,6 +87,8 @@ public:
     void add_component(ComponentBase *c);
     void add_backend(ComponentBase *c);
     void add_plugin(PluginBase *c);
+
+    bool empty() const;
 };
 
 #endif

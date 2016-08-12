@@ -164,9 +164,11 @@ inline bool ParserNodePlatform::component_exists(const std::string & name) const
 inline std::shared_ptr<ParserNodeComponent>
 ParserNodePlatform::get_component(const std::string & name)
 {
-    return std::shared_ptr<ParserNodeComponent>
-        (static_cast<ParserNodeComponent*>
-         (get_module(Namespace::get(Namespace::COMPONENT), name).get()));
+    if (!component_exists(name)) {
+        throw RabbitsException("Component `" + name + "' does not exist");
+    }
+
+    return m_components[name];
 }
 
 inline bool ParserNodePlatform::backend_exists(const std::string & name) const
@@ -177,9 +179,11 @@ inline bool ParserNodePlatform::backend_exists(const std::string & name) const
 inline std::shared_ptr<ParserNodeBackend>
 ParserNodePlatform::get_backend(const std::string & name)
 {
-    return std::shared_ptr<ParserNodeBackend>
-        (static_cast<ParserNodeBackend*>
-         (get_module(Namespace::get(Namespace::BACKEND), name).get()));
+    if (!backend_exists(name)) {
+        throw RabbitsException("Backend `" + name + "' does not exist");
+    }
+
+    return m_backends[name];
 }
 
 inline bool ParserNodePlatform::plugin_exists(const std::string & name) const
@@ -190,9 +194,11 @@ inline bool ParserNodePlatform::plugin_exists(const std::string & name) const
 inline std::shared_ptr<ParserNodePlugin>
 ParserNodePlatform::get_plugin(const std::string & name)
 {
-    return std::shared_ptr<ParserNodePlugin>
-        (static_cast<ParserNodePlugin*>
-         (get_module(Namespace::get(Namespace::PLUGIN), name).get()));
+    if (!plugin_exists(name)) {
+        throw RabbitsException("Plugin `" + name + "' does not exist");
+    }
+
+    return m_plugins[name];
 }
 
 inline void ParserNodePlatform::find_component_by_attr(const std::string &key, Subnodes<ParserNodeComponent> &out)
@@ -277,4 +283,8 @@ inline void ParserNodePlatform::add_plugin(PluginBase *p)
     m_plugins[p->get_name()] = std::make_shared<ParserNodePlugin>(p, *this);
 }
 
+inline bool ParserNodePlatform::empty() const
+{
+    return m_components.empty() && m_plugins.empty() && m_backends.empty();
+}
 #endif

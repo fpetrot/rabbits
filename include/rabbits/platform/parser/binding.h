@@ -55,6 +55,21 @@ public:
 
     ParserNodeModuleWithPorts & get_peer() const;
 
+    const std::string & get_local_port_name() const
+    {
+        return m_local_port_s;
+    }
+
+    bool peer_port_is_implicit() const
+    {
+        return m_peer_port_s.empty();
+    }
+
+    const std::string & get_peer_port_name() const
+    {
+        return m_peer_port_s;
+    }
+
     Port & get_local_port() const
     {
         assert(m_local_port != nullptr);
