@@ -32,7 +32,7 @@
 #include "rabbits/logger.h"
 #include "rabbits/config/has_config.h"
 
-class Test;
+class TestBase;
 
 class TestFailureException : public RabbitsException {
 protected:
@@ -110,11 +110,12 @@ public:
 
     const std::string & get_name() { return m_name; }
 
-    virtual Test * create(ConfigManager &) const = 0;
+    virtual TestBase * create(ConfigManager &) const = 0;
 };
 
-class Test : public sc_core::sc_module {
+class TestBase {
 private:
+    std::string m_name;
     bool m_test_result = true;
     std::string m_current_filename = "??";
     int m_current_line = -1;
@@ -129,9 +130,11 @@ protected:
     int get_current_line() { return m_current_line; }
     std::string get_test_dir(const std::string &fn) const;
 
+    void set_test_failed() { m_test_result = false; }
+
     void failure(const std::string &what)
     {
-        throw TestFailureException(name(), what, get_current_file(), get_current_line());
+        throw TestFailureException(m_name, what, get_current_file(), get_current_line());
     }
 
     ComponentBase * create_component_by_implem(const std::string name, const std::string yml_params);
@@ -160,46 +163,92 @@ protected:
 
     virtual void unit() = 0;
 
+public:
+    TestBase(const std::string &n, ConfigManager &c)
+        : m_name(n), m_config(c)
+    {}
+
+    virtual ~TestBase() {}
+
+    bool tests_passed() const { return m_test_result; }
+    ConfigManager & get_config() const { return m_config; }
+
+    virtual void run() = 0;
+
+    const std::string & get_name() const { return m_name; }
+};
+
+class Test : public TestBase {
+public:
+    Test(const std::string &n, ConfigManager &c)
+        : TestBase(n, c)
+    {}
+
+    void run()
+    {
+        unit();
+    }
+};
+
+
+class TestBench : public TestBase, public sc_core::sc_module {
+protected:
     void unit_wrapper()
     {
         try {
             unit();
         } catch (TestFailureException e) {
-            m_test_result = false;
+            set_test_failed();
             LOG(APP, ERR) << e.what() << "\n";
         }
     }
 
 public:
-    SC_HAS_PROCESS(Test);
-    Test(sc_core::sc_module_name n, ConfigManager &c)
-        : sc_module(n)
-        , m_config(c)
+    SC_HAS_PROCESS(TestBench);
+    TestBench(sc_core::sc_module_name n, ConfigManager &c)
+        : TestBase(std::string(n), c)
+        , sc_core::sc_module(n)
     {
         SC_THREAD(unit_wrapper);
     }
 
-    bool tests_passed() const { return m_test_result; }
-    ConfigManager & get_config() const { return m_config; }
+    void run()
+    {
+        sc_core::sc_start();
+    }
 };
 
-#define RABBITS_UNIT_TEST(_name, _base)                             \
+#define RABBITS_GEN_TEST_FACTORY(_name)                        \
+    class Test_ ## _name ## _Factory : public TestFactory {    \
+    public:                                                    \
+        Test_ ## _name ## _Factory(std::string n)              \
+            : TestFactory(n) {}                                \
+        virtual TestBase * create(ConfigManager &c) const {    \
+            return new Test_ ## _name (# _name, c);            \
+        }                                                      \
+    };                                                         \
+    static Test_ ## _name ## _Factory _name ## _inst(# _name); \
+
+
+#define RABBITS_UNIT_TEST(_name)                        \
+    class Test_ ## _name : public Test {                \
+    public:                                             \
+        Test_ ## _name(std::string n, ConfigManager &c) \
+            : Test(n, c) {}                             \
+        virtual void unit();                            \
+    };                                                  \
+    RABBITS_GEN_TEST_FACTORY(_name)                     \
+    void Test_ ## _name::unit()
+
+
+#define RABBITS_UNIT_TESTBENCH(_name, _base)                        \
     class Test_ ## _name : public _base {                           \
     public:                                                         \
-        SC_HAS_PROCESS(Test_ ## _name);                             \
         Test_ ## _name(sc_core::sc_module_name n, ConfigManager &c) \
             : _base(n, c) {}                                        \
         virtual void unit();                                        \
     };                                                              \
-    class Test_ ## _name ## _Factory : public TestFactory {         \
-    public:                                                         \
-        Test_ ## _name ## _Factory(std::string n)                   \
-            : TestFactory(n) {}                                     \
-        virtual Test * create(ConfigManager &c) const {             \
-            return new Test_ ## _name (# _name, c);                 \
-        }                                                           \
-    };                                                              \
-    static Test_ ## _name ## _Factory _name ## _inst(# _name);      \
+    RABBITS_GEN_TEST_FACTORY(_name)                                 \
     void Test_ ## _name::unit()
 
 #define RABBITS_TEST_ASSERT(assertion)      \

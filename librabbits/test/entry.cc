@@ -23,7 +23,7 @@ namespace test {
 
 std::set<TestFactory*> * TestFactory::m_insts = NULL;
 
-ComponentBase * Test::create_component_by_implem(const string implem,
+ComponentBase * TestBase::create_component_by_implem(const string implem,
                                                const string yml_params)
 {
     ComponentManager &cm = get_config().get_component_manager();
@@ -42,7 +42,7 @@ ComponentBase * Test::create_component_by_implem(const string implem,
 static int do_test(TestFactory *tf, ConfigManager &config)
 {
 
-    Test *t = NULL;
+    TestBase *t = NULL;
     bool tests_passed;
 
     try {
@@ -65,7 +65,7 @@ static int do_test(TestFactory *tf, ConfigManager &config)
     }
 
     try {
-        sc_core::sc_start();
+        t->run();
     } catch (TestFailureException e) {
         LOG(APP, ERR) << tf->get_name() << ": Failed during test: " << e.what() << "\n";
         return 1;
@@ -112,7 +112,7 @@ static int report_result(const string &name, int status)
     return ret;
 }
 
-std::string Test::get_test_dir(const std::string &fn) const
+std::string TestBase::get_test_dir(const std::string &fn) const
 {
     return path(fn).parent_path().string();
 }
@@ -123,6 +123,7 @@ static void load_test_module(DynamicLoader &dyn_loader)
 
     if (tst == NULL) {
         LOG(APP, ERR) << "Unable to load test module\n";
+        exit(1);
     }
 }
 
