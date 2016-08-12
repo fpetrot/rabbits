@@ -63,7 +63,6 @@ static void split_trace(string trace, string &obj, string &symbol, uint64_t &off
         conv.str(trace.substr(last, pos - last));
         conv.unsetf(std::ios::dec);
         conv >> address;
-        last = pos + 1;
     }
 }
 #endif

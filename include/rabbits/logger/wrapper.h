@@ -56,7 +56,7 @@ protected:
     void setup_logger(Logger &l, LogTarget target, LogLevel::value lvl,
                       const std::string log_file);
     bool logger_is_custom();
-    void setup_loggers(HasLoggerIface *parent);
+    void setup_loggers(HasLoggerIface &parent);
 
 
 public:

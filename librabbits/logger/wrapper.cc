@@ -20,6 +20,7 @@
 #include "rabbits/logger/wrapper.h"
 #include "rabbits/logger.h"
 #include "rabbits/module/parameters.h"
+#include "rabbits/config/manager.h"
 
 
 LoggerWrapper::LoggerWrapper(const std::string & name, HasLoggerIface &parent, Parameters &params, ConfigManager &config)
@@ -32,7 +33,7 @@ LoggerWrapper::LoggerWrapper(const std::string & name, HasLoggerIface &parent, P
         m_params["log-file"].set_default(name + ".log");
     }
 
-    setup_loggers(&parent);
+    setup_loggers(parent);
 }
 
 LoggerWrapper::LoggerWrapper(Parameters &params, ConfigManager &config)
@@ -40,7 +41,7 @@ LoggerWrapper::LoggerWrapper(Parameters &params, ConfigManager &config)
     , m_logger_sim(config)
     , m_params(params)
 {
-    setup_loggers(nullptr);
+    setup_loggers(config);
 }
 
 LoggerWrapper::LogTarget LoggerWrapper::get_log_target(const std::string target_s)
@@ -153,7 +154,7 @@ bool LoggerWrapper::logger_is_custom()
         || (!m_params["trace"].is_default());
 }
 
-void LoggerWrapper::setup_loggers(HasLoggerIface *parent)
+void LoggerWrapper::setup_loggers(HasLoggerIface &parent)
 {
     LogTarget log_target;
     LogLevel::value log_level;
@@ -183,7 +184,7 @@ void LoggerWrapper::setup_loggers(HasLoggerIface *parent)
     }
 
     for (int i = 0; i < LogContext::LASTLOGCONTEXT; i++) {
-        parent->get_logger(LogContext::value(i)).set_child(*m_loggers[i]);
+        parent.get_logger(LogContext::value(i)).set_child(*m_loggers[i]);
 
         if (custom) {
             setup_logger(*m_loggers[i], log_target, log_level, log_file);
