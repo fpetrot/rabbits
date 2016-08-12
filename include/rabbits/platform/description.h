@@ -99,7 +99,7 @@ public:
      */
     class InvalidCmdLineException : public RabbitsException {
     protected:
-        std::string build_what(const std::string & arg) { return "Invalid argument: " + arg; }
+        std::string build_what(const std::string & arg) { return "Invalid command line argument `" + arg + "`"; }
     public:
         explicit InvalidCmdLineException(const std::string & arg) : RabbitsException(build_what(arg)) {}
         virtual ~InvalidCmdLineException() throw() {}

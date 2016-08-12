@@ -327,7 +327,12 @@ int sc_main(int argc, char *argv[])
     declare_global_params(config);
     declare_aliases(config);
 
-    config.add_cmdline(argc, argv);
+    try {
+        config.add_cmdline(argc, argv);
+    } catch (PlatformDescription::InvalidCmdLineException e) {
+        LOG(APP, ERR) << e.what() << ". Try -help\n";
+        return 1;
+    }
 
     Parameters &globals = config.get_global_params();
 
@@ -403,12 +408,12 @@ int sc_main(int argc, char *argv[])
     try {
         PlatformBuilder builder(pname.c_str(), platform, config);
 
-        check_unused_params(platform);
-
         if (globals["show-help"].as<bool>() || globals["show-advanced-params"].as<bool>()) {
             print_usage(argv[0], config, builder);
             return 0;
         }
+
+        check_unused_params(platform);
 
         if (globals["show-systemc-hierarchy"].as<bool>()) {
             dump_systemc_hierarchy(builder, LogLevel::INFO);
