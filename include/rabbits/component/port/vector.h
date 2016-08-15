@@ -28,6 +28,8 @@
 
 #include "rabbits/component/port.h"
 #include "rabbits/component/port/in.h"
+#include "rabbits/component/port/out.h"
+#include "rabbits/component/port/inout.h"
 #include "rabbits/component/connection_strategy/vector.h"
 
 template <typename T>
@@ -95,7 +97,7 @@ public:
     }
 
     VectorPortBase(const std::string &name, unsigned int size,
-                   std::function<T*(const std::string&)> generator) 
+                   std::function<T*(const std::string&)> generator)
         : Port(name)
         , m_ports(size)
         , m_cs(*this)
@@ -112,7 +114,7 @@ public:
     }
 
     VectorPortBase(const std::string &name, unsigned int size,
-                   std::function<T*(const std::string&, int)> generator) 
+                   std::function<T*(const std::string&, int)> generator)
         : Port(name)
         , m_ports(size)
         , m_cs(*this)
@@ -147,20 +149,68 @@ public:
     using VectorPortBase<T>::VectorPortBase;
 };
 
-
 template <typename Tport>
-class VectorPort< InPort<Tport> > : public VectorPortBase< InPort<Tport> > {
+class VectorPort< InPort<Tport> > : public VectorPortBase< InPort<Tport> >
+{
+protected:
+    using VectorPortBase< InPort<Tport> >::m_ports;
+
 public:
     using VectorPortBase< InPort<Tport> >::VectorPortBase;
 
-    sc_core::sc_event_or_list get_sc_event_or_list() {
-        sc_core::sc_event_or_list list;
-
-        for (auto p : *this) {
-            p->sc_p.default_event();
+    VectorPort< InPort<Tport> >(const std::string &name,
+                                sc_core::sc_vector< sc_core::sc_in<Tport> > &sub_ports)
+        : VectorPortBase< InPort<Tport> >(name, sub_ports.size())
+    {
+        int i = 0;
+        for (auto &sub_p : sub_ports) {
+        sub_p(m_ports[i]->sc_p);
+            i++;
         }
+    }
+};
 
-        return list;
+
+template <typename Tport>
+class VectorPort< OutPort<Tport> > : public VectorPortBase< OutPort<Tport> >
+{
+protected:
+    using VectorPortBase< OutPort<Tport> >::m_ports;
+
+public:
+    using VectorPortBase< OutPort<Tport> >::VectorPortBase;
+
+    VectorPort< OutPort<Tport> >(const std::string &name,
+                                 sc_core::sc_vector< sc_core::sc_out<Tport> > &sub_ports)
+        : VectorPortBase< OutPort<Tport> >(name, sub_ports.size())
+    {
+        int i = 0;
+        for (auto &sub_p : sub_ports) {
+            sub_p(m_ports[i]->sc_p);
+            i++;
+        }
+    }
+};
+
+
+template <typename Tport>
+class VectorPort< InOutPort<Tport> > : public VectorPortBase< InOutPort<Tport> >
+{
+protected:
+    using VectorPortBase< InOutPort<Tport> >::m_ports;
+
+public:
+    using VectorPortBase< InOutPort<Tport> >::VectorPortBase;
+
+    VectorPort< InOutPort<Tport> >(const std::string &name,
+                                   sc_core::sc_vector< sc_core::sc_inout<Tport> > &sub_ports)
+        : VectorPortBase< InOutPort<Tport> >(name, sub_ports.size())
+    {
+        int i = 0;
+        for (auto &sub_p : sub_ports) {
+            sub_p(m_ports[i]->sc_p);
+            i++;
+        }
     }
 };
 

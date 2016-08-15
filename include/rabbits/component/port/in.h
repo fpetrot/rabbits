@@ -45,6 +45,14 @@ public:
         declare_parent(sc_p.get_parent_object());
     }
 
+    InPort(const std::string &name, sc_core::sc_in<T> &sub_port)
+        : Port(name), sc_p(name.c_str()), m_cs(sc_p)
+    {
+        add_connection_strategy(m_cs);
+        declare_parent(sc_p.get_parent_object());
+        sub_port(sc_p);
+    }
+
     virtual ~InPort() { delete m_auto_sig; }
 
     void set_autoconnect_to(const T& value)
