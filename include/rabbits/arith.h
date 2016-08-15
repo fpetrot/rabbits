@@ -51,6 +51,17 @@ public:
         return (sizeof(w) << 3) - __builtin_clz(w) - 1;
     }
 
+    /**
+     * @brief Return true if w is a power of 2
+     */
+    static bool is_power_of_2(uint64_t w) {
+        if (!w) {
+            return false;
+        }
+
+        return !(w & (w-1));
+    }
+
 private:
     class AddressRangeOrder {
     public:
