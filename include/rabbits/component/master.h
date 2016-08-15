@@ -37,14 +37,19 @@
  * Represent a component that is connected as a master (a initiator) on a bus.
  */
 template <unsigned int BUSWIDTH = 32>
-class MasterTraits: public tlm::tlm_bw_transport_if<>
+class Master: public Component, public tlm::tlm_bw_transport_if<>
 {
 public:
     TlmInitiatorPort<BUSWIDTH> p_bus;
 
-    MasterTraits() : p_bus("mem", *this) {}
+    Master(sc_core::sc_module_name name, ConfigManager &config)
+        : Component(name, Parameters(), config), p_bus("mem", *this) {}
+    Master(sc_core::sc_module_name name, const Parameters &params, ConfigManager &config)
+        : Component(name, params, config), p_bus("mem", *this) {}
+    Master(sc_core::sc_module_name name, const Parameters &params, ConfigManager &config, const std::string &port_name)
+        : Component(name, params, config), p_bus(port_name, *this) {}
 
-    virtual ~MasterTraits() {}
+    virtual ~Master() {}
 
     /**
      * @brief Emit a read request on the bus the master is connected to.
@@ -88,15 +93,4 @@ public:
     }
 };
 
-
-template <unsigned int BUSWIDTH = 32>
-class Master : public Component, public MasterTraits<BUSWIDTH> {
-public:
-    Master(sc_core::sc_module_name name, ConfigManager &config)
-        : Component(name, Parameters(), config) {}
-    Master(sc_core::sc_module_name name, const Parameters &params, ConfigManager &config)
-        : Component(name, params, config) {}
-
-    virtual ~Master() {}
-};
 #endif

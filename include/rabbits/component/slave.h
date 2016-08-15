@@ -40,14 +40,24 @@
  * Represent a component that is connected as a slave (a target) on a bus.
  */
 template <unsigned int BUSWIDTH = 32>
-class SlaveTraits: public tlm::tlm_fw_transport_if<>
+class Slave: public Component, public tlm::tlm_fw_transport_if<>
 {
 public:
     TlmTargetPort<BUSWIDTH> p_bus;
 
-    SlaveTraits() : p_bus("mem", *this) {}
+    Slave(sc_core::sc_module_name name, ConfigManager &c)
+        : Component(name, c), p_bus("mem", *this)
+    {}
 
-    virtual ~SlaveTraits() {}
+    Slave(sc_core::sc_module_name name, const Parameters &params, ConfigManager &c)
+        : Component(name, params, c), p_bus("mem", *this)
+    {}
+
+    Slave(sc_core::sc_module_name name, const Parameters &params, ConfigManager &c, const std::string &port_name)
+        : Component(name, params, c), p_bus(port_name, *this)
+    {}
+
+    virtual ~Slave() {}
 
 
     /**
@@ -95,6 +105,7 @@ public:
      * @see bus_cb_read_32
      */
     virtual void bus_cb_read_8(uint64_t addr, uint8_t *value, bool &bErr) {
+        MLOG(SIM, DBG) << "Default " << __func__ << " called. Returning bus error\n";
         bErr = true;
     }
 
@@ -113,6 +124,7 @@ public:
      * @see bus_cb_read_32
      */
     virtual void bus_cb_read_16(uint64_t addr, uint16_t *value, bool &bErr) {
+        MLOG(SIM, DBG) << "Default " << __func__ << " called. Returning bus error\n";
         bErr = true;
     }
 
@@ -131,6 +143,7 @@ public:
      * @see bus_cb_read_16
      */
     virtual void bus_cb_read_32(uint64_t addr, uint32_t *value, bool &bErr) {
+        MLOG(SIM, DBG) << "Default " << __func__ << " called. Returning bus error\n";
         bErr = true;
     }
 
@@ -180,6 +193,7 @@ public:
      * @see bus_cb_write_32
      */
     virtual void bus_cb_write_8(uint64_t addr, uint8_t *value, bool &bErr) {
+        MLOG(SIM, DBG) << "Default " << __func__ << " called. Returning bus error\n";
         bErr = true;
     }
 
@@ -216,6 +230,7 @@ public:
      * @see bus_cb_write_16
      */
     virtual void bus_cb_write_32(uint64_t addr, uint32_t *value, bool &bErr) {
+        MLOG(SIM, DBG) << "Default " << __func__ << " called. Returning bus error\n";
         bErr = true;
     }
 
@@ -290,7 +305,7 @@ public:
 };
 
 template <unsigned int BUSWIDTH>
-void SlaveTraits<BUSWIDTH>::b_transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& delay)
+void Slave<BUSWIDTH>::b_transport(tlm::tlm_generic_payload& trans, sc_core::sc_time& delay)
 {
     bool bErr = false;
 
@@ -316,7 +331,7 @@ void SlaveTraits<BUSWIDTH>::b_transport(tlm::tlm_generic_payload& trans, sc_core
 }
 
 template <unsigned int BUSWIDTH>
-unsigned int SlaveTraits<BUSWIDTH>::transport_dbg(tlm::tlm_generic_payload& trans)
+unsigned int Slave<BUSWIDTH>::transport_dbg(tlm::tlm_generic_payload& trans)
 {
     uint64_t addr = trans.get_address();
     uint8_t *buf = reinterpret_cast<uint8_t *>(trans.get_data_ptr());
@@ -332,15 +347,5 @@ unsigned int SlaveTraits<BUSWIDTH>::transport_dbg(tlm::tlm_generic_payload& tran
         return 0;
     }
 }
-
-
-template <unsigned int BUSWIDTH = 32>
-class Slave : public Component, public SlaveTraits<BUSWIDTH> {
-public:
-    Slave(sc_core::sc_module_name name, ConfigManager &c) : Component(name, c) {}
-    Slave(sc_core::sc_module_name name, const Parameters &params, ConfigManager &c) : Component(name, params, c) {}
-
-    virtual ~Slave() {}
-};
 
 #endif
