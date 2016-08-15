@@ -19,10 +19,6 @@ find_package(Doxygen)
 option(USE_SDL "Use SDL1.2 for framebuffer devices" ON)
 option(BUILD_DOCUMENTATION "Build the Doxygen HTML documentation (requires Doxygen)" OFF)
 
-if(NOT RABBITS_CONFIG_PATH)
-    set(RABBITS_CONFIG_PATH "${CMAKE_INSTALL_PREFIX}/share/rabbits/config")
-endif()
-
 if(USE_SDL)
     find_package(SDL)
     if(SDL_FOUND)

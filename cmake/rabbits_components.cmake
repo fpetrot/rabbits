@@ -123,7 +123,7 @@ endfunction(rabbits_generate_tests)
 function(rabbits_install_configs n)
     get_property(__configs GLOBAL PROPERTY RABBITS_CONFIGS_LIST)
     if(__configs)
-        install(FILES ${__configs} DESTINATION ${RABBITS_CONFIG_PATH}/${n}/config)
+        install(FILES ${__configs} DESTINATION ${RABBITS_CONFIG_DIR}/${n}/config)
     endif()
 endfunction(rabbits_install_configs)
 
