@@ -77,10 +77,10 @@ protected:
 
         switch (get_kind()) {
         case TARGET:
-            bind(*parent_cs.get_target_base_socket());
+            parent_cs.bind(*get_target_base_socket());
             break;
         case INITIATOR:
-            bind(*parent_cs.get_initiator_base_socket());
+            parent_cs.bind(*get_initiator_base_socket());
             break;
         }
 
