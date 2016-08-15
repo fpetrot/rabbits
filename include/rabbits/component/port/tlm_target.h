@@ -63,6 +63,15 @@ public:
         socket.bind(target_proxy);
     }
 
+    explicit TlmTargetPort(const std::string &name)
+        : Port(name)
+        , socket(name.c_str())
+        , m_init_target_cs(socket)
+        , m_target_bus_cs(socket)
+    {
+        init();
+    }
+
     virtual ~TlmTargetPort() {}
 
     void register_mapped_ev_listener(TlmTargetMappedListener *l) {
