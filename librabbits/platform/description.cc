@@ -22,6 +22,7 @@
 
 #include <yaml-cpp/yaml.h>
 #include <sstream>
+#include <cassert>
 
 using std::string;
 using std::list;
