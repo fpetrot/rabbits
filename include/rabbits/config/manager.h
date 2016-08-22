@@ -59,12 +59,22 @@ private:
     BackendManager m_backends;
     PluginManager m_plugins;
 
+    /* Workaroung GCC ICE for versions < 6 */
+#if defined(__GNUC__) && (__GNUC__ < 6)
+    ModuleManagerBase * m_managers[Namespace::COUNT] {
+        nullptr,
+        &m_components,
+        &m_plugins,
+        &m_backends,
+    };
+#else
     ModuleManagerBase * m_managers[Namespace::COUNT] {
         [Namespace::GLOBAL] = nullptr,
         [Namespace::COMPONENT] = &m_components,
         [Namespace::PLUGIN] = &m_plugins,
         [Namespace::BACKEND] = &m_backends,
     };
+#endif
 
     PlatformDescription m_root_descr;
     PlatformDescription m_cmdline_descr;
