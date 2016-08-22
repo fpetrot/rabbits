@@ -335,7 +335,7 @@ class Component < RabbitsModule
 
   def build_discover
     if @discover then
-      DISCOVER_TPL % { :class =>  + @class }
+      DISCOVER_TPL % { :class => @class }
     else
       ''
     end
@@ -378,7 +378,7 @@ class Backend < RabbitsModule
 
   def build_discover
     if @discover then
-      DISCOVER_TPL % { :class =>  + @class }
+      DISCOVER_TPL % { :class => @class }
     else
       ''
     end
@@ -392,15 +392,6 @@ class Backend < RabbitsModule
       :Kind => "Backend",
     })
   end
-
-  def build_discover
-    if @discover then
-      DISCOVER_TPL % { :class =>  + @class }
-    else
-      ''
-    end
-  end
-
 end
 
 class StaticLoader
