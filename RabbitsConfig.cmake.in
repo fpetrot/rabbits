@@ -1,7 +1,12 @@
 @PACKAGE_INIT@
 
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if("${CMAKE_VERSION}" VERSION_LESS 3.1)
+    # XXX Not portable
+    add_compile_options(-std=c++11)
+else()
+    set(CMAKE_CXX_STANDARD 11)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
 
 set_and_check(RABBITS_INCLUDE_DIR "@PACKAGE_RABBITS_INCLUDE_DIR@")
 set_and_check(RABBITS_LIB_DIR "@PACKAGE_RABBITS_LIB_DIR@")
