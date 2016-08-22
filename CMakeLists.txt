@@ -25,6 +25,7 @@ option(USE_SDL "Use SDL1.2 for framebuffer devices" ON)
 option(BUILD_DOCUMENTATION "Build the Doxygen HTML documentation (requires Doxygen)" OFF)
 
 if(USE_SDL)
+    set(SDL_BUILDING_LIBRARY)
     find_package(SDL)
     if(SDL_FOUND)
         set(RABBITS_CONFIG_SDL 1)
