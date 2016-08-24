@@ -111,7 +111,7 @@ protected:
 
     void pushed_threads_entry()
     {
-        auto &t = m_pushed_threads.back();
+        auto t = m_pushed_threads.back();
         m_pushed_threads.pop_back();
 
 #ifdef RABBITS_WORKAROUND_CXX11_GCC_BUGS
