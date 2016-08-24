@@ -24,6 +24,7 @@
 #include <vector>
 #include <map>
 
+#include "rabbits/config.h"
 #include "rabbits/module/parameters.h"
 #include "rabbits/platform/description.h"
 #include "rabbits/component/manager.h"
@@ -59,8 +60,8 @@ private:
     BackendManager m_backends;
     PluginManager m_plugins;
 
-    /* Workaroung GCC ICE for versions < 6 */
-#if defined(__GNUC__) && (__GNUC__ < 6)
+    /* Workaround GCC ICE for versions < 6 */
+#ifdef RABBITS_WORKAROUND_CXX11_GCC_BUGS
     ModuleManagerBase * m_managers[Namespace::COUNT] {
         nullptr,
         &m_components,

@@ -34,4 +34,9 @@
 #define RABBITS_CONFIG_PATH "@CMAKE_INSTALL_PREFIX@/@RABBITS_CONFIG_DIR@"
 #define RABBITS_PLATFORM_SYMLINK_PREFIX "@RABBITS_PLATFORM_SYMLINK_PREFIX@"
 
+/* For GCC 4.9 and GCC 5.4 */
+#if (!defined(__clang__)) && defined(__GNUC__) && (__GNUC__ < 6)
+# define RABBITS_WORKAROUND_CXX11_GCC_BUGS
+#endif
+
 #endif

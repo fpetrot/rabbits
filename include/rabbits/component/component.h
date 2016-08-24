@@ -104,7 +104,8 @@ protected:
     LoggerWrapper m_loggers;
 
     std::map<std::string, Port*> m_ports;
-    std::vector< std::function<void() > > m_pushed_threads;
+
+    std::vector<ScThreadCallback> m_pushed_threads;
 
     Attributes m_attributes;
 
@@ -113,7 +114,11 @@ protected:
         auto &t = m_pushed_threads.back();
         m_pushed_threads.pop_back();
 
+#ifdef RABBITS_WORKAROUND_CXX11_GCC_BUGS
+        (*t)();
+#else
         t();
+#endif
     }
 
     /* Macro to avoid SystemC warnings about name duplication */
@@ -221,7 +226,7 @@ public:
     virtual Logger & hasport_getlogger(LogContext::value context) const {
         return get_logger(context);
     }
-    virtual void push_sc_thread(std::function<void()> cb) {
+    virtual void push_sc_thread(ScThreadCallback cb) {
         m_pushed_threads.push_back(cb);
     }
 

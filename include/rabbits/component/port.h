@@ -24,8 +24,15 @@
 #include <utility>
 #include <string>
 #include <map>
-#include <functional>
 #include <vector>
+
+#include "rabbits/config.h"
+
+#ifdef RABBITS_WORKAROUND_CXX11_GCC_BUGS
+# include <memory>
+#else
+# include <functional>
+#endif
 
 #include <systemc>
 
@@ -35,6 +42,25 @@
 #include "rabbits/logger.h"
 
 class Port;
+
+
+#ifdef RABBITS_WORKAROUND_CXX11_GCC_BUGS
+
+/* std::function is broken in current GCC 4.9... */
+class ScThreadCallbackFtor {
+public:
+    virtual ~ScThreadCallbackFtor() {}
+    virtual void operator() () = 0;
+};
+
+typedef std::shared_ptr<ScThreadCallbackFtor> ScThreadCallback;
+
+#else
+
+typedef std::function< void() > ScThreadCallback;
+
+#endif
+
 
 class HasPortIface {
 public:
@@ -55,7 +81,7 @@ public:
     virtual std::string hasport_name() const = 0;
     virtual Logger & hasport_getlogger(LogContext::value) const = 0;
 
-    virtual void push_sc_thread(std::function<void()> thread_callback) = 0;
+    virtual void push_sc_thread(ScThreadCallback thread_callback) = 0;
 };
 
 
@@ -101,7 +127,7 @@ protected:
             return;
         }
 
-        m_parent->push_sc_thread(std::function<void()>(c));
+        m_parent->push_sc_thread(ScThreadCallback(c));
     }
 
     virtual void connect(Port& p, CSPairs pairs, PlatformDescription &d)
