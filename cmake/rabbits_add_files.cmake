@@ -136,4 +136,17 @@ function(rabbits_clear_files_collections)
         RABBITS_TESTS_LIST)
 endfunction(rabbits_clear_files_collections)
 
+function(rabbits_debian_package)
+    set(CPACK_GENERATOR "DEB")
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Rabbits auto-packaging")
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "rabbits")
+    set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Auto-generated Rabbits package for project ${CMAKE_PROJECT_NAME}")
+
+    rabbits_get_version(v)
+    set(CPACK_PACKAGE_VERSION ${v})
+    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE amd64)
+
+    include(CPack)
+endfunction(rabbits_debian_package)
+
 # vim: ts=4 sts=4 sw=4 expandtab
