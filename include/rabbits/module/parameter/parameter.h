@@ -64,13 +64,12 @@ private:
     bool m_advanced = false;
 
     ParamDataBase *m_data;
-    ParamDataBase *m_default;
 
 protected:
-    ParameterBase(const std::string & descr, ParamDataBase *data, ParamDataBase *default_value, bool advanced = false)
-        : m_description(descr), m_advanced(advanced), m_data(data), m_default(default_value) {}
-    ParameterBase(const ParameterBase &p, ParamDataBase *data, ParamDataBase *default_value)
-        : m_description(p.m_description), m_advanced(p.m_advanced), m_data(data), m_default(default_value) {}
+    ParameterBase(const std::string & descr, ParamDataBase *data, bool advanced = false)
+        : m_description(descr), m_advanced(advanced), m_data(data) {}
+    ParameterBase(const ParameterBase &p, ParamDataBase *data)
+        : m_description(p.m_description), m_advanced(p.m_advanced), m_data(data) {}
 
 public:
     virtual ~ParameterBase() {}
@@ -207,10 +206,10 @@ protected:
 
 public:
     Parameter(const std::string & description, const T &default_value, bool advanced = false)
-        : ParameterBase(description, &m_data_storage, &m_default_storage, advanced)
+        : ParameterBase(description, &m_data_storage, advanced)
         , m_default_storage(default_value) {}
     Parameter(const Parameter &p)
-        : ParameterBase(p, &m_data_storage, &m_default_storage)
+        : ParameterBase(p, &m_data_storage)
         , m_data_storage(p.m_data_storage)
         , m_default_storage(p.m_default_storage) {}
     virtual ~Parameter() {}

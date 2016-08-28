@@ -95,6 +95,7 @@ public:
         return BindingResult::BINDING_OK;
     }
 
+    using ConnectionStrategy< SignalCS<T> >::bind;
 };
 
 #endif

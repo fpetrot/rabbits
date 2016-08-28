@@ -90,6 +90,8 @@ protected:
 public:
     virtual ~TlmInitiatorTargetPortAgnosticCS() {}
 
+    using ConnectionStrategy<TlmInitiatorTargetBaseCS>::bind;
+
     unsigned int get_bus_width() const { return BUSWIDTH; }
 
     BindingResult bind_peer(TlmInitiatorTargetBaseCS &cs, PlatformDescription &d)
