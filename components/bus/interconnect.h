@@ -75,8 +75,8 @@ protected:
 
 public:
     SC_HAS_PROCESS(Interconnect);
-    Interconnect(sc_core::sc_module_name name, ConfigManager &c)
-        : Component(name, c)
+    Interconnect(sc_core::sc_module_name name, const Parameters &p, ConfigManager &c)
+        : Component(name, p, c)
         , m_target("bus_target_socket")
         , m_initiator("bus_initiator_socket")
     {
@@ -164,6 +164,8 @@ public:
             trans.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
             return;
         }
+
+	MLOG_F(SIM, TRC, "Memory request at address 0x%08" PRIx64 "\n", trans.get_address());
 
         trans.set_address(trans.get_address() - offset);
 
