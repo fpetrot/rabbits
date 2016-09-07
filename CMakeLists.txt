@@ -41,7 +41,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(RABBITS_DEBUG ON)
 else()
     if(NOT RABBITS_LOGLEVEL)
-        set(RABBITS_LOGLEVEL 3) # Debug level
+        set(RABBITS_LOGLEVEL 4) # Trace level also
     endif()
 endif()
 
