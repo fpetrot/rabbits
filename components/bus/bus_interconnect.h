@@ -40,7 +40,7 @@ public:
 
     BusInterconnect(sc_core::sc_module_name name, const Parameters &params, ConfigManager &c)
         : Component(name, params, c)
-        , m_interco("interco", c)
+        , m_interco("interco", params, c)
         , bus("mem", *this) {}
 
     virtual ~BusInterconnect() {}
