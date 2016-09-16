@@ -88,25 +88,6 @@ class ClockedByteChannel : public sc_core::sc_module, public Channel<uint8_t>
         // SOLUTION 2: MatlabConnector to notify channel when value change ?
 };
 
-#include "i2c.h"
-
-class I2cMasterChannel : public Channel<i2c_packet> {
-    public:
-        I2cMasterChannel() {
-
-        }
-
-    public:
-        void write(const i2c_packet &packet) {
-            printf("I2cMasterChannel: write at 0x%03x, data=0x%02x\n", packet.addr, packet.data);
-        }
-
-        void read(i2c_packet &packet) {
-            printf("I2cMasterChannel: read at 0x%03x\n", packet.addr);
-            packet.data = 0xA0;
-        }
-};
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
