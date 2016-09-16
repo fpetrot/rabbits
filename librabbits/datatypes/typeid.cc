@@ -35,4 +35,7 @@ std::unordered_map<std::type_index, const char * const> TypeId::m_ids {
     { typeid(int16_t), "int16" },
     { typeid(int32_t), "int32" },
     { typeid(int64_t), "int64" },
+
+    { typeid(double), "float" },
+    { typeid(float), "float" },
 };
