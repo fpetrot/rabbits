@@ -151,6 +151,19 @@ class DescrTypeString < DescrType
   end
 end
 
+def unit2factor(unit)
+    case unit
+    when 'k', 'K'
+      1024
+    when 'm', 'M'
+      1024 * 1024
+    when 'g', 'G'
+      1024 * 1024 * 1024
+    else
+      1
+    end
+end
+
 class DescrTypeInt < DescrType
   def initialize(type_name)
     super(type_name)
@@ -165,19 +178,26 @@ class DescrTypeInt < DescrType
   def convert(str)
     return str if str.is_a?(Fixnum)
 
-    unit = str[/-?[0-9]([kKmMgG])/,1]
-    factor = 1
-
-    case unit
-    when 'k', 'K'
-      factor = 1024
-    when 'm', 'M'
-      factor = 1024 * 1024
-    when 'g', 'G'
-      factor = 1024 * 1024 * 1024
-    end
+    unit = str[-1]
+    factor = unit2factor(unit)
 
     return str.to_i * factor
+  end
+end
+
+class DescrTypeDouble < DescrType
+  def initialize(type_name)
+    super(type_name)
+    @cc_type = 'double'
+  end
+
+  def convert(str)
+    return str if str.is_a?(Float)
+
+    unit = str[-1]
+    factor = unit2factor(unit)
+
+    return str.to_f * factor
   end
 end
 
@@ -222,6 +242,8 @@ DescrTypeInt.new('int8')
 DescrTypeInt.new('int16')
 DescrTypeInt.new('int32')
 DescrTypeInt.new('int64')
+DescrTypeDouble.new('double')
+DescrTypeDouble.new('float')
 DescrTypeBoolean.new('boolean')
 DescrTypeTime.new('time')
 
