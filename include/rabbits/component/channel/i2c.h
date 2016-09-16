@@ -16,26 +16,36 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#ifndef _RABBITS_COMPONENT_CHANNEL_I2C_H
+#define _RABBITS_COMPONENT_CHANNEL_I2C_H
 
-#include "rabbits/datatypes/typeid.h"
+#include <systemc>
+#include <inttypes.h>
+#include <vector>
 
+struct I2CFrame {
+    enum eDirection {
+        WRITE, READ
+    };
 
-std::unordered_map<std::type_index, const char * const> TypeId::m_ids {
-    { typeid(int), "int" },
+    bool valid = false;
+    bool stop = false;
+    uint16_t addr;
+    eDirection direction;
+    std::vector<uint8_t> send_data;
+    std::vector<uint8_t> recv_data;
 
-    { typeid(bool), "bool" },
-    { typeid(std::string), "string" },
-
-    { typeid(uint8_t), "uint8" },
-    { typeid(uint16_t), "uint16" },
-    { typeid(uint32_t), "uint32" },
-    { typeid(uint64_t), "uint64" },
-
-    { typeid(int8_t), "int8" },
-    { typeid(int16_t), "int16" },
-    { typeid(int32_t), "int32" },
-    { typeid(int64_t), "int64" },
-
-    { typeid(double), "float" },
-    { typeid(float), "float" },
+    void clear() {
+        send_data.clear();
+        recv_data.clear();
+        valid = false;
+        stop = false;
+    }
 };
+
+class I2CSystemCInterface : public virtual sc_core::sc_interface {
+public:
+    virtual void i2c_slave_xmit(I2CFrame &) = 0;
+};
+
+#endif

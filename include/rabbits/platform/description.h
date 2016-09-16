@@ -699,6 +699,36 @@ NUMERICAL_CONVERTER(int64_t, )
 #undef NUMERICAL_CONVERTER
 
 template <>
+struct converter<double> {
+    static bool decode(const PlatformDescription::Node &n, double &res) {
+        if (n.type() != PlatformDescription::SCALAR) {
+            return false;
+        }
+        const std::string & input = n.raw_data();
+        std::stringstream ss(input);
+        double factor = 1;
+        ss.unsetf(std::ios::dec);
+        if (!(ss >> res)) {
+            return false;
+        }
+        if (!ss.eof()) {
+            /* Unit parsing */
+            char unit;
+            if((!(ss >> unit)) || (!(ss >> std::ws).eof())) {
+                return false;
+            }
+            factor = unit2factor(unit);
+            if (!factor) {
+                /* Invalid unit */
+                return false;
+            }
+        }
+        res *= factor;
+        return true;
+    }
+};
+
+template <>
 struct converter<bool> {
     static bool decode(const PlatformDescription::Node &n, bool &res) {
         if (n.type() != PlatformDescription::SCALAR) {
