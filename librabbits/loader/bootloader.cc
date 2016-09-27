@@ -22,6 +22,61 @@
 
 #include "rabbits/logger.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+extern "C" {
+#include <libfdt.h>
+}
+
+static int get_file_size(const char *filename)
+{
+    int fd, size;
+    fd = open(filename, O_RDONLY);
+    if (fd < 0)
+        return -1;
+    size = lseek(fd, 0, SEEK_END);
+    close(fd);
+    return size;
+}
+
+static int load_file(const char *filename, uint8_t *addr)
+{
+    int fd, size;
+    fd = open(filename, O_RDONLY);
+    if (fd < 0)
+        return -1;
+    size = lseek(fd, 0, SEEK_END);
+    if (size == -1) {
+        fprintf(stderr, "file %-20s: get size error: %s\n",
+                filename, strerror(errno));
+        close(fd);
+        return -1;
+    }
+
+    lseek(fd, 0, SEEK_SET);
+    if (read(fd, addr, size) != size) {
+        close(fd);
+        return -1;
+    }
+    close(fd);
+    return size;
+}
+
+static int findnode_nofail(void *fdt, const char *node_path)
+{
+    int offset;
+
+    offset = fdt_path_offset(fdt, node_path);
+    if (offset < 0) {
+        printf("%s Couldn't find node %s: %s", __func__, node_path, fdt_strerror(offset));
+        exit(1);
+    }
+
+    return offset;
+}
+
 ArmBootloader::PatchBlob::PatchBlob(const Entry blob[], size_t size)
 {
     size_t i;
@@ -94,9 +149,55 @@ int ArmBootloader::boot()
             dtb_load_addr = DTB_DEFAULT_LOAD_ADDR + m_ram_start;
         }
 
-        if (Loader::load_image(m_dtb_path, m_bus, dtb_load_addr, &dtb_size)) {
-            LOG_F(APP, ERR, "Unable to load dtb %s\n", m_dtb_path.c_str());
-            return 1;
+        if(!m_bootargs.empty()) {
+            int dt_size = get_file_size(m_dtb_path.c_str());
+            if(dt_size < 0) {
+                LOG_F(APP, ERR, "Unable to get size of device tree file.\n");
+                return 1;
+            }
+
+            /* Expand to 2x size to give enough room for manipulation.  */
+            dt_size *= 2;
+
+            void *fdt = new uint8_t[dt_size];
+            if(!fdt) {
+                LOG_F(APP, ERR, "Failed to allocated DTB structure.\n");
+                return 1;
+            }
+
+            int dt_file_load_size = load_file(m_dtb_path.c_str(), (uint8_t *)fdt);
+            if(dt_file_load_size < 0) {
+                LOG_F(APP, ERR, "Unable to open device tree file.\n");
+                return 1;
+            }
+
+            int r = fdt_open_into(fdt, fdt, dt_size);
+            if(r) {
+                LOG_F(APP, ERR, "Unable to copy device tree in memory.\n");
+                return 1;
+            }
+
+            if (fdt_check_header(fdt)) {
+                LOG_F(APP, ERR, "Device tree file loaded into memory is invalid.\n");
+                return 1;
+            }
+
+            r = fdt_setprop_string(fdt, findnode_nofail(fdt, "/chosen"), "bootargs", m_bootargs.c_str());
+            if(r < 0) {
+                LOG_F(APP, ERR, "Couldn't set bootargs in device tree.\n");
+                return 1;
+            }
+
+            if (Loader::load((uint8_t *)fdt, m_bus, dtb_load_addr, dt_size)) {
+                LOG_F(APP, ERR, "Unable to load dtb %s\n", m_dtb_path.c_str());
+                return 1;
+            }
+        }
+        else {
+            if (Loader::load_image(m_dtb_path, m_bus, dtb_load_addr, &dtb_size)) {
+                LOG_F(APP, ERR, "Unable to load dtb %s\n", m_dtb_path.c_str());
+                return 1;
+            }
         }
         have_dtb = true;
     }
