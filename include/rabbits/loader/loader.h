@@ -247,6 +247,21 @@ fail:
 open_fail:
         return 1;
     }
+
+    static int load(uint8_t *data, DebugInitiator *bus, uint64_t load_addr, uint64_t size)
+    {
+        uint64_t written;
+
+        LOG_F(APP, DBG, "Loading data (%d bytes) at 0x%" PRIx64 "\n", size, load_addr);
+
+        written = bus->debug_write(load_addr, data, size);
+        if(written < size) {
+            LOG_F(APP, ERR, "Only %" PRIu64 " bytes were written over %" PRIu64 ". Trying to write outside ram?\n", written, size);
+            return 1;
+        }
+
+        return 0;
+    }
 };
 
 #endif

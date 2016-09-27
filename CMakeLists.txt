@@ -19,10 +19,13 @@ find_package(yaml-cpp REQUIRED)
 find_package(RubyInterp 2.0 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem)
 find_package(Doxygen)
+find_package(libfdt REQUIRED)
 
 # Options
 option(USE_SDL "Use SDL1.2 for framebuffer devices" ON)
 option(BUILD_DOCUMENTATION "Build the Doxygen HTML documentation (requires Doxygen)" OFF)
+
+set(EXTRA_LIBS ${EXTRA_LIBS} ${LIBFDT_LIBRARIES})
 
 if(USE_SDL)
     set(SDL_BUILDING_LIBRARY ON)
