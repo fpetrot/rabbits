@@ -38,6 +38,10 @@ public:
 private:
     SignalCS<T> m_cs;
 
+    bool m_autoconnect = false;
+    sc_core::sc_signal<T> *m_auto_sig = nullptr;
+    T m_auto_value;
+
 public:
     OutPort(const std::string &name)
         : Port(name), sc_p(name.c_str()), m_cs(sc_p)
@@ -55,6 +59,21 @@ public:
     }
 
     virtual ~OutPort() {}
+
+    void set_autoconnect_to(const T& value)
+    {
+        m_autoconnect = true;
+        m_auto_value = value;
+    }
+
+    void before_end_of_elaboration()
+    {
+        if ((!is_connected()) && (m_autoconnect)) {
+            m_auto_sig = new sc_core::sc_signal<T>;
+            sc_p(*m_auto_sig);
+            *m_auto_sig = m_auto_value;
+        }
+    }
 
 };
 
