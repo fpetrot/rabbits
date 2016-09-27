@@ -108,7 +108,7 @@ protected:
     uint32_t m_machine_id;
     uint32_t m_ram_start;
 
-    std::string m_kernel_path, m_initramfs_path, m_dtb_path;
+    std::string m_kernel_path, m_initramfs_path, m_dtb_path, m_bootargs;
     uint32_t m_kernel_load_addr, m_initramfs_load_addr, m_dtb_load_addr;
 
 public:
@@ -159,6 +159,13 @@ public:
      * @param[in] path Path to the device image.
      */
     void set_dtb(const std::string & path) { m_dtb_path = path; }
+
+    /**
+     * @brief Set the kernel cmdline
+     *
+     * @param[in] bootargs Kernel cmdline to write in the device tree
+     */
+    void set_dtb_bootargs(const std::string & bootargs) { m_bootargs = bootargs;}
 
     /**
      * @brief Set the device tree load address.
