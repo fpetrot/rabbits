@@ -22,6 +22,7 @@
 
 #include <set>
 #include <cstring>
+#include <cmath>
 #include <sstream>
 
 #include <systemc>
@@ -162,6 +163,7 @@ protected:
     }
 
     virtual void unit() = 0;
+    virtual bool more_test_check() const { return true; }
 
 public:
     TestBase(const std::string &n, ConfigManager &c)
@@ -170,7 +172,7 @@ public:
 
     virtual ~TestBase() {}
 
-    bool tests_passed() const { return m_test_result; }
+    bool tests_passed() const { return m_test_result && more_test_check(); }
     ConfigManager & get_config() const { return m_config; }
 
     virtual void run() = 0;
@@ -192,7 +194,34 @@ public:
 
 
 class TestBench : public TestBase, public sc_core::sc_module {
+public:
+    enum eTestMode {
+        REACH_THE_END,
+        MAY_NOT_REACH_THE_END,
+        DOES_NOT_REACH_THE_END
+    };
+
 protected:
+
+    eTestMode m_test_mode = REACH_THE_END;
+    bool m_end_reached = false;
+
+    bool more_test_check() const {
+         if (m_test_mode == REACH_THE_END && !m_end_reached) {
+             LOG(APP, ERR) << "The test has not reached the end\n";
+             return false;
+         }
+
+         if (m_test_mode == DOES_NOT_REACH_THE_END && m_end_reached) {
+             LOG(APP, ERR) << "The test has reached the end\n";
+             return false;
+         }
+
+         return true;
+    }
+
+    void set_test_mode(eTestMode m) { m_test_mode = m; }
+
     void unit_wrapper()
     {
         try {
@@ -201,6 +230,8 @@ protected:
             set_test_failed();
             LOG(APP, ERR) << e.what() << "\n";
         }
+
+        m_end_reached = true;
     }
 
 public:
@@ -218,38 +249,69 @@ public:
     }
 };
 
-#define RABBITS_GEN_TEST_FACTORY(_name)                        \
-    class Test_ ## _name ## _Factory : public TestFactory {    \
-    public:                                                    \
-        Test_ ## _name ## _Factory(std::string n)              \
-            : TestFactory(n) {}                                \
-        virtual TestBase * create(ConfigManager &c) const {    \
-            return new Test_ ## _name (# _name, c);            \
-        }                                                      \
-    };                                                         \
-    static Test_ ## _name ## _Factory _name ## _inst(# _name); \
+#ifndef RABBITS_TEST_MOD
+# define RABBITS_TEST_MOD
+# define RABBITS_TEST_MOD_empty
+#endif
+
+#define RABBITS_TEST___factory_name(_mod, _name) Test_ ## _mod ## _ ## _name ## _Factory
+#define RABBITS_TEST__factory_name(_mod, _name) RABBITS_TEST___factory_name(_mod, _name)
+#define RABBITS_TEST_factory_name(_name) RABBITS_TEST__factory_name(RABBITS_TEST_MOD, _name)
+
+#define RABBITS_TEST___name(_mod, _name) Test_ ## _mod ## _ ## _name
+#define RABBITS_TEST__name(_mod, _name) RABBITS_TEST___name(_mod, _name)
+#define RABBITS_TEST_name(_name) RABBITS_TEST__name(RABBITS_TEST_MOD, _name)
+
+#define RABBITS_TEST___inst(_mod, _name) _mod ## _ ## _name ## _inst
+#define RABBITS_TEST__inst(_mod, _name) RABBITS_TEST___inst(_mod, _name)
+#define RABBITS_TEST_inst(_name) RABBITS_TEST__inst(RABBITS_TEST_MOD, _name)
+
+#define RABBITS_TEST_strify(a) # a
+
+#ifdef RABBITS_TEST_MOD_empty
+# define RABBITS_TEST___str(mod, name) RABBITS_TEST_strify(name)
+#else
+# define RABBITS_TEST___str(mod, name) RABBITS_TEST_strify(mod) ":" RABBITS_TEST_strify(name)
+#endif
+
+#define RABBITS_TEST__str(mod, name) RABBITS_TEST___str(mod, name)
+#define RABBITS_TEST_str(name) RABBITS_TEST__str(RABBITS_TEST_MOD, name)
+
+#define RABBITS_GEN_TEST_FACTORY(_name)                                       \
+    class RABBITS_TEST_factory_name(_name)                                    \
+        : public TestFactory {                                                \
+    public:                                                                   \
+        RABBITS_TEST_factory_name(_name)(std::string n)                       \
+            : TestFactory(n) {}                                               \
+        virtual TestBase * create(ConfigManager &c) const {                   \
+            return new RABBITS_TEST_name(_name) (RABBITS_TEST_str(_name), c); \
+        }                                                                     \
+    };                                                                        \
+    static RABBITS_TEST_factory_name(_name)                                   \
+    RABBITS_TEST_inst(_name)(RABBITS_TEST_str(_name));                        \
 
 
-#define RABBITS_UNIT_TEST(_name)                        \
-    class Test_ ## _name : public Test {                \
-    public:                                             \
-        Test_ ## _name(std::string n, ConfigManager &c) \
-            : Test(n, c) {}                             \
-        virtual void unit();                            \
-    };                                                  \
-    RABBITS_GEN_TEST_FACTORY(_name)                     \
-    void Test_ ## _name::unit()
+#define RABBITS_UNIT_TEST(_name)                                  \
+    class RABBITS_TEST_name(_name) : public Test {                \
+    public:                                                       \
+        RABBITS_TEST_name(_name)(std::string n, ConfigManager &c) \
+            : Test(n, c) {}                                       \
+        virtual void unit();                                      \
+    };                                                            \
+    RABBITS_GEN_TEST_FACTORY(_name)                               \
+    void RABBITS_TEST_name(_name)::unit()
 
 
-#define RABBITS_UNIT_TESTBENCH(_name, _base)                        \
-    class Test_ ## _name : public _base {                           \
-    public:                                                         \
-        Test_ ## _name(sc_core::sc_module_name n, ConfigManager &c) \
-            : _base(n, c) {}                                        \
-        virtual void unit();                                        \
-    };                                                              \
-    RABBITS_GEN_TEST_FACTORY(_name)                                 \
-    void Test_ ## _name::unit()
+#define RABBITS_UNIT_TESTBENCH(_name, _base)                 \
+    class RABBITS_TEST_name(_name) : public _base {          \
+    public:                                                  \
+        RABBITS_TEST_name(_name)(sc_core::sc_module_name n,  \
+                                 ConfigManager &c)           \
+            : _base(n, c) {}                                 \
+        virtual void unit();                                 \
+    };                                                       \
+    RABBITS_GEN_TEST_FACTORY(_name)                          \
+    void RABBITS_TEST_name(_name)::unit()
 
 #define RABBITS_TEST_ASSERT(assertion)      \
     do {                                    \
@@ -293,6 +355,14 @@ public:
         m_last_timestamp = sc_core::sc_time_stamp();                                    \
     } while(0)
 
+#define RABBITS_TEST_ASSERT_TIME_DELTA_ERR(expected, error)                             \
+    do {                                                                                \
+        sc_core::sc_time expected_delta(expected);                                      \
+        sc_core::sc_time effective_delta = sc_core::sc_time_stamp() - m_last_timestamp; \
+        double diff = abs(expected_delta.to_double() - effective_delta.to_double());    \
+        RABBITS_TEST_ASSERT_LT(diff, error.to_double());                                \
+        m_last_timestamp = sc_core::sc_time_stamp();                                    \
+    } while(0)
 
 #define RABBITS_TEST_END() \
     sc_core::sc_stop()
