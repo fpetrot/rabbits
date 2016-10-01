@@ -26,6 +26,7 @@ class CharDeviceSystemCInterface : public virtual sc_core::sc_interface {
 public:
     virtual void send(std::vector<uint8_t> &data) = 0;
     virtual void recv(std::vector<uint8_t> &data) = 0;
+    virtual bool empty() const = 0;
 };
 
 
@@ -59,6 +60,10 @@ public:
         data.clear();
         data.insert(data.end(), m_buffer.begin(), m_buffer.end());
         m_buffer.clear();
+    }
+
+    bool empty() const {
+        return m_buffer.empty();
     }
 };
 #endif
