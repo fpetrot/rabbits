@@ -23,6 +23,7 @@
 #include "node.h"
 #include "rabbits/module/namespace.h"
 #include "rabbits/module/parameters.h"
+#include "rabbits/module/manager.h"
 
 class HasPortIface;
 class ParserNodeBinding;
@@ -32,6 +33,12 @@ class ParserNodeModule : public ParserNode {
     const Namespace &m_ns;
     std::string m_type;
     Parameters m_params;
+    bool m_params_is_set = false;
+    ModuleManagerBase::Factory m_factory;
+
+protected:
+    virtual ModuleManagerBase::Factory get_module_factory();
+    void set_params(const Parameters &p);
 
 public:
     ParserNodeModule(PlatformDescription &d, const std::string n,
@@ -45,7 +52,8 @@ public:
     const std::string & get_name() const;
     const std::string & get_type() const;
     const Namespace & get_namespace() const;
-    const Parameters & get_params() const;
+    ModuleManagerBase::Factory get_factory();
+    const Parameters & get_params();
 
     template <class T>
     void add_field(const std::string &name, T& storage);

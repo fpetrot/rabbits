@@ -21,6 +21,7 @@
 #define _RABBITS_PLATFORM_PARSER_COMPONENT_H
 
 #include "module.h"
+#include "rabbits/component/manager.h"
 
 
 class ComponentBase;
@@ -30,8 +31,13 @@ protected:
     ComponentBase *m_inst = nullptr;
     std::string m_implem;
 
+    ComponentManager::Factory m_factory;
+
+    ModuleManagerBase::Factory get_module_factory();
+
 public:
-    ParserNodeComponent(PlatformDescription &descr, const std::string &n, ParserNodePlatform &root);
+    ParserNodeComponent(PlatformDescription &descr, const std::string &n,
+                        ParserNodePlatform &root);
     ParserNodeComponent(const std::string &name, const std::string &type,
                         const Parameters &params, ParserNodePlatform &root);
     ParserNodeComponent(ComponentBase *inst, ParserNodePlatform &root);
@@ -42,6 +48,8 @@ public:
 
     void set_inst(ComponentBase *inst);
     ComponentBase *get_inst() const { return m_inst; }
+
+    ComponentManager::Factory get_comp_factory();
 };
 
 #endif

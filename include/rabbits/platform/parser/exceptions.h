@@ -160,6 +160,24 @@ public:
     virtual ~ModuleTypeNotFoundParseException() throw() {}
 };
 
+class ComponentImplemNotFoundParseException : public PlatformParseException {
+protected:
+    std::string make_what(const PlatformDescription &node,
+                          const Namespace &ns, const std::string &mod)
+    {
+        return "Component implementation `" + mod
+            + "` not found" + get_origin(node);
+    }
+
+public:
+    ComponentImplemNotFoundParseException(const PlatformDescription &node,
+                                     const Namespace &ns, const std::string &mod)
+        : PlatformParseException(node, make_what(node, ns, mod))
+    {}
+
+    virtual ~ComponentImplemNotFoundParseException() throw() {}
+};
+
 class ModuleNotFoundParseException : public PlatformParseException {
 protected:
     const Namespace &m_ns;

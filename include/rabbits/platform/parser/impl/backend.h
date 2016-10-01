@@ -21,6 +21,7 @@
 #define _RABBITS_PLATFORM_PARSER_IMPL_BACKEND_H
 
 #include "../backend.h"
+#include "../platform.h"
 
 #include "rabbits/component/component.h"
 
@@ -44,6 +45,12 @@ inline void ParserNodeBackend::set_inst(ComponentBase *inst)
 {
     m_inst = inst;
     ParserNodeModuleWithPorts::set_inst(inst);
+}
+
+inline BackendManager::Factory ParserNodeBackend::get_backend_factory()
+{
+    BackendManager &bm = get_root().get_config().get_backend_manager();
+    return bm.find_by_type(get_type());
 }
 
 #endif

@@ -24,25 +24,48 @@
 #include "../platform.h"
 
 #include "rabbits/component/component.h"
+#include "rabbits/component/manager.h"
 
 inline ParserNodeComponent::ParserNodeComponent(PlatformDescription &descr, const std::string &n,
                                          ParserNodePlatform &root)
     : ParserNodeModuleWithPorts(descr, n, root, Namespace::get(Namespace::COMPONENT))
 {
     add_optional_field<std::string>("implementation", "", m_implem);
+
+    ComponentManager &cm = get_root().get_config().get_component_manager();
+
+    if (implem_is_set()) {
+        if (!cm.implem_exists(m_implem)) {
+            throw ComponentImplemNotFoundParseException(descr, get_namespace(), 
+                                                        m_implem);
+        } else {
+            m_factory = cm.find_by_implem(m_implem);
+        }
+    } else {
+        m_factory = cm.find_by_type(get_type());
+    }
 }
 
-inline ParserNodeComponent::ParserNodeComponent(const std::string &name, const std::string &type,
-                                                const Parameters &params, ParserNodePlatform &root)
-    : ParserNodeModuleWithPorts(name, type, params, root, Namespace::get(Namespace::COMPONENT))
-{
-}
+inline ParserNodeComponent::ParserNodeComponent(const std::string &name,
+                                                const std::string &type,
+                                                const Parameters &params,
+                                                ParserNodePlatform &root)
+    : ParserNodeModuleWithPorts(name, type, params, root,
+                                Namespace::get(Namespace::COMPONENT))
+{}
 
-inline ParserNodeComponent::ParserNodeComponent(ComponentBase *c, ParserNodePlatform &root)
-    : ParserNodeModuleWithPorts(c, root, Namespace::get(Namespace::COMPONENT)), m_inst(c)
+inline ParserNodeComponent::ParserNodeComponent(ComponentBase *c,
+                                                ParserNodePlatform &root)
+    : ParserNodeModuleWithPorts(c, root, Namespace::get(Namespace::COMPONENT))
+    , m_inst(c)
 {}
 
 inline ParserNodeComponent::~ParserNodeComponent() {}
+
+inline ModuleManagerBase::Factory ParserNodeComponent::get_module_factory()
+{
+    return m_factory;
+}
 
 inline bool ParserNodeComponent::implem_is_set() const { return !m_implem.empty(); }
 
@@ -52,6 +75,11 @@ inline void ParserNodeComponent::set_inst(ComponentBase *inst)
 {
     m_inst = inst;
     ParserNodeModuleWithPorts::set_inst(inst);
+}
+
+inline ComponentManager::Factory ParserNodeComponent::get_comp_factory()
+{
+    return m_factory;
 }
 
 #endif
