@@ -20,6 +20,8 @@
 #ifndef _RABBITS_TESTS_PLATFORM_PARSER_COMMON_H
 #define _RABBITS_TESTS_PLATFORM_PARSER_COMMON_H
 
+#define RABBITS_TEST_MOD platform_parser
+
 #include <rabbits/test/test.h>
 
 #include <rabbits/platform/parser.h>
@@ -67,16 +69,32 @@ public:
     OutPort<bool> p_b;
 };
 
+class Foo2Component : public FooComponent {
+public:
+    using FooComponent::FooComponent;
+};
+
 class FooComponentFactory : public ComponentFactory<FooComponent> {
 public:
     FooComponentFactory(ConfigManager &c)
-        : ComponentFactory<FooComponent>(c, "foo", "Foo component", "foo-impl", 0)
+        : ComponentFactory<FooComponent>(c, "foo", "Foo component", "foo-implem", 0)
+    {}
+};
+
+class Foo2ComponentFactory : public ComponentFactory<Foo2Component> {
+public:
+    Foo2ComponentFactory(ConfigManager &c)
+        : ComponentFactory<Foo2Component>(c, "foo", "Foo 2 component", "foo2-implem", -10)
     {}
 };
 
 #define REGISTER_FOO_COMPONENT()                                \
     get_config().get_component_manager().register_factory(      \
         std::make_shared<FooComponentFactory>(get_config()));
+
+#define REGISTER_FOO2_COMPONENT()                                \
+    get_config().get_component_manager().register_factory(      \
+        std::make_shared<Foo2ComponentFactory>(get_config()));
 
 
 /* Bar component */

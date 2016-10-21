@@ -21,6 +21,7 @@
 #define _RABBITS_PLATFORM_PARSER_IMPL_PLUGIN_H
 
 #include "../plugin.h"
+#include "../platform.h"
 
 inline ParserNodePlugin::ParserNodePlugin(PlatformDescription &d, const std::string &n, ParserNodePlatform &root)
     : ParserNodeModule(d, n, root, Namespace::get(Namespace::PLUGIN))
@@ -40,5 +41,11 @@ inline ParserNodePlugin::ParserNodePlugin(PluginBase *p, ParserNodePlatform &roo
 
 inline ParserNodePlugin::~ParserNodePlugin()
 {}
+
+inline PluginManager::Factory ParserNodePlugin::get_plugin_factory()
+{
+    PluginManager &pm = get_root().get_config().get_plugin_manager();
+    return pm.find_by_type(get_type());
+}
 
 #endif

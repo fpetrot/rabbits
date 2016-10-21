@@ -118,4 +118,36 @@ RABBITS_UNIT_TEST(component_by_implem)
     std::shared_ptr<ParserNodeComponent> c = p.get_root().get_component("c0");
     RABBITS_TEST_ASSERT(c->implem_is_set());
     RABBITS_TEST_ASSERT_EQ(c->get_implem(), "foo-implem");
+
+    ComponentManager &cm = get_config().get_component_manager();
+    RABBITS_TEST_ASSERT_EQ(c->get_factory(), cm.find_by_implem("foo-implem"));
+}
+
+RABBITS_UNIT_TEST(component_by_implem_low_prio)
+{
+    REGISTER_FOO_COMPONENT();
+    REGISTER_FOO2_COMPONENT();
+
+    const string yml =
+        "platforms:\n"
+        "  foo:\n"
+        "    description: Foo platform\n"
+        "    components:\n"
+        "      c0:\n"
+        "        type: foo\n"
+        "        implementation: foo2-implem\n"
+        ;
+
+    PlatformDescription pd = apply_platform(get_config(), yml);
+    PlatformParser p("foo", pd, get_config());
+
+    RABBITS_TEST_ASSERT_EQ(p.get_root().get_components().size(), 1u);
+    RABBITS_TEST_ASSERT(p.get_root().component_exists("c0"));
+
+    std::shared_ptr<ParserNodeComponent> c = p.get_root().get_component("c0");
+    RABBITS_TEST_ASSERT(c->implem_is_set());
+    RABBITS_TEST_ASSERT_EQ(c->get_implem(), "foo2-implem");
+
+    ComponentManager &cm = get_config().get_component_manager();
+    RABBITS_TEST_ASSERT_EQ(c->get_factory(), cm.find_by_implem("foo2-implem"));
 }
