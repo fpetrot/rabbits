@@ -107,7 +107,7 @@ static int report_result(const string &name, int status)
         ret = 1;
     }
 
-    LOG(APP, INF) << name << "\r\t\t\t\t\t\t" << res << "\n";
+    LOG(APP, INF) << name << "\r\t\t\t\t\t\t\t\t\t\t" << res << "\n";
 
     return ret;
 }

@@ -36,27 +36,38 @@ inline ParserNodeModule::ParserNodeModule(PlatformDescription &d, const std::str
     if (!m.type_exists(m_type)) {
         throw ModuleTypeNotFoundParseException(d, ns, m_type);
     }
-
-    m_params = m.find_by_type(m_type)->get_params();
-    m_params.fill_from_description(d);
 }
 
 inline ParserNodeModule::ParserNodeModule(const std::string name, const std::string &type,
                                           const Parameters &params, ParserNodePlatform &root,
                                           const Namespace &ns)
-    : ParserNode(root), m_name(name), m_ns(ns), m_type(type), m_params(params)
+    : ParserNode(root), m_name(name), m_ns(ns), m_type(type)
 {
+    set_params(params);
     if (!get_root().get_config().get_manager_by_namespace(ns).type_exists(m_type)) {
         throw ModuleTypeNotFoundParseException(get_descr(), ns, m_type);
     }
 }
 
-inline ParserNodeModule::ParserNodeModule(ParserNodePlatform &root, const Namespace &ns)
+inline ParserNodeModule::ParserNodeModule(ParserNodePlatform &root,
+                                          const Namespace &ns)
     : ParserNode(root), m_ns(ns)
 {
 }
 
 inline ParserNodeModule::~ParserNodeModule() {}
+
+inline ModuleManagerBase::Factory ParserNodeModule::get_module_factory()
+{
+    ModuleManagerBase &m = get_root().get_config().get_manager_by_namespace(m_ns);
+    return m.find_by_type(m_type);
+}
+
+inline void ParserNodeModule::set_params(const Parameters &p)
+{
+    m_params = p;
+    m_params_is_set = true;
+}
 
 inline const std::string & ParserNodeModule::get_name() const
 {
@@ -73,8 +84,24 @@ inline const Namespace & ParserNodeModule::get_namespace() const
     return m_ns;
 }
 
-inline const Parameters & ParserNodeModule::get_params() const
+inline ModuleManagerBase::Factory ParserNodeModule::get_factory()
 {
+    if (m_factory == nullptr) {
+        m_factory = get_module_factory();
+    }
+
+    return m_factory;
+}
+
+inline const Parameters & ParserNodeModule::get_params()
+{
+    if (!m_params_is_set) {
+        ModuleManagerBase::Factory f = get_factory();
+
+        set_params(f->get_params());
+        m_params.fill_from_description(get_descr());
+    }
+
     return m_params;
 }
 

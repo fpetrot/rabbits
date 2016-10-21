@@ -21,6 +21,7 @@
 #define _RABBITS_PLATFORM_PARSER_PLUGIN_H
 
 #include "module.h"
+#include "rabbits/plugin/manager.h"
 
 class PluginBase;
 
@@ -37,6 +38,8 @@ public:
 
     void set_inst(PluginBase *inst) { m_inst = inst; }
     PluginBase * get_inst() const { return m_inst; }
+
+    PluginManager::Factory get_plugin_factory();
 };
 
 #endif

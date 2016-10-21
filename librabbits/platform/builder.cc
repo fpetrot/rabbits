@@ -134,14 +134,11 @@ void PlatformBuilder::create_dbg_init(PlatformParser &parser)
 
 void PlatformBuilder::create_plugins(PlatformParser &p)
 {
-    PluginManager &pm = m_config.get_plugin_manager();
-
     for (auto &plug : p.get_root().get_plugins()) {
         const string &name = plug.first;
         const string &type = plug.second->get_type();
 
-        PluginManager::Factory p_fact = pm.find_by_type(type);
-
+        PluginManager::Factory p_fact = plug.second->get_plugin_factory();
         assert(p_fact != nullptr);
 
         LOG(APP, DBG) << "Creating plugin instance `" << name
@@ -163,15 +160,11 @@ void PlatformBuilder::run_hooks(HOOK &&hook)
 
 void PlatformBuilder::create_components(PlatformParser &parser, CreationStage::value stage)
 {
-    PlatformDescription::iterator it;
-    ComponentManager &cm = m_config.get_component_manager();
-
     for (auto &comp : parser.get_root().get_components()) {
         const string &name = comp.first;
         const string &type = comp.second->get_type();
 
-        ComponentManager::Factory c_fact = cm.find_by_type(type);
-
+        ComponentManager::Factory c_fact = comp.second->get_comp_factory();
         assert(c_fact != nullptr);
 
         switch (stage) {
@@ -191,14 +184,11 @@ void PlatformBuilder::create_components(PlatformParser &parser, CreationStage::v
 
 void PlatformBuilder::create_backends(PlatformParser &p)
 {
-    BackendManager &pm = m_config.get_backend_manager();
-
     for (auto &plug : p.get_root().get_backends()) {
         const string &name = plug.first;
         const string &type = plug.second->get_type();
 
-        BackendManager::Factory p_fact = pm.find_by_type(type);
-
+        BackendManager::Factory p_fact = plug.second->get_backend_factory();
         assert(p_fact != nullptr);
 
         LOG(APP, DBG) << "Creating backend instance `" << name
