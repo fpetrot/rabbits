@@ -24,6 +24,7 @@ find_package(libfdt REQUIRED)
 # Options
 option(USE_SDL "Use SDL1.2 for framebuffer devices" ON)
 option(BUILD_DOCUMENTATION "Build the Doxygen HTML documentation (requires Doxygen)" OFF)
+option(RABBITS_ENABLE_TESTING "Enable tests building" OFF)
 
 set(EXTRA_LIBS ${EXTRA_LIBS} ${LIBFDT_LIBRARIES})
 
@@ -46,6 +47,10 @@ else()
     if(NOT RABBITS_LOGLEVEL)
         set(RABBITS_LOGLEVEL 4) # Trace level also
     endif()
+endif()
+
+if(RABBITS_ENABLE_TESTING)
+    enable_testing()
 endif()
 
 if(UNIX)
