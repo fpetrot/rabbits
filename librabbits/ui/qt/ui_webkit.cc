@@ -1,6 +1,6 @@
 /*
  *  This file is part of Rabbits
- *  Copyright (C) 2015  Clement Deschamps and Luc Michel
+ *  Copyright (C) 2016  Clement Deschamps and Luc Michel
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -17,45 +17,26 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _UI_H
-#define _UI_H
-
-#include <string>
-
-#include "ui_fb.h"
 #include "ui_webkit.h"
+#include "ui.h"
 
-class ui
+#include "rabbits-common.h"
+#include "rabbits/logger.h"
+
+#include <QApplication>
+
+qt_ui_webkit::qt_ui_webkit() : ui_webkit()
 {
-private:
-    static ui *singleton;
+}
 
-protected:
-    ui_fb *m_active_fb;
+void qt_ui_webkit::exec_js(std::string js)
+{
+    QApplication::postEvent(m_view, new WebkitExecEvent(this, QString::fromStdString(js)));
+}
 
-public:
-    virtual ~ui()
-    {
-    }
+void qt_ui_webkit::poll_updates(std::vector<std::string> &updates)
+{
+    updates.assign(m_updates.begin(), m_updates.end());
+    m_updates.clear();
+}
 
-    static ui* get_ui();
-    static void start_ui();
-
-    virtual void stop() = 0;
-
-    virtual ui_fb* new_fb(std::string name, const ui_fb_info &info) = 0;
-    virtual void show_fb(ui_fb *fb)
-    {
-        m_active_fb = fb;
-    }
-
-    virtual ui_webkit* new_webkit(std::string url)
-    {
-        // no default implementation
-        return NULL;
-    }
-
-    virtual void update() = 0;
-};
-
-#endif

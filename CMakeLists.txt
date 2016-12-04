@@ -23,6 +23,7 @@ find_package(libfdt REQUIRED)
 
 # Options
 option(USE_SDL "Use SDL1.2 for framebuffer devices" ON)
+option(USE_QT "Use QT for user interface" ON)
 option(BUILD_DOCUMENTATION "Build the Doxygen HTML documentation (requires Doxygen)" OFF)
 
 set(EXTRA_LIBS ${EXTRA_LIBS} ${LIBFDT_LIBRARIES})
@@ -35,6 +36,15 @@ if(USE_SDL)
         include_directories(${SDL_INCLUDE_DIR})
         set(EXTRA_LIBS ${EXTRA_LIBS} ${SDL_LIBRARY})
     endif()
+endif()
+
+if(USE_QT)
+    set(CMAKE_INCLUDE_CURRENT_DIR ON)
+    set(CMAKE_AUTOMOC ON)
+    find_package(Qt5Widgets)
+    find_package(Qt5WebKitWidgets)
+    set(RABBITS_CONFIG_QT 1)
+    set(EXTRA_LIBS ${EXTRA_LIBS} Qt5::Widgets Qt5::WebKitWidgets)
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")

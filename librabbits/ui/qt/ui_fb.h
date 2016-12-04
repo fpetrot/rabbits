@@ -1,6 +1,6 @@
 /*
  *  This file is part of Rabbits
- *  Copyright (C) 2015  Clement Deschamps and Luc Michel
+ *  Copyright (C) 2016  Clement Deschamps and Luc Michel
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -17,45 +17,17 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _UI_H
-#define _UI_H
+#ifndef _UI_DUMMY_FB_H
+#define _UI_DUMMY_FB_H
 
-#include <string>
+#include "rabbits/ui/ui_fb.h"
 
-#include "ui_fb.h"
-#include "ui_webkit.h"
-
-class ui
+class qt_ui_fb: public ui_fb
 {
-private:
-    static ui *singleton;
-
-protected:
-    ui_fb *m_active_fb;
-
 public:
-    virtual ~ui()
-    {
-    }
+    qt_ui_fb(const ui_fb_info & info);
 
-    static ui* get_ui();
-    static void start_ui();
-
-    virtual void stop() = 0;
-
-    virtual ui_fb* new_fb(std::string name, const ui_fb_info &info) = 0;
-    virtual void show_fb(ui_fb *fb)
-    {
-        m_active_fb = fb;
-    }
-
-    virtual ui_webkit* new_webkit(std::string url)
-    {
-        // no default implementation
-        return NULL;
-    }
-
-    virtual void update() = 0;
+    void set_info(const ui_fb_info & info);
 };
 
 #endif

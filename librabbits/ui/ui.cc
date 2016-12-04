@@ -20,7 +20,9 @@
 #include "rabbits/config.h"
 #include "rabbits/ui/ui.h"
 
-#ifdef RABBITS_CONFIG_SDL
+#if defined(RABBITS_CONFIG_QT)
+# include "qt/ui.h"
+#elif defined(RABBITS_CONFIG_SDL)
 # include "sdl/ui.h"
 #else
 # include "dummy/ui.h"
@@ -32,7 +34,9 @@ ui * ui::singleton = NULL;
 ui * ui::get_ui()
 {
     if (ui::singleton == NULL) {
-#ifdef RABBITS_CONFIG_SDL
+#if defined(RABBITS_CONFIG_QT)
+        ui::singleton = new qt_ui;
+#elif defined(RABBITS_CONFIG_SDL)
         ui::singleton = new sdl_ui;
 #else
         ui::singleton = new dummy_ui;

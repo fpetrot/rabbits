@@ -30,4 +30,5 @@ void simu_manager::start()
         ui::get_ui()->update();
         sc_start(1, SC_MS);
     }
+    ui::get_ui()->stop();
 }
