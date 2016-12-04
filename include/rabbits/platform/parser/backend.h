@@ -21,6 +21,7 @@
 #define _RABBITS_PLATFORM_PARSER_BACKEND_H
 
 #include "module.h"
+#include "rabbits/backend/manager.h"
 
 class ComponentBase;
 
@@ -37,6 +38,9 @@ public:
 
     void set_inst(ComponentBase *inst);
     ComponentBase *get_inst() const { return m_inst; }
+
+    BackendManager::Factory get_backend_factory();
+
 };
 
 #endif

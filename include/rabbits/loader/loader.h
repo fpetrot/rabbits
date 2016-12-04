@@ -42,21 +42,11 @@
  */
 class Loader {
 private:
-    /* Align addr on page boundary, as required by mmap
-     *  Return the offset to apply to modified addr to obtain original addr
-     */
-    static uint64_t align_addr_on_page(uint64_t &addr)
+    static void resize_buffer(std::vector<uint8_t>& buf, uint64_t size)
     {
-        long ps = sysconf(_SC_PAGESIZE);
-        uint64_t offset;
-
-        LOG_F(APP, DBG, "align: %08" PRIx64 "\n", addr);
-        offset = addr & (ps - 1);
-        addr &= ~(ps - 1);
-
-        LOG_F(APP, DBG, "aligned: %08" PRIx64 ", off:%08" PRIx64 "\n", addr, offset);
-
-        return offset;
+        if (buf.capacity() < size) {
+            buf.reserve(size);
+        }
     }
 
     template <class T_hdr, class T_phdr>
@@ -66,8 +56,8 @@ private:
         T_phdr *phdr = NULL;
         ssize_t phdr_size;
         int i;
-        void *elf_data = NULL;
-        uint64_t written;
+        int64_t written;
+        std::vector<uint8_t> buf;
 
         if (read(fd, &hdr, sizeof(hdr)) != sizeof(hdr)) {
             goto fail;
@@ -91,33 +81,35 @@ private:
             T_phdr *ph = &phdr[i];
 
             if (ph->p_type == PT_LOAD) {
-                LOG_F(APP, DBG, "Loading elf segment, start:%08" PRIx64 ", size:%08" PRIx64 "\n",
-		      static_cast<uint64_t>(ph->p_paddr),
-		      static_cast<uint64_t>(ph->p_filesz));
+                LOG_F(APP, DBG, "Loading elf segment, start:%08" PRIx64
+                      ", size:%08" PRIx64 "\n",
+                      static_cast<uint64_t>(ph->p_paddr),
+                      static_cast<uint64_t>(ph->p_filesz));
 
-                uint64_t offset = ph->p_offset;
-                uint64_t rem;
+                const uint64_t offset = ph->p_offset;
+                const int64_t filesize = ph->p_filesz;
 
-                rem = align_addr_on_page(offset);
+                resize_buffer(buf, filesize);
 
-                elf_data = mmap(NULL, ph->p_filesz, PROT_READ, MAP_SHARED, fd, offset);
-
-                if (elf_data == MAP_FAILED) {
-                    perror("mmap");
+                if (lseek(fd, offset, SEEK_SET) < 0) {
+                    perror("lseek");
                     goto fail;
                 }
 
-                written = bus->debug_write(ph->p_paddr, ((char*)elf_data)+rem, ph->p_filesz);
-                if (written < ph->p_filesz) {
-                    LOG_F(APP, ERR, "Only %" PRIu64 " bytes were written over %" PRIu64 ". Trying to write outside ram?\n", 
-			  written, static_cast<uint64_t>(ph->p_filesz));
-                    munmap(elf_data, ph->p_filesz);
-                    elf_data = NULL;
+                if (read(fd, &(buf[0]), filesize) != filesize) {
+                    LOG(APP, ERR) << "Error while reading elf file\n";
                     goto fail;
                 }
 
-                munmap(elf_data, ph->p_filesz);
-                elf_data = NULL;
+                written = bus->debug_write(ph->p_paddr, &(buf[0]), filesize);
+
+                if (written < filesize) {
+                    LOG_F(APP, ERR, "Only %" PRIu64 " bytes were written "
+                                    "over %" PRIu64 ". "
+                                    "Trying to write outside ram?\n",
+                          written, static_cast<uint64_t>(filesize));
+                    goto fail;
+                }
             }
         }
 
@@ -228,8 +220,8 @@ open_fail:
 
         written = bus->debug_write(load_addr, data, fsize);
         if(written < static_cast<uint64_t>(fsize)) {
-            LOG_F(APP, ERR, "Only %" PRIu64 " bytes were written over %" PRIu64 ". Trying to write outside ram?\n", 
-		  written, static_cast<uint64_t>(fsize));
+            LOG_F(APP, ERR, "Only %" PRIu64 " bytes were written over %" PRIu64 ". Trying to write outside ram?\n",
+                  written, static_cast<uint64_t>(fsize));
             goto fail;
         }
 

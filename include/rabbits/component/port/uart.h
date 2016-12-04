@@ -40,7 +40,10 @@ private:
 public:
     sc_core::sc_port<CharDeviceSystemCInterface> tx, rx;
 
-    UartPort(const std::string & name) : Port(name), m_chardev_cs(tx, rx), tx("tx"), rx("rx")
+    UartPort(const std::string & name)
+        : Port(name), m_chardev_cs(tx, rx)
+        , tx((name + "-tx").c_str())
+        , rx((name + "-rx").c_str())
     {
         add_connection_strategy(m_chardev_cs);
         declare_parent(tx.get_parent_object());
@@ -62,5 +65,7 @@ public:
 
     void recv(std::vector<uint8_t> &data) { rx->recv(data); }
     void send(std::vector<uint8_t> &data) { tx->send(data); }
+
+    bool data_pending() { return !rx->empty(); }
 };
 #endif

@@ -78,7 +78,7 @@ template <>
 struct comparator<gt> {
     template <typename T1, typename T2>
     static bool compare(T1 a, T2 b) {
-        return a < b;
+        return a > b;
     };
 
     static const std::string op_str() { return ">"; }
@@ -89,7 +89,7 @@ template <>
 struct comparator<ge> {
     template <typename T1, typename T2>
     static bool compare(T1 a, T2 b) {
-        return a <= b;
+        return a >= b;
     };
 
     static const std::string op_str() { return ">="; }
