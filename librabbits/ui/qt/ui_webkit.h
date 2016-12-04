@@ -29,10 +29,12 @@ class qt_ui_webkit : public ui_webkit
 public:
     QWebView *m_view;
 
+	std::string m_url;
+
     std::vector<std::string> m_updates;
 
 public:
-    qt_ui_webkit();
+    qt_ui_webkit(std::string url);
 
     void exec_js(std::string js);
 

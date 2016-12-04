@@ -25,8 +25,9 @@
 
 #include <QApplication>
 
-qt_ui_webkit::qt_ui_webkit() : ui_webkit()
+qt_ui_webkit::qt_ui_webkit(std::string url) : ui_webkit()
 {
+	m_url = url;
 }
 
 void qt_ui_webkit::exec_js(std::string js)

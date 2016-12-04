@@ -66,8 +66,7 @@ public:
 
 			m_tabs->addTab(boardView,"Board"); // TODO: Platform name
 
-			// TODO: package html content
-            boardView->load(QUrl("file:///home/clement/antfield/dev/rpi/cute/lces/html/index.html"));
+            boardView->load(QUrl(QString::fromStdString(createEvent->m_webkit->m_url)));
 
             QWebFrame *frame = boardView->page()->mainFrame();
             frame->addToJavaScriptWindowObject("bridge", new WebkitBridge(createEvent->m_webkit));
@@ -186,7 +185,7 @@ ui_fb* qt_ui::new_fb(std::string name, const ui_fb_info &info)
 
 ui_webkit* qt_ui::new_webkit(std::string url)
 {
-    qt_ui_webkit *webkit = new qt_ui_webkit;
+    qt_ui_webkit *webkit = new qt_ui_webkit(url);
 
     QApplication::postEvent(QApplication::instance(), new WebkitCreateEvent(webkit));
 
