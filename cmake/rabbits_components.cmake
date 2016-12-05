@@ -121,4 +121,11 @@ function(rabbits_install_configs n)
     endif()
 endfunction(rabbits_install_configs)
 
+function(rabbits_install_res n)
+    get_property(__res GLOBAL PROPERTY RABBITS_RES_LIST)
+    if(__res)
+        install(FILES ${__res} DESTINATION ${RABBITS_RES_DIR}/${n})
+    endif()
+endfunction(rabbits_install_res)
+
 # vim: ts=4 sts=4 sw=4 expandtab

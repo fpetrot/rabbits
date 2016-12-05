@@ -104,6 +104,7 @@ set(RABBITS_LIB_DIR lib)
 set(RABBITS_INCLUDE_DIR include)
 set(RABBITS_DOC_DIR share/doc/rabbits)
 set(RABBITS_CONFIG_DIR share/rabbits/config)
+set(RABBITS_RES_DIR share/rabbits/res)
 set(RABBITS_EXECUTABLE ${RABBITS_BIN_DIR}/${RABBITS_APP_NAME})
 set(RABBITS_LIBRARIES rabbits)
 set(RABBITS_TEST_LIBRARY rabbits-test)
@@ -155,6 +156,7 @@ configure_package_config_file(RabbitsConfig.cmake.in
     RABBITS_LIB_DIR
     RABBITS_BIN_DIR
     RABBITS_CONFIG_DIR
+    RABBITS_RES_DIR
     RABBITS_EXECUTABLE
     NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 
@@ -170,6 +172,7 @@ install(DIRECTORY include/ DESTINATION ${RABBITS_INCLUDE_DIR} FILES_MATCHING PAT
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/rabbits/config.h" DESTINATION ${RABBITS_INCLUDE_DIR}/rabbits)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen-factory.rb" DESTINATION ${RABBITS_LIB_DIR}/rabbits)
 install(DIRECTORY DESTINATION ${RABBITS_CONFIG_DIR})
+install(DIRECTORY DESTINATION ${RABBITS_RES_DIR})
 
 # cmake files installation
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/RabbitsConfig.cmake
