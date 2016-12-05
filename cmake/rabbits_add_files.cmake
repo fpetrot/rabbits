@@ -82,6 +82,19 @@ function(rabbits_add_configs)
         ${ARGN})
 endfunction(rabbits_add_configs)
 
+function(rabbits_add_res)
+    rabbits_add_files_to_collection(
+        RABBITS_RES_LIST
+        "List of resources files"
+        "List of resources files"
+        ${ARGN})
+    rabbits_add_files_to_collection(
+        RABBITS_ALL_RES_LIST
+        "List of all resources files"
+        "List of all resources files"
+        ${ARGN})
+endfunction(rabbits_add_res)
+
 function(rabbits_add_tests)
     rabbits_add_files_to_collection(
         RABBITS_TESTS_LIST
@@ -100,6 +113,7 @@ function(rabbits_add_executable n)
     rabbits_generate_platform_symlinks(${n})
     rabbits_generate_tests(${n})
     rabbits_install_configs(${n})
+    rabbits_install_res(${n})
     rabbits_clear_files_collections()
     install(TARGETS ${n} DESTINATION ${RABBITS_BIN_DIR})
 endfunction(rabbits_add_executable)
@@ -115,6 +129,7 @@ function(rabbits_add_dynlib n)
     rabbits_generate_platform_symlinks(${n})
     rabbits_generate_tests(${n})
     rabbits_install_configs(${n})
+    rabbits_install_res(${n})
     rabbits_clear_files_collections()
     install(TARGETS ${n} DESTINATION ${RABBITS_LIB_DIR}/rabbits)
 endfunction(rabbits_add_dynlib)
@@ -133,6 +148,7 @@ function(rabbits_clear_files_collections)
         RABBITS_PLUGINS_LIST
         RABBITS_PLATFORMS_LIST
         RABBITS_CONFIGS_LIST
+        RABBITS_RES_LIST
         RABBITS_TESTS_LIST)
 endfunction(rabbits_clear_files_collections)
 

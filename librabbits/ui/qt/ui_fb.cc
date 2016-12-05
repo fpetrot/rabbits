@@ -1,6 +1,6 @@
 /*
  *  This file is part of Rabbits
- *  Copyright (C) 2015  Clement Deschamps and Luc Michel
+ *  Copyright (C) 2016  Clement Deschamps and Luc Michel
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -17,40 +17,18 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "rabbits/config.h"
-#include "rabbits/ui/ui.h"
+#include "ui_fb.h"
 
-#if defined(RABBITS_CONFIG_QT)
-# include "qt/ui.h"
-#elif defined(RABBITS_CONFIG_SDL)
-# include "sdl/ui.h"
-#else
-# include "dummy/ui.h"
-#endif
+#include "rabbits-common.h"
+#include "rabbits/logger.h"
 
-ui * ui::singleton = NULL;
-
-void ui::create_ui()
+qt_ui_fb::qt_ui_fb(const ui_fb_info & info) :
+        ui_fb(info)
 {
-    if (ui::singleton != NULL) {
-        LOG_F(APP, ERR, "ui has already been created\n");
-        return;
-    }
-#if defined(RABBITS_CONFIG_QT)
-    ui::singleton = new qt_ui;
-#elif defined(RABBITS_CONFIG_SDL)
-    ui::singleton = new sdl_ui;
-#else
-    ui::singleton = new dummy_ui;
-#endif
+    set_info(info);
 }
 
-ui * ui::get_ui()
+void qt_ui_fb::set_info(const ui_fb_info & info)
 {
-    return ui::singleton;
 }
 
-void ui::dispose_ui()
-{
-    delete ui::singleton;
-}

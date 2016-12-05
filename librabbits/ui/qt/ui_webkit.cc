@@ -1,6 +1,6 @@
 /*
  *  This file is part of Rabbits
- *  Copyright (C) 2015  Clement Deschamps and Luc Michel
+ *  Copyright (C) 2016  Clement Deschamps and Luc Michel
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -17,40 +17,27 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "rabbits/config.h"
-#include "rabbits/ui/ui.h"
+#include "ui_webkit.h"
+#include "ui.h"
 
-#if defined(RABBITS_CONFIG_QT)
-# include "qt/ui.h"
-#elif defined(RABBITS_CONFIG_SDL)
-# include "sdl/ui.h"
-#else
-# include "dummy/ui.h"
-#endif
+#include "rabbits-common.h"
+#include "rabbits/logger.h"
 
-ui * ui::singleton = NULL;
+#include <QApplication>
 
-void ui::create_ui()
+qt_ui_webkit::qt_ui_webkit(std::string url) : ui_webkit()
 {
-    if (ui::singleton != NULL) {
-        LOG_F(APP, ERR, "ui has already been created\n");
-        return;
-    }
-#if defined(RABBITS_CONFIG_QT)
-    ui::singleton = new qt_ui;
-#elif defined(RABBITS_CONFIG_SDL)
-    ui::singleton = new sdl_ui;
-#else
-    ui::singleton = new dummy_ui;
-#endif
+	m_url = url;
 }
 
-ui * ui::get_ui()
+void qt_ui_webkit::exec_js(std::string js)
 {
-    return ui::singleton;
+    QApplication::postEvent(m_view, new WebkitExecEvent(this, QString::fromStdString(js)));
 }
 
-void ui::dispose_ui()
+void qt_ui_webkit::poll_updates(std::vector<std::string> &updates)
 {
-    delete ui::singleton;
+    updates.assign(m_updates.begin(), m_updates.end());
+    m_updates.clear();
 }
+
