@@ -14,6 +14,7 @@ set(RABBITS_FACTORY_SCRIPT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen-factory
 include(rabbits_add_files)
 include(rabbits_components)
 
+find_package(Threads REQUIRED)
 find_package(SystemC REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(RubyInterp 2.0 REQUIRED)
@@ -22,11 +23,11 @@ find_package(Doxygen)
 find_package(libfdt REQUIRED)
 
 # Options
-option(USE_SDL "Use SDL1.2 for framebuffer devices" ON)
+option(USE_SDL "Use SDL1.2 for framebuffer devices" OFF)
 option(USE_QT "Use QT for user interface" ON)
 option(BUILD_DOCUMENTATION "Build the Doxygen HTML documentation (requires Doxygen)" OFF)
 
-set(EXTRA_LIBS ${EXTRA_LIBS} ${LIBFDT_LIBRARIES})
+set(EXTRA_LIBS ${EXTRA_LIBS} ${CMAKE_THREAD_LIBS_INIT} ${LIBFDT_LIBRARIES})
 
 if(USE_SDL)
     set(SDL_BUILDING_LIBRARY ON)
