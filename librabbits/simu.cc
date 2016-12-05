@@ -24,10 +24,29 @@
 
 using namespace sc_core;
 
-void simu_manager::start()
+static pthread_t simu_thread;
+
+void *simu_thread_run(void *arg)
 {
     while (sc_get_status() != SC_STOPPED) {
         ui::get_ui()->update();
         sc_start(1, SC_MS);
+    }
+    ui::get_ui()->stop();
+
+    return NULL;
+}
+
+void simu_manager::start()
+{
+    /* SystemC simulation is started on a separate pthread */
+    pthread_create(&simu_thread, NULL, simu_thread_run, NULL);
+    pthread_detach(simu_thread);
+
+    ui::get_ui()->event_loop();
+
+    /* in case the event loop ended while SC is running (e.g. window closed) */
+    if(sc_core::sc_get_status() != sc_core::SC_STOPPED) {
+        sc_core::sc_stop();
     }
 }

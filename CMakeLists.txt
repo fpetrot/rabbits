@@ -14,6 +14,7 @@ set(RABBITS_FACTORY_SCRIPT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen-factory
 include(rabbits_add_files)
 include(rabbits_components)
 
+find_package(Threads REQUIRED)
 find_package(SystemC REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(RubyInterp 2.0 REQUIRED)
@@ -22,10 +23,11 @@ find_package(Doxygen)
 find_package(libfdt REQUIRED)
 
 # Options
-option(USE_SDL "Use SDL1.2 for framebuffer devices" ON)
+option(USE_SDL "Use SDL1.2 for framebuffer devices" OFF)
+option(USE_QT "Use QT for user interface" ON)
 option(BUILD_DOCUMENTATION "Build the Doxygen HTML documentation (requires Doxygen)" OFF)
 
-set(EXTRA_LIBS ${EXTRA_LIBS} ${LIBFDT_LIBRARIES})
+set(EXTRA_LIBS ${EXTRA_LIBS} ${CMAKE_THREAD_LIBS_INIT} ${LIBFDT_LIBRARIES})
 
 if(USE_SDL)
     set(SDL_BUILDING_LIBRARY ON)
@@ -35,6 +37,15 @@ if(USE_SDL)
         include_directories(${SDL_INCLUDE_DIR})
         set(EXTRA_LIBS ${EXTRA_LIBS} ${SDL_LIBRARY})
     endif()
+endif()
+
+if(USE_QT)
+    set(CMAKE_INCLUDE_CURRENT_DIR ON)
+    set(CMAKE_AUTOMOC ON)
+    find_package(Qt5Widgets)
+    find_package(Qt5WebKitWidgets)
+    set(RABBITS_CONFIG_QT 1)
+    set(EXTRA_LIBS ${EXTRA_LIBS} Qt5::Widgets Qt5::WebKitWidgets)
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -94,6 +105,7 @@ set(RABBITS_LIB_DIR lib)
 set(RABBITS_INCLUDE_DIR include)
 set(RABBITS_DOC_DIR share/doc/rabbits)
 set(RABBITS_CONFIG_DIR share/rabbits/config)
+set(RABBITS_RES_DIR share/rabbits/res)
 set(RABBITS_EXECUTABLE ${RABBITS_BIN_DIR}/${RABBITS_APP_NAME})
 set(RABBITS_LIBRARIES rabbits)
 set(RABBITS_TEST_LIBRARY rabbits-test)
@@ -145,6 +157,7 @@ configure_package_config_file(RabbitsConfig.cmake.in
     RABBITS_LIB_DIR
     RABBITS_BIN_DIR
     RABBITS_CONFIG_DIR
+    RABBITS_RES_DIR
     RABBITS_EXECUTABLE
     NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 
@@ -160,6 +173,7 @@ install(DIRECTORY include/ DESTINATION ${RABBITS_INCLUDE_DIR} FILES_MATCHING PAT
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/rabbits/config.h" DESTINATION ${RABBITS_INCLUDE_DIR}/rabbits)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen-factory.rb" DESTINATION ${RABBITS_LIB_DIR}/rabbits)
 install(DIRECTORY DESTINATION ${RABBITS_CONFIG_DIR})
+install(DIRECTORY DESTINATION ${RABBITS_RES_DIR})
 
 # cmake files installation
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/RabbitsConfig.cmake

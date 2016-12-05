@@ -106,13 +106,7 @@ function(rabbits_generate_tests n)
 
         set(_test_payload ${CMAKE_CURRENT_BINARY_DIR}/${n}_test_payload.cc)
 
-        if("${CMAKE_VERSION}" VERSION_GREATER 3.0.2)
-            file(GENERATE
-                OUTPUT ${_test_payload}
-                CONTENT "namespace test { const char * test_payload = \"$<TARGET_FILE:${_test_mod}>\"; };")
-        else()
-            file(WRITE ${_test_payload} "namespace test { const char * test_payload = \"$<TARGET_FILE:${_test_mod}>\"; };")
-        endif()
+        file(WRITE ${_test_payload} "namespace test { const char * test_payload = \"$<TARGET_FILE:${_test_mod}>\"; };")
 
         add_executable(${_test_name} ${_test_payload})
         target_link_libraries(${_test_name} ${SYSTEMC_LIBRARIES} ${RABBITS_TEST_LIBRARY})
@@ -126,5 +120,12 @@ function(rabbits_install_configs n)
         install(FILES ${__configs} DESTINATION ${RABBITS_CONFIG_DIR}/${n}/config)
     endif()
 endfunction(rabbits_install_configs)
+
+function(rabbits_install_res n)
+    get_property(__res GLOBAL PROPERTY RABBITS_RES_LIST)
+    if(__res)
+        install(FILES ${__res} DESTINATION ${RABBITS_RES_DIR}/${n})
+    endif()
+endfunction(rabbits_install_res)
 
 # vim: ts=4 sts=4 sw=4 expandtab
