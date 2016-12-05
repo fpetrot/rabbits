@@ -69,7 +69,7 @@ class WebkitBridge : public QObject
 public:
     qt_ui_webkit *m_webkit;
 
-    WebkitBridge(qt_ui_webkit *webkit = 0) : QObject(0)
+    WebkitBridge(qt_ui_webkit *webkit = 0) : QObject(webkit->m_view)
     {
         m_webkit = webkit;
     }
@@ -86,6 +86,8 @@ class qt_ui: public ui
 private:
     std::vector<qt_ui_fb*> m_fbs;
 
+    QApplication *m_app;
+
 protected:
     qt_ui();
 
@@ -98,6 +100,8 @@ public:
     ui_fb* new_fb(std::string name, const ui_fb_info &info);
 
     ui_webkit* new_webkit(std::string url);
+
+    void event_loop();
 
     void update();
 };

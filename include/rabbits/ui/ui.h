@@ -38,8 +38,12 @@ public:
     {
     }
 
+    /* must be called on the main thread before calling get_ui() */
+    static void create_ui();
+
+    static void dispose_ui();
+
     static ui* get_ui();
-    static void start_ui();
 
     virtual void stop() = 0;
 
@@ -55,6 +59,10 @@ public:
         return NULL;
     }
 
+    /* called once from the main thread */
+    virtual void event_loop() = 0;
+
+    /* called periodically from the simulation thread */
     virtual void update() = 0;
 };
 

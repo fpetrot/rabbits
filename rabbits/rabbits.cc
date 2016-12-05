@@ -318,6 +318,8 @@ void check_unused_params(PlatformDescription &d)
 extern "C" {
 int sc_main(int argc, char *argv[])
 {
+    ui::create_ui();
+
     ConfigManager config;
     ConfigManager::set_config_manager(config);
 
@@ -434,6 +436,7 @@ int sc_main(int argc, char *argv[])
         return 1;
     }
 
+    ui::dispose_ui();
 
     return 0;
 }

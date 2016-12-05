@@ -28,26 +28,29 @@
 # include "dummy/ui.h"
 #endif
 
-
 ui * ui::singleton = NULL;
+
+void ui::create_ui()
+{
+    if (ui::singleton != NULL) {
+        LOG_F(APP, ERR, "ui has already been created\n");
+        return;
+    }
+#if defined(RABBITS_CONFIG_QT)
+    ui::singleton = new qt_ui;
+#elif defined(RABBITS_CONFIG_SDL)
+    ui::singleton = new sdl_ui;
+#else
+    ui::singleton = new dummy_ui;
+#endif
+}
 
 ui * ui::get_ui()
 {
-    if (ui::singleton == NULL) {
-#if defined(RABBITS_CONFIG_QT)
-        ui::singleton = new qt_ui;
-#elif defined(RABBITS_CONFIG_SDL)
-        ui::singleton = new sdl_ui;
-#else
-        ui::singleton = new dummy_ui;
-#endif
-    }
-
     return ui::singleton;
 }
 
-void ui::start_ui()
+void ui::dispose_ui()
 {
-    get_ui();
-    /* TODO: Idle screen */
+    delete ui::singleton;
 }

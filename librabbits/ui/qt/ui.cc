@@ -39,9 +39,8 @@
 /* AUTOMOC ui.h */
 #include "moc_ui.cpp"
 
-static pthread_t qt_thread;
-
-static sem_t sem_qt_wait;
+static int _argc = 1;
+static char *_argv[] = { (char *)"Rabbits" };
 
 class MainEventFilter: public QObject
 {
@@ -62,16 +61,14 @@ public:
 
             QWebView *boardView = new QWebView(m_tabs);
 
-            boardView->setAttribute(Qt::WA_DeleteOnClose, true);
-
-			m_tabs->addTab(boardView,"Board"); // TODO: Platform name
+            m_tabs->addTab(boardView, "Board"); // TODO: platform name
 
             boardView->load(QUrl(QString::fromStdString(createEvent->m_webkit->m_url)));
 
+            createEvent->m_webkit->m_view = boardView;
+
             QWebFrame *frame = boardView->page()->mainFrame();
             frame->addToJavaScriptWindowObject("bridge", new WebkitBridge(createEvent->m_webkit));
-
-            createEvent->m_webkit->m_view = boardView;
 
             return true;
         }
@@ -86,6 +83,7 @@ public:
     }
 };
 
+#if 0
 static void messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
     QByteArray localMsg = msg.toLocal8Bit();
@@ -97,9 +95,7 @@ static void messageHandler(QtMsgType type, const QMessageLogContext &context, co
         fprintf(stderr, "Info: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
         break;
     case QtWarningMsg:
-#if 0 // removing warning messages (when closing Rabbits, QT is complaining about Timers)
         fprintf(stderr, "Warning: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-#endif
         break;
     case QtCriticalMsg:
         fprintf(stderr, "Critical: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
@@ -109,69 +105,39 @@ static void messageHandler(QtMsgType type, const QMessageLogContext &context, co
         abort();
     }
 }
+#endif
 
-void * qt_main(void *arg)
+qt_ui::qt_ui()
 {
     /* Disable GLIB in QT because it is conflicting with QEMU */
     qputenv("QT_NO_GLIB", "1");
 
-    int argc = 0;
-    QApplication a(argc, NULL);
+    m_app = new QApplication(_argc, _argv);
 
-	qInstallMessageHandler(messageHandler);
+    QApplication::setApplicationDisplayName("Rabbits"); // TODO: add platform name
 
-	QMainWindow *window = new QMainWindow();
-    window->setWindowTitle(QString::fromUtf8("Rabbits")); // TODO: add platform name
+    QMainWindow *window = new QMainWindow();
 
-	/* Menus */
+    QTabWidget *tabs = new QTabWidget(window);
+
+    tabs->setMinimumSize(QSize(640, 480));
+
+    m_app->installEventFilter(new MainEventFilter(tabs));
+
     QMenu *fileMenu = window->menuBar()->addMenu("&File");
 
     QAction *quitAction = new QAction("&Quit", window);
     fileMenu->addAction(quitAction);
-    a.connect(quitAction, SIGNAL(triggered()), &a, SLOT(quit()));
+    m_app->connect(quitAction, SIGNAL(triggered()), m_app, SLOT(quit()));
 
-    // TODO: "View" menu to detach tabs
-    // QMenu *viewMenu = window->menuBar()->addMenu("&View");
-
-    QTabWidget *tabs = new QTabWidget();
     window->setCentralWidget(tabs);
 
-    // TODO: only in debug mode
-    QWebSettings::globalSettings()->setAttribute(QWebSettings::DeveloperExtrasEnabled, true);
-
-    a.installEventFilter(new MainEventFilter(tabs));
-
-	window->show();
-
-	/* initialization done */
-    sem_post(&sem_qt_wait);
-
-    a.exec();
-
-	// if QT has been closed from "File -> Quit"
-	if(sc_core::sc_get_status() != sc_core::SC_STOPPED) {
-		sc_core::sc_stop();
-	}
-
-	/* application exited */
-    sem_post(&sem_qt_wait);
-
-    return NULL;
-}
-
-qt_ui::qt_ui()
-{
-    sem_init(&sem_qt_wait, 0, 0);
-
-    pthread_create(&qt_thread, NULL, qt_main, NULL);
-    pthread_detach(qt_thread);
-
-	/* wait for initialization */
-    sem_wait(&sem_qt_wait);
+    window->show();
 }
 
 qt_ui::~qt_ui()
 {
+    delete m_app;
 }
 
 ui_fb* qt_ui::new_fb(std::string name, const ui_fb_info &info)
@@ -192,6 +158,11 @@ ui_webkit* qt_ui::new_webkit(std::string url)
     return webkit;
 }
 
+void qt_ui::event_loop()
+{
+    QApplication::instance()->exec();
+}
+
 void qt_ui::update()
 {
     // QT event loop is running in a separate pthread
@@ -200,9 +171,4 @@ void qt_ui::update()
 void qt_ui::stop()
 {
     QApplication::quit();
-
-	// TODO: we should use pthread_join here, but it returns EINVAL (22)
-	// There is probably another thread already waiting to join with this thread
-	// Using a semaphore instead.
-    sem_wait(&sem_qt_wait);
 }
