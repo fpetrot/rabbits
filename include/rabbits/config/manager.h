@@ -32,6 +32,7 @@
 #include "rabbits/plugin/manager.h"
 #include "rabbits/dynloader/dynloader.h"
 #include "rabbits/logger/has_logger.h"
+#include "rabbits/logger/wrapper.h"
 
 namespace boost {
     namespace filesystem {
@@ -47,12 +48,9 @@ public:
 private:
     static ConfigManager * m_config;
 
-    mutable Logger m_logger_app;
-    mutable Logger m_logger_sim;
-
-    Logger * m_root_loggers[LogContext::LASTLOGCONTEXT] { &m_logger_app, &m_logger_sim };
-
     Parameters m_global_params;
+
+    LoggerWrapper m_root_loggers;
 
     DynamicLoader m_dynloader;
 
@@ -131,7 +129,7 @@ public:
 
     PlatformDescription get_root_description() const { return m_root_descr; }
 
-    Logger & get_logger(LogContext::value context) const { return *m_root_loggers[context]; }
+    Logger & get_logger(LogContext::value context) const { return m_root_loggers.get_logger(context); }
 
     ComponentManager & get_component_manager() { return m_components; }
     BackendManager & get_backend_manager() { return m_backends; }

@@ -33,20 +33,11 @@
 #include <rabbits/config/manager.h>
 #include <rabbits/config/static_loader.h>
 
-#include <cstdlib>
-#include <iostream>
-#include <fstream>
-#include <map>
-#include <memory>
-
 #include "usage.h"
 #include "cmdline.h"
 
 using std::string;
 using std::vector;
-using std::map;
-using std::fstream;
-using std::unique_ptr;
 
 static void declare_global_params(ConfigManager &config)
 {
@@ -84,38 +75,10 @@ static void declare_global_params(ConfigManager &config)
                                             false,
                                             true));
 
-    config.add_global_param("debug",
-                            Parameter<bool>("Set log level to `debug' "
-                                            "(equivalent to `-log-level debug')",
-                                            false));
-
     config.add_global_param("show-version",
                             Parameter<bool>("Display version information and exit",
                                             false));
 
-    /* Logger stuff */
-    config.add_global_param("log-target",
-                            Parameter<string>("Specify the log target (valid options "
-                                              "are `stdout', `stderr' and `file')",
-                                              "stderr"));
-    config.add_global_param("log-file",
-                            Parameter<string>("Specify the log file",
-                                              "rabbits.log"));
-    config.add_global_param("log-level",
-                            Parameter<string>("Specify the log level (valid options "
-                                              "are `trace', `debug', `info', `warning', `error')",
-                                              "info"));
-    config.add_global_param("log-sim-target",
-                            Parameter<string>("Specify simulation related log target "
-                                              "(valid options are `stdout', `stderr' and `file')",
-                                              "stderr"));
-    config.add_global_param("log-sim-file",
-                            Parameter<string>("Specify simulation related log file",
-                                              "rabbits.log"));
-    config.add_global_param("log-sim-level",
-                            Parameter<string>("Specify simulation related log level "
-                                              "(valid options are `trace', `debug', `info', `warning', `error')",
-                                              "info"));
 }
 
 static void declare_aliases(ConfigManager &config)
@@ -132,131 +95,6 @@ static void declare_aliases(ConfigManager &config)
     config.add_param_alias("debug",             p["debug"]);
     config.add_param_alias("version",           p["show-version"]);
     config.add_param_alias("platform",          p["selected-platform"]);
-}
-
-enum LogTarget {
-    LT_STDOUT, LT_STDERR, LT_FILE
-};
-
-typedef unique_ptr<fstream> LogFile;
-typedef map<string, LogFile> LogFiles;
-
-static LogTarget get_log_target(const string target_s)
-{
-    if (target_s == "stdout") {
-        return LT_STDOUT;
-    } else if (target_s == "stderr") {
-        return LT_STDERR;
-    } else if (target_s == "file") {
-        return LT_FILE;
-    }
-
-    LOG(APP, ERR) << "Ignoring invalid log target " << target_s << "\n";
-    return LT_STDERR;
-}
-
-static LogLevel::value get_log_level(const string level_s)
-{
-    if (level_s == "debug") {
-        return LogLevel::DEBUG;
-    } else if (level_s == "info") {
-        return LogLevel::INFO;
-    } else if (level_s == "warning") {
-        return LogLevel::WARNING;
-    } else if (level_s == "error") {
-        return LogLevel::ERROR;
-    } else if (level_s == "trace") {
-        return LogLevel::TRACE;
-    }
-
-    LOG(APP, ERR) << "Ignoring invalid log level " << level_s << "\n";
-    return LogLevel::INFO;
-}
-
-static fstream* open_file(const string &fn, LogFiles &files)
-{
-    fstream* ret = nullptr;
-
-    if (files.find(fn) != files.end()) {
-        if (!files[fn]) {
-            return nullptr;
-        }
-        return files[fn].get();
-    }
-
-    ret = new fstream(fn, fstream::out | fstream::trunc);
-
-    files[fn].reset(ret);
-
-    return ret;
-}
-
-static void setup_logger(Logger &l, LogTarget target, LogLevel::value lvl,
-                         const string log_file, LogFiles &files)
-{
-    switch (target) {
-    case LT_STDOUT:
-        l.set_streams(&std::cout);
-        break;
-
-    case LT_FILE:
-        {
-            fstream* file = open_file(log_file, files);
-
-            if (!*file) {
-                LOG(APP, ERR) << "Unable to open log file " << log_file << ". Falling back to stderr\n";
-            } else {
-                l.set_streams(file);
-            }
-        }
-        break;
-
-    case LT_STDERR:
-        /* Default */
-        break;
-    }
-
-    l.set_log_level(lvl);
-}
-
-static inline bool sim_logger_is_custom(Parameters &g)
-{
-    return (!g["log-sim-target"].is_default())
-        || (!g["log-sim-level"].is_default())
-        || (!g["log-sim-file"].is_default());
-}
-
-static void setup_loggers(ConfigManager &config, LogFiles &files)
-{
-    Parameters &p = config.get_global_params();
-    Logger &app = get_app_logger();
-    Logger &sim = get_sim_logger();
-
-    const LogTarget log_target = get_log_target(p["log-target"].as<string>());
-    const LogLevel::value log_level = get_log_level(p["log-level"].as<string>());
-    const string log_file = p["log-file"].as<string>();
-
-    const LogTarget log_sim_target = get_log_target(p["log-sim-target"].as<string>());
-    const LogLevel::value log_sim_level = get_log_level(p["log-sim-level"].as<string>());
-    const string log_sim_file = p["log-sim-file"].as<string>();
-
-    setup_logger(app, log_target, log_level, log_file, files);
-
-    if (sim_logger_is_custom(p)) {
-        setup_logger(sim, log_sim_target, log_sim_level, log_sim_file, files);
-    } else {
-        setup_logger(sim, log_target, log_level, log_file, files);
-    }
-
-    sim.set_custom_banner([] (Logger &l, const std::string &banner)
-    {
-            l << format::purple << "[sim]";
-        if (sc_core::sc_get_status() == sc_core::SC_ELABORATION) {
-            l << format::green << "[elaboration]" << format::reset;
-        } else {
-            l << format::green << "[" << sc_core::sc_time_stamp() << "]" << format::reset;
-        }
-    });
 }
 
 class WarnUnusedParams : public PlatformDescription::NodeVisitor {
@@ -297,7 +135,8 @@ protected:
 
 public:
     void operator() (PlatformDescription &n,
-                     const std::vector<std::string> &names) {
+                     const std::vector<std::string> &names)
+    {
         string s;
 
         if (names_to_str(n, names, s)) {
@@ -323,9 +162,6 @@ int sc_main(int argc, char *argv[])
     ConfigManager config;
     ConfigManager::set_config_manager(config);
 
-    get_app_logger().set_log_level(LogLevel::INFO);
-    get_sim_logger().set_log_level(LogLevel::INFO);
-
     declare_global_params(config);
     declare_aliases(config);
 
@@ -337,15 +173,6 @@ int sc_main(int argc, char *argv[])
     }
 
     Parameters &globals = config.get_global_params();
-
-    LogFiles log_files;
-
-    if (globals["debug"].as<bool>()) {
-        globals["log-level"] = string("debug");
-        globals["log-sim-level"] = string("debug");
-    }
-
-    setup_loggers(config, log_files);
 
     if (globals["debug"].as<bool>()) {
         print_version(LogLevel::DEBUG);
