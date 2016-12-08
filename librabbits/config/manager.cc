@@ -21,6 +21,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <systemc>
 
 #include "rabbits/config.h"
 #include "rabbits/config/manager.h"
@@ -34,9 +35,8 @@ using namespace boost::filesystem;
 ConfigManager * ConfigManager::m_config = nullptr;
 
 ConfigManager::ConfigManager()
-    : m_logger_app(*this)
-    , m_logger_sim(*this)
-    , m_global_params(Namespace::get(Namespace::GLOBAL))
+    : m_global_params(Namespace::get(Namespace::GLOBAL))
+    , m_root_loggers(m_global_params, *this)
     , m_dynloader(*this)
 {
     add_global_param("config-dir",
@@ -58,6 +58,42 @@ ConfigManager::ConfigManager()
                                      "non-mapped area on a bus.",
                                      true,
                                      true));
+
+    add_global_param("log-target",
+                     Parameter<string>("Specify the log target (valid options "
+                                       "are `stdout', `stderr' and `file')",
+                                       "stderr"));
+
+    add_global_param("log-file",
+                     Parameter<string>("Specify the log file",
+                                       "rabbits.log"));
+
+    add_global_param("log-level",
+                     Parameter<string>("Specify the log level (valid options "
+                                       "are `trace', `debug', `info', `warning', `error')",
+                                       "info"));
+
+    add_global_param("debug",
+                     Parameter<bool>("Set log level to `debug' "
+                                     "(equivalent to `-log-level debug')",
+                                     false));
+
+    add_global_param("trace",
+                     Parameter<bool>("Set log level to `trace' "
+                                     "(equivalent to `-log-level trace')",
+                                     false));
+
+    Logger &sim = m_root_loggers.get_logger(LogContext::SIM);
+    sim.set_custom_banner([] (Logger &l, const std::string &banner) {
+        l << format::purple << "[sim]";
+        if (sc_core::sc_get_status() == sc_core::SC_ELABORATION) {
+            l << format::green << "[elaboration]" << format::reset;
+        } else {
+            l << format::green << "[" << sc_core::sc_time_stamp() << "]" << format::reset;
+        }
+    });
+
+    m_root_loggers.reconfigure();
 }
 
 ConfigManager::~ConfigManager()
@@ -83,7 +119,7 @@ void ConfigManager::compute_platform(const string &name, const PlatformDescripti
     if (platform["inherit"].is_scalar()) {
         const string parent_name = platform["inherit"].as<string>();
 
-        LOG(APP, DBG) << "Platform " << name << " inherits from `" << parent_name << "`\n";
+        LOG(APP, TRC) << "Platform " << name << " inherits from `" << parent_name << "`\n";
 
         if (platform_exists(parent_name)) {
             PlatformDescription parent = get_platform(parent_name);
@@ -91,7 +127,7 @@ void ConfigManager::compute_platform(const string &name, const PlatformDescripti
             platform = platform.merge(parent);
             platform.remove("generic");
         } else {
-            LOG(APP, DBG) << "Platform " << name << " inherits from unknown platform `" << parent_name << "`\n";
+            LOG(APP, TRC) << "Platform " << name << " inherits from unknown platform `" << parent_name << "`\n";
         }
     }
 
@@ -103,12 +139,12 @@ void ConfigManager::recompute_platforms()
     m_platforms.clear();
 
     if (!m_root_descr["platforms"].is_map()) {
-        LOG(APP, DBG) << "No platform found.\n";
+        LOG(APP, TRC) << "No platform found.\n";
         return;
     }
 
     for (auto &p : m_root_descr["platforms"]) {
-        LOG(APP, DBG) << "Found platform " << p.first << "\n";
+        LOG(APP, TRC) << "Found platform " << p.first << "\n";
         compute_platform(p.first, p.second);
     }
 }
@@ -160,6 +196,8 @@ void ConfigManager::recompute_config()
     recompute_platforms();
 
     m_is_recomputing_config = false;
+
+    m_root_loggers.reconfigure();
 }
 
 void ConfigManager::apply_description(PlatformDescription &d)
@@ -173,11 +211,11 @@ void ConfigManager::parse_basename(const char *arg0)
     const string basename = path(arg0).filename().string();
 
     if (basename != RABBITS_APP_NAME) {
-        LOG(APP, DBG) << "Trying to deduce selected platform from basename\n";
+        LOG(APP, TRC) << "Trying to deduce selected platform from basename\n";
         const string prefix(RABBITS_PLATFORM_SYMLINK_PREFIX);
 
         if (basename.find(prefix) != 0) {
-            LOG(APP, DBG) << "basename seems invalid. Giving up.\n";
+            LOG(APP, TRC) << "basename seems invalid. Giving up.\n";
         } else {
             m_platform_basename = basename.substr(prefix.size());
         }

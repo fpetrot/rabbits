@@ -28,12 +28,13 @@ LoggerWrapper::LoggerWrapper(const std::string & name, HasLoggerIface &parent, P
     , m_logger_sim(config)
     , m_name(name)
     , m_params(params)
+    , m_parent(&parent)
 {
     if (m_params.exists("log-file")) {
         m_params["log-file"].set_default(name + ".log");
     }
 
-    setup_loggers(parent);
+    setup_loggers();
 }
 
 LoggerWrapper::LoggerWrapper(Parameters &params, ConfigManager &config)
@@ -41,7 +42,7 @@ LoggerWrapper::LoggerWrapper(Parameters &params, ConfigManager &config)
     , m_logger_sim(config)
     , m_params(params)
 {
-    setup_loggers(config);
+    setup_loggers();
 }
 
 LoggerWrapper::LogTarget LoggerWrapper::get_log_target(const std::string target_s)
@@ -110,11 +111,8 @@ void LoggerWrapper::setup_logger_banner(Logger &l)
                         });
 }
 
-void LoggerWrapper::setup_logger(Logger &l, LogTarget target, LogLevel::value lvl,
-                  const std::string log_file)
+void LoggerWrapper::setup_logger(Logger &l, LogTarget target, const std::string log_file)
 {
-    setup_logger_banner(l);
-
     switch (target) {
     case LT_STDOUT:
         l.set_streams(&std::cout);
@@ -137,42 +135,52 @@ void LoggerWrapper::setup_logger(Logger &l, LogTarget target, LogLevel::value lv
         /* Default */
         break;
     }
+}
 
-    l.set_log_level(lvl);
+bool LoggerWrapper::param_is_custom(const std::string &name) const
+{
+    if (!m_params.exists(name)) {
+        return false;
+    }
+
+    return !m_params[name].is_default();
+}
+
+bool LoggerWrapper::lvl_is_custom()
+{
+    return (param_is_custom("log-level")
+            || param_is_custom("debug")
+            || param_is_custom("trace"));
 }
 
 bool LoggerWrapper::logger_is_custom()
 {
-    if (!m_params.exists("log-file")) {
-        return false;
-    }
-
-    return (!m_params["log-target"].is_default())
-        || (!m_params["log-level"].is_default())
-        || (!m_params["log-file"].is_default())
-        || (!m_params["debug"].is_default())
-        || (!m_params["trace"].is_default());
+    return (param_is_custom("log-target")
+            || param_is_custom("log-file"));
 }
 
-void LoggerWrapper::setup_loggers(HasLoggerIface &parent)
+void LoggerWrapper::set_defaults(Logger &l)
 {
-    LogTarget log_target;
-    LogLevel::value log_level;
-    std::string log_file;
+    l.set_log_level(LogLevel::INFO);
+}
+
+void LoggerWrapper::setup_loggers()
+{
+    LogTarget log_target = LT_STDERR;
+    LogLevel::value log_level = LogLevel::INFO;
+    std::string log_file = "";
     bool debug = false;
     bool trace = false;
-    bool custom = logger_is_custom();
 
-    if (custom) {
+    if (logger_is_custom()) {
         log_target = get_log_target(m_params["log-target"].as<std::string>());
-        log_level = get_log_level(m_params["log-level"].as<std::string>());
         log_file = m_params["log-file"].as<std::string>();
+    }
+
+    if (lvl_is_custom()) {
+        log_level = get_log_level(m_params["log-level"].as<std::string>());
         debug = m_params["debug"].as<bool>();
         trace = m_params["trace"].as<bool>();
-    } else {
-        log_target = LT_STDERR;
-        log_level = LogLevel::INFO;
-        log_file = "";
     }
 
     if (debug) {
@@ -184,12 +192,20 @@ void LoggerWrapper::setup_loggers(HasLoggerIface &parent)
     }
 
     for (int i = 0; i < LogContext::LASTLOGCONTEXT; i++) {
-        parent.get_logger(LogContext::value(i)).set_child(*m_loggers[i]);
-
-        if (custom) {
-            setup_logger(*m_loggers[i], log_target, log_level, log_file);
+        if (m_parent) {
+            m_parent->get_logger(LogContext::value(i)).set_child(*m_loggers[i]);
         } else {
-            setup_logger_banner(*m_loggers[i]);
+            set_defaults(*m_loggers[i]);
+        }
+
+        setup_logger_banner(*m_loggers[i]);
+
+        if (logger_is_custom()) {
+            setup_logger(*m_loggers[i], log_target, log_file);
+        }
+
+        if (lvl_is_custom()) {
+            m_loggers[i]->set_log_level(log_level);
         }
     }
 }
