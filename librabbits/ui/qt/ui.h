@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "rabbits/logger.h"
+#include "rabbits/logger/wrapper.h"
 #include "rabbits/ui/ui.h"
 
 #include "events.h"
@@ -31,21 +32,31 @@
 
 class QApplication;
 
-class QtUi: public Ui
+class QtUi: public Ui, public HasLoggerIface
 {
 private:
+    LoggerWrapper m_loggers;
     QApplication *m_app = nullptr;
 
     /* Custom argc/argv construction for Qt */
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
     static const int QT_ARGC = 1;
-    char m_arg0[ARRAY_SIZE(RABBITS_APP_NAME)] { RABBITS_APP_NAME };
+    char m_arg0[ARRAY_SIZE(RABBITS_APP_NAME)] = RABBITS_APP_NAME;
     char * m_qt_argv[QT_ARGC] { m_arg0 };
     int m_qt_argc = QT_ARGC;
 #undef ARRAY_SIZE
 
     void set_app_name();
     void setup_window();
+
+    static QtUi *m_inst;
+    static void qt_msg_handler_entry(QtMsgType type,
+                                     const QMessageLogContext &context,
+                                     const QString &msg);
+
+    void qt_msg_handler(QtMsgType type,
+                        const QMessageLogContext &context,
+                        const QString &msg);
 
 public:
     QtUi(ConfigManager &config);
@@ -59,6 +70,9 @@ public:
 
     Ui::eExitStatus run();
     void stop();
+
+    /* HasLoggerIface */
+    Logger & get_logger(LogContext::value context) const { return m_loggers.get_logger(context); }
 };
 
 #endif

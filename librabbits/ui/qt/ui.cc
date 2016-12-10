@@ -25,6 +25,7 @@
 #include "ui.h"
 #include "view/framebuffer.h"
 #include "view/webkit.h"
+#include "tester.h"
 
 #include <QApplication>
 #include <QWebView>
@@ -35,6 +36,8 @@
 #include <QMainWindow>
 #include <QMenuBar>
 #include <QTabWidget>
+
+QtUi * QtUi::m_inst = nullptr;
 
 class MainEventFilter: public QObject
 {
@@ -93,29 +96,35 @@ public:
     }
 };
 
-#if 0
-static void messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
+void QtUi::qt_msg_handler_entry(QtMsgType type,
+                                const QMessageLogContext &context,
+                                const QString &msg)
+{
+    assert(m_inst);
+    m_inst->qt_msg_handler(type, context, msg);
+}
+
+void QtUi::qt_msg_handler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
     QByteArray localMsg = msg.toLocal8Bit();
     switch (type) {
     case QtDebugMsg:
-        fprintf(stderr, "Debug: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+        MLOG(APP, DBG) << localMsg.constData() << "\n";
         break;
     case QtInfoMsg:
-        fprintf(stderr, "Info: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+        MLOG(APP, INF) << localMsg.constData() << "\n";
         break;
     case QtWarningMsg:
-        fprintf(stderr, "Warning: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+        MLOG(APP, WRN) << localMsg.constData() << "\n";
         break;
     case QtCriticalMsg:
-        fprintf(stderr, "Critical: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+        MLOG(APP, ERR) << localMsg.constData() << "\n";
         break;
     case QtFatalMsg:
-        fprintf(stderr, "Fatal: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-        abort();
+        MLOG(APP, ERR) << "Qt fatal error: " << localMsg.constData() << "\n";
+        MLOG(APP, ERR) << "Try to run with the `-nographic' command line argument\n";
     }
 }
-#endif
 
 void QtUi::set_app_name()
 {
@@ -151,22 +160,36 @@ void QtUi::setup_window()
 
 QtUi::QtUi(ConfigManager &config)
     : Ui(config)
+    , m_loggers("qt ui", config, Parameters::EMPTY, config)
 {
-    LOG(APP, DBG) << "Creating QT UI\n";
+    MLOG(APP, DBG) << "Creating Qt UI\n";
+
+    QtTester tester;
+
+    if (m_inst != nullptr) {
+        LOG(APP, ERR) << "Trying to create multiple Qt UI\n";
+        throw UiCreationFailureException("Qt UI already exists");
+    }
+    m_inst = this;
+
+    if (!tester.test()) {
+        /* QApplication would fail */
+        throw UiCreationFailureException("Qt UI creation failure");
+    }
 
     /* Disable GLIB in QT because it is conflicting with QEMU */
     qputenv("QT_NO_GLIB", "1");
 
-    m_app = new QApplication(m_qt_argc, m_qt_argv);
+    qInstallMessageHandler(qt_msg_handler_entry);
 
+    m_app = new QApplication(m_qt_argc, m_qt_argv);
     set_app_name();
     setup_window();
-
 }
 
 QtUi::~QtUi()
 {
-    LOG(APP, DBG) << "Destroying QT UI\n";
+    MLOG(APP, DBG) << "Destroying Qt UI\n";
     delete m_app;
 }
 
