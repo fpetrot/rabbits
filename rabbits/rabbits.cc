@@ -79,6 +79,8 @@ static void declare_global_params(ConfigManager &config)
                             Parameter<bool>("Display version information and exit",
                                             false));
 
+    config.add_global_param("disable-gui",
+                            Parameter<bool>("Completly disable the GUI", false));
 }
 
 static void declare_aliases(ConfigManager &config)
@@ -95,6 +97,7 @@ static void declare_aliases(ConfigManager &config)
     config.add_param_alias("debug",             p["debug"]);
     config.add_param_alias("version",           p["show-version"]);
     config.add_param_alias("platform",          p["selected-platform"]);
+    config.add_param_alias("nographic",         p["disable-gui"]);
 }
 
 class WarnUnusedParams : public PlatformDescription::NodeVisitor {
@@ -154,11 +157,106 @@ void check_unused_params(PlatformDescription &d)
     dc.visit_non_converted(warn_unused);
 }
 
-extern "C" {
+enum eRunMode {
+    RUN_NORMAL,
+    RUN_HELP,
+    RUN_VERSION,
+    RUN_LIST_PLATFORMS,
+    RUN_LIST_COMPONENTS,
+    RUN_LIST_BACKENDS,
+    RUN_LIST_PLUGINS,
+    RUN_SYSC_HIERARCHY
+};
+
+static eRunMode get_run_mode(Parameters &globals)
+{
+    if (globals["show-version"].as<bool>()) {
+        return RUN_VERSION;
+    }
+
+    if (globals["list-components"].as<bool>()) {
+        return RUN_LIST_COMPONENTS;
+    }
+
+    if (globals["list-backends"].as<bool>()) {
+        return RUN_LIST_BACKENDS;
+    }
+
+    if (globals["list-plugins"].as<bool>()) {
+        return RUN_LIST_PLUGINS;
+    }
+
+    if (globals["list-platforms"].as<bool>()) {
+        return RUN_LIST_PLATFORMS;
+    }
+
+    if (globals["show-help"].as<bool>()) {
+        return RUN_HELP;
+    }
+
+    if (globals["show-advanced-params"].as<bool>()) {
+        return RUN_HELP;
+    }
+
+    if (globals["show-systemc-hierarchy"].as<bool>()) {
+        return RUN_SYSC_HIERARCHY;
+    }
+
+    return RUN_NORMAL;
+}
+
+static UiChooser::Hint get_ui_hint(eRunMode run_mode, Parameters &globals)
+{
+    if (run_mode != RUN_NORMAL) {
+        /* Non-normal modes require headless */
+        return UiChooser::HEADLESS;
+    }
+
+    if (globals["disable-gui"].as<bool>()) {
+        /* User asked for headless */
+        return UiChooser::HEADLESS;
+    }
+
+    return UiChooser::AUTO;
+}
+
+static void load_modules(ConfigManager &config)
+{
+    StaticLoader::load(config);
+
+    DynamicLoader &dyn_loader = config.get_dynloader();
+    char * env_dynlib_paths = std::getenv("RABBITS_DYNLIB_PATH");
+    if (env_dynlib_paths != NULL) {
+        dyn_loader.add_colon_sep_search_paths(env_dynlib_paths);
+    }
+
+    dyn_loader.search_and_load_rabbits_dynlibs();
+}
+
+static bool list_modules(ConfigManager &config, eRunMode mode)
+{
+    switch (mode) {
+    case RUN_LIST_COMPONENTS:
+        enum_modules(config, Namespace::get(Namespace::COMPONENT), LogLevel::INFO);
+        break;
+    case RUN_LIST_BACKENDS:
+        enum_modules(config, Namespace::get(Namespace::BACKEND), LogLevel::INFO);
+        break;
+    case RUN_LIST_PLUGINS:
+        enum_modules(config, Namespace::get(Namespace::PLUGIN), LogLevel::INFO);
+        break;
+    case RUN_LIST_PLATFORMS:
+        enum_platforms(config, LogLevel::INFO);
+        break;
+    default:
+        return false;
+    }
+
+    return true;
+}
+
 int sc_main(int argc, char *argv[])
 {
-    ui::create_ui();
-
     ConfigManager config;
     ConfigManager::set_config_manager(config);
 
@@ -174,54 +272,36 @@ int sc_main(int argc, char *argv[])
 
     Parameters &globals = config.get_global_params();
 
+    const eRunMode run_mode = get_run_mode(globals);
+    const UiChooser::Hint ui_hint = get_ui_hint(run_mode, globals);
+
+    config.create_ui(ui_hint);
+
     if (globals["debug"].as<bool>()) {
         print_version(LogLevel::DEBUG);
     }
 
-    if (globals["show-version"].as<bool>()) {
+    if (run_mode == RUN_VERSION) {
         print_version(LogLevel::INFO);
         return 0;
     }
 
-    StaticLoader::load(config);
+    load_modules(config);
 
-    DynamicLoader &dyn_loader = config.get_dynloader();
-    char * env_dynlib_paths = std::getenv("RABBITS_DYNLIB_PATH");
-    if (env_dynlib_paths != NULL) {
-        dyn_loader.add_colon_sep_search_paths(env_dynlib_paths);
-    }
-
-    dyn_loader.search_and_load_rabbits_dynlibs();
-
-    if (globals["list-components"].as<bool>()) {
-        enum_modules(config, Namespace::get(Namespace::COMPONENT), LogLevel::INFO);
-        return 0;
-    }
-
-    if (globals["list-backends"].as<bool>()) {
-        enum_modules(config, Namespace::get(Namespace::BACKEND), LogLevel::INFO);
-        return 0;
-    }
-
-    if (globals["list-plugins"].as<bool>()) {
-        enum_modules(config, Namespace::get(Namespace::PLUGIN), LogLevel::INFO);
-        return 0;
-    }
-
-    if (globals["list-platforms"].as<bool>()) {
-        enum_platforms(config, LogLevel::INFO);
+    if (list_modules(config, run_mode)) {
         return 0;
     }
 
     std::string pname = globals["selected-platform"].as<string>();
 
     if (pname.empty()) {
-        if (globals["show-help"].as<bool>() || globals["show-advanced-params"].as<bool>()) {
+        if (run_mode == RUN_HELP) {
             PlatformBuilder empty("", config);
             print_usage(argv[0], config, empty);
             return 0;
         }
-        LOG(APP, ERR) << "No selected platform. Please select a platform with -platform. Try -help.\n";
+        LOG(APP, ERR) << "No selected platform. "
+            "Please select a platform with -platform. Try -help.\n";
         return 1;
     }
 
@@ -237,19 +317,19 @@ int sc_main(int argc, char *argv[])
     try {
         PlatformBuilder builder(pname.c_str(), platform, config);
 
-        if (globals["show-help"].as<bool>() || globals["show-advanced-params"].as<bool>()) {
+        if (run_mode == RUN_HELP) {
             print_usage(argv[0], config, builder);
             return 0;
         }
 
         check_unused_params(platform);
 
-        if (globals["show-systemc-hierarchy"].as<bool>()) {
+        if (run_mode == RUN_SYSC_HIERARCHY) {
             dump_systemc_hierarchy(builder, LogLevel::INFO);
             return 0;
         }
 
-        simu_manager().start();
+        SimuManager(config).start();
 
     } catch (PlatformParseException e) {
         get_app_logger().enable_banner(false);
@@ -263,8 +343,5 @@ int sc_main(int argc, char *argv[])
         return 1;
     }
 
-    ui::dispose_ui();
-
     return 0;
-}
 }

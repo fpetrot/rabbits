@@ -1,6 +1,6 @@
 /*
  *  This file is part of Rabbits
- *  Copyright (C) 2016  Clement Deschamps and Luc Michel
+ *  Copyright (C) 2015  Clement Deschamps and Luc Michel
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -16,19 +16,20 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#ifndef _RABBITS_UI_VIEW_WEBKIT_H
+#define _RABBITS_UI_VIEW_WEBKIT_H
 
-#include "ui_fb.h"
+#include <string>
 
-#include "rabbits-common.h"
-#include "rabbits/logger.h"
+class UiWebkitEventListener {
+public:
+    virtual void webkit_event(const std::string &ev) = 0;
+};
 
-qt_ui_fb::qt_ui_fb(const ui_fb_info & info) :
-        ui_fb(info)
-{
-    set_info(info);
-}
+class UiViewWebkitIface {
+public:
+    virtual void exec_js(const std::string & js) = 0;
+    virtual void register_event_listener(UiWebkitEventListener &) = 0;
+};
 
-void qt_ui_fb::set_info(const ui_fb_info & info)
-{
-}
-
+#endif

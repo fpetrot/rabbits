@@ -20,37 +20,3 @@
 #include "rabbits/config.h"
 #include "rabbits/ui/ui.h"
 
-#if defined(RABBITS_CONFIG_QT)
-# include "qt/ui.h"
-#elif defined(RABBITS_CONFIG_SDL)
-# include "sdl/ui.h"
-#else
-# include "dummy/ui.h"
-#endif
-
-ui * ui::singleton = NULL;
-
-void ui::create_ui()
-{
-    if (ui::singleton != NULL) {
-        LOG_F(APP, ERR, "ui has already been created\n");
-        return;
-    }
-#if defined(RABBITS_CONFIG_QT)
-    ui::singleton = new qt_ui;
-#elif defined(RABBITS_CONFIG_SDL)
-    ui::singleton = new sdl_ui;
-#else
-    ui::singleton = new dummy_ui;
-#endif
-}
-
-ui * ui::get_ui()
-{
-    return ui::singleton;
-}
-
-void ui::dispose_ui()
-{
-    delete ui::singleton;
-}

@@ -17,29 +17,21 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _UI_QT_WEBKIT_H
-#define _UI_QT_WEBKIT_H
+#ifndef _UI_QT_FB_H
+#define _UI_QT_FB_H
 
-#include "rabbits/ui/ui_webkit.h"
+#include "rabbits/ui/view/framebuffer.h"
 
-#include <QWebView>
+#include "../view.h"
 
-class qt_ui_webkit : public ui_webkit
+class QtUiViewFramebuffer: public QtUiView, public UiViewFramebufferIface
 {
 public:
-    QWebView *m_view;
+    QtUiViewFramebuffer(const std::string &name, QApplication *app,
+                        const UiFramebufferInfo & info);
+    virtual ~QtUiViewFramebuffer() {}
 
-	std::string m_url;
-
-    std::vector<std::string> m_updates;
-
-public:
-    qt_ui_webkit(std::string url);
-
-    void exec_js(std::string js);
-
-    void poll_updates(std::vector<std::string> &updates);
+    void set_info(const UiFramebufferInfo & info);
 };
 
 #endif
-

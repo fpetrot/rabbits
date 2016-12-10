@@ -26,6 +26,7 @@
 #include "rabbits/config.h"
 #include "rabbits/config/manager.h"
 #include "rabbits/logger.h"
+#include "rabbits/ui/ui.h"
 
 using std::set;
 using std::vector;
@@ -75,12 +76,12 @@ ConfigManager::ConfigManager()
 
     add_global_param("debug",
                      Parameter<bool>("Set log level to `debug' "
-                                     "(equivalent to `-log-level debug')",
+                                     "(equivalent to `-global.log-level debug')",
                                      false));
 
     add_global_param("trace",
                      Parameter<bool>("Set log level to `trace' "
-                                     "(equivalent to `-log-level trace')",
+                                     "(equivalent to `-global.log-level trace')",
                                      false));
 
     Logger &sim = m_root_loggers.get_logger(LogContext::SIM);
@@ -98,6 +99,7 @@ ConfigManager::ConfigManager()
 
 ConfigManager::~ConfigManager()
 {
+    delete m_ui;
 }
 
 void ConfigManager::apply_aliases()
@@ -377,4 +379,23 @@ PlatformDescription ConfigManager::apply_platform(const string &name)
     } else {
         return PlatformDescription::INVALID_DESCRIPTION;
     }
+}
+
+void ConfigManager::create_ui(UiChooser::Hint hint)
+{
+    if (m_ui != nullptr) {
+        LOG(APP, DBG) << "Ui already created. Skipping.\n";
+        return;
+    }
+
+    m_ui = UiChooser::create_ui(hint, *this);
+}
+
+Ui & ConfigManager::get_ui()
+{
+    if (m_ui == nullptr) {
+        create_ui();
+    }
+
+    return *m_ui;
 }

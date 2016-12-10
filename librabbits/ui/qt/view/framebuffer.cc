@@ -17,26 +17,17 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _UI_WEBKIT_H
-#define _UI_WEBKIT_H
+#include "framebuffer.h"
 
-#include <string>
-#include <vector>
-
-class ui_webkit
+QtUiViewFramebuffer::QtUiViewFramebuffer(const std::string &name, 
+                                         QApplication *app,
+                                         const UiFramebufferInfo & info)
+    : QtUiView(name, app)
 {
-public:
-    virtual ~ui_webkit()
-    {
-    }
+    set_info(info);
+}
 
-    ui_webkit()
-    {
-    }
+void QtUiViewFramebuffer::set_info(const UiFramebufferInfo & info)
+{
+}
 
-    virtual void exec_js(std::string js) = 0;
-
-    virtual void poll_updates(std::vector<std::string> &updates) = 0;
-};
-
-#endif

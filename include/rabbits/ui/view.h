@@ -1,6 +1,6 @@
 /*
  *  This file is part of Rabbits
- *  Copyright (C) 2016  Clement Deschamps and Luc Michel
+ *  Copyright (C) 2015  Clement Deschamps and Luc Michel
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -16,18 +16,21 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#ifndef _RABBITS_UI_VIEW_H
+#define _RABBITS_UI_VIEW_H
 
-#ifndef _UI_DUMMY_FB_H
-#define _UI_DUMMY_FB_H
+#include <string>
 
-#include "rabbits/ui/ui_fb.h"
+class UiView {
+protected:
+    std::string m_name;
 
-class qt_ui_fb: public ui_fb
-{
 public:
-    qt_ui_fb(const ui_fb_info & info);
+    UiView(const std::string &name) : m_name(name) {}
+    virtual ~UiView() {}
 
-    void set_info(const ui_fb_info & info);
+    const std::string & get_name() const { return m_name; }
 };
+
 
 #endif

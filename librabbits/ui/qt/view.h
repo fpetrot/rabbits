@@ -16,18 +16,21 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#ifndef _RABBITS_LIBRABBITS_UI_QT_VIEW_H
+#define _RABBITS_LIBRABBITS_UI_QT_VIEW_H
 
-#ifndef _UI_DUMMY_FB_H
-#define _UI_DUMMY_FB_H
+#include "rabbits/ui/view.h"
 
-#include "rabbits/ui/ui_fb.h"
+class QApplication;
 
-class dummy_ui_fb: public ui_fb
-{
+class QtUiView : public UiView {
+protected:
+    QApplication *m_app;
+
 public:
-    dummy_ui_fb(const ui_fb_info & info);
+    QtUiView(const std::string &name, QApplication *app)
+        : UiView(name), m_app(app) {}
+    virtual ~QtUiView() {}
 
-    void set_info(const ui_fb_info & info);
 };
-
 #endif

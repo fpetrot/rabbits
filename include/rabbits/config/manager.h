@@ -33,6 +33,7 @@
 #include "rabbits/dynloader/dynloader.h"
 #include "rabbits/logger/has_logger.h"
 #include "rabbits/logger/wrapper.h"
+#include "rabbits/ui/chooser.h"
 
 namespace boost {
     namespace filesystem {
@@ -53,6 +54,8 @@ private:
     LoggerWrapper m_root_loggers;
 
     DynamicLoader m_dynloader;
+
+    Ui * m_ui = nullptr;
 
     ComponentManager m_components;
     BackendManager m_backends;
@@ -144,6 +147,9 @@ public:
     }
 
     DynamicLoader & get_dynloader() { return m_dynloader; }
+
+    void create_ui(UiChooser::Hint hint = UiChooser::AUTO);
+    Ui & get_ui();
 };
 
 #endif
