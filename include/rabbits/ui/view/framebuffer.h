@@ -16,19 +16,28 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#ifndef _RABBITS_UI_VIEW_FRAMEBUFFER_H
+#define _RABBITS_UI_VIEW_FRAMEBUFFER_H
 
-#include "ui_fb.h"
-
-#include "rabbits-common.h"
-#include "rabbits/logger.h"
-
-dummy_ui_fb::dummy_ui_fb(const ui_fb_info & info) :
-        ui_fb(info)
+enum eUiFramebufferMode
 {
-    set_info(info);
-}
+    FB_MODE_RGB888 = 0,
+    FB_MODE_RGB565,
+};
 
-void dummy_ui_fb::set_info(const ui_fb_info & info)
+struct UiFramebufferInfo
 {
-}
+    int physical_w, physical_h;
+    int virtual_w, virtual_h;
+    int pitch;
+    int x_offset, y_offset;
+    eUiFramebufferMode mode;
+    void * buf;
+};
 
+class UiViewFramebufferIface {
+public:
+    virtual void set_info(const UiFramebufferInfo &) = 0;
+};
+
+#endif

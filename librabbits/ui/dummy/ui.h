@@ -23,23 +23,22 @@
 #include <vector>
 
 #include "rabbits/ui/ui.h"
-#include "ui_fb.h"
 
-class dummy_ui: public ui
+class DummyUi: public Ui
 {
-private:
-    std::vector<dummy_ui_fb*> m_fbs;
-
-protected:
-    dummy_ui();
-
 public:
-    friend class ui;
-    virtual ~dummy_ui();
+    
+    DummyUi(ConfigManager &config);
+    virtual ~DummyUi();
 
-    ui_fb* new_fb(std::string name, const ui_fb_info &info);
+    UiViewFramebufferIface* create_framebuffer(const std::string &name,
+                                               const UiFramebufferInfo &info);
 
-    void update();
+    UiViewWebkitIface* create_webkit(const std::string &name,
+                                     const std::string &url);
+
+    Ui::eExitStatus run();
+    void stop();
 };
 
 #endif
