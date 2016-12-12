@@ -111,9 +111,11 @@ void QtUi::qt_msg_handler(QtMsgType type, const QMessageLogContext &context, con
     case QtDebugMsg:
         MLOG(APP, DBG) << localMsg.constData() << "\n";
         break;
+#if QT_VERSION >= 0x050500
     case QtInfoMsg:
         MLOG(APP, INF) << localMsg.constData() << "\n";
         break;
+#endif
     case QtWarningMsg:
         MLOG(APP, WRN) << localMsg.constData() << "\n";
         break;
