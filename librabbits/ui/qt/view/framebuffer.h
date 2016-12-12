@@ -1,6 +1,6 @@
 /*
  *  This file is part of Rabbits
- *  Copyright (C) 2015  Clement Deschamps and Luc Michel
+ *  Copyright (C) 2016  Clement Deschamps and Luc Michel
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -17,6 +17,21 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "rabbits/config.h"
-#include "rabbits/ui/ui.h"
+#ifndef _UI_QT_FB_H
+#define _UI_QT_FB_H
 
+#include "rabbits/ui/view/framebuffer.h"
+
+#include "../view.h"
+
+class QtUiViewFramebuffer: public QtUiView, public UiViewFramebufferIface
+{
+public:
+    QtUiViewFramebuffer(const std::string &name, QApplication *app,
+                        const UiFramebufferInfo & info);
+    virtual ~QtUiViewFramebuffer() {}
+
+    void set_info(const UiFramebufferInfo & info);
+};
+
+#endif

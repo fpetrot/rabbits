@@ -22,88 +22,66 @@
 
 #include <vector>
 
-#include <rabbits/logger.h>
-
+#include "rabbits/logger.h"
+#include "rabbits/logger/wrapper.h"
 #include "rabbits/ui/ui.h"
-#include "ui_fb.h"
-#include "ui_webkit.h"
+
+#include "events.h"
 
 #include <QObject>
-#include <QEvent>
 
-const QEvent::Type WEBKIT_CREATE_EVENT  = static_cast<QEvent::Type>(QEvent::User + 1);
-const QEvent::Type WEBKIT_EXEC_EVENT    = static_cast<QEvent::Type>(QEvent::User + 2);
+class QApplication;
 
-/* Event for creating a new webkit window */
-class WebkitCreateEvent : public QEvent
-{
-public:
-    qt_ui_webkit *m_webkit;
-
-public:
-    WebkitCreateEvent(qt_ui_webkit *webkit) : QEvent(WEBKIT_CREATE_EVENT)
-    {
-        m_webkit = webkit;
-    }
-};
-
-/* Event for executing JS in a specific webkit window */
-class WebkitExecEvent : public QEvent
-{
-public:
-    qt_ui_webkit *m_webkit;
-    QString m_js;
-
-public:
-    WebkitExecEvent(qt_ui_webkit *webkit, QString js) : QEvent(WEBKIT_EXEC_EVENT)
-    {
-        m_webkit = webkit;
-        m_js = js;
-    }
-};
-
-class WebkitBridge : public QObject
-{
-    Q_OBJECT
-
-public:
-    qt_ui_webkit *m_webkit;
-
-    WebkitBridge(qt_ui_webkit *webkit = 0) : QObject(webkit->m_view)
-    {
-        m_webkit = webkit;
-    }
-
-    Q_INVOKABLE void callback(QString id) {
-		LOG_F(APP, DBG, "webkit-bridge: %s\n", id.toUtf8().data());
-
-        m_webkit->m_updates.push_back(std::string(id.toUtf8().data()));
-    }
-};
-
-class qt_ui: public ui
+class QtUi: public Ui, public HasLoggerIface
 {
 private:
-    std::vector<qt_ui_fb*> m_fbs;
+    LoggerWrapper m_loggers;
+    QApplication *m_app = nullptr;
 
-    QApplication *m_app;
+    /* Custom argc/argv construction for Qt */
+#define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
+    static const int QT_ARGC = 1;
+#ifdef RABBITS_WORKAROUND_CXX11_GCC_BUGS
+    /* This bugs (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=43453) triggers
+     * an compilation error when the array is initialized with a string literal
+     * while it is allowed by the standard. It happens on GCC 4.9 and seems to
+     * be fixed afterward.
+     */
+    char m_arg0[ARRAY_SIZE(RABBITS_APP_NAME)] = { 'r', 'a', 'b', 'b', 'i', 't', 's', '\0' };
+#else
+    char m_arg0[ARRAY_SIZE(RABBITS_APP_NAME)] = RABBITS_APP_NAME;
+#endif
+    char * m_qt_argv[QT_ARGC] { m_arg0 };
+    int m_qt_argc = QT_ARGC;
+#undef ARRAY_SIZE
 
-protected:
-    qt_ui();
+    void set_app_name();
+    void setup_window();
+
+    static QtUi *m_inst;
+    static void qt_msg_handler_entry(QtMsgType type,
+                                     const QMessageLogContext &context,
+                                     const QString &msg);
+
+    void qt_msg_handler(QtMsgType type,
+                        const QMessageLogContext &context,
+                        const QString &msg);
 
 public:
-    friend class ui;
-    virtual ~qt_ui();
+    QtUi(ConfigManager &config);
+    virtual ~QtUi();
 
+    UiViewFramebufferIface* create_framebuffer(const std::string &name,
+                                               const UiFramebufferInfo &info);
+
+    UiViewWebkitIface* create_webkit(const std::string &name,
+                                     const std::string &url);
+
+    Ui::eExitStatus run();
     void stop();
 
-    ui_fb* new_fb(std::string name, const ui_fb_info &info);
-
-    ui_webkit* new_webkit(std::string url);
-
-    void event_loop();
-
-    void update();
+    /* HasLoggerIface */
+    Logger & get_logger(LogContext::value context) const { return m_loggers.get_logger(context); }
 };
 
 #endif

@@ -19,9 +19,13 @@
 
 #include <cassert>
 
-#include "ui.h"
+#include "rabbits/config.h"
+#include "rabbits/config/manager.h"
 
-#include <semaphore.h>
+#include "ui.h"
+#include "view/framebuffer.h"
+#include "view/webkit.h"
+#include "tester.h"
 
 #include <QApplication>
 #include <QWebView>
@@ -33,142 +37,187 @@
 #include <QMenuBar>
 #include <QTabWidget>
 
-#include "rabbits-common.h"
-#include "rabbits/logger.h"
-
-/* AUTOMOC ui.h */
-#include "moc_ui.cpp"
-
-static int _argc = 1;
-static char *_argv[] = { (char *)"Rabbits" };
+QtUi * QtUi::m_inst = nullptr;
 
 class MainEventFilter: public QObject
 {
 private:
-	QTabWidget *m_tabs;
+    QTabWidget *m_tabs;
 
 public:
     MainEventFilter(QTabWidget *tabs) : QObject()
     {
-		m_tabs = tabs;
-	};
+        m_tabs = tabs;
+    };
     ~MainEventFilter() {};
 
-    bool eventFilter(QObject* object, QEvent* event)
+    bool webkit_create(QEvent *event)
     {
-        if(event->type() == WEBKIT_CREATE_EVENT) {
-            WebkitCreateEvent *createEvent = (WebkitCreateEvent *)event;
+        WebkitCreateEvent *create_ev;
+        create_ev = reinterpret_cast<WebkitCreateEvent*>(event);
+        QtUiViewWebkit *webkit = create_ev->get_webkit();
 
-            QWebView *boardView = new QWebView(m_tabs);
+        QWebView *boardView = new QWebView(m_tabs);
 
-            m_tabs->addTab(boardView, "Board"); // TODO: platform name
+        QString tab_name(QString::fromStdString(webkit->get_name()));
+        m_tabs->addTab(boardView, tab_name);
 
-            boardView->load(QUrl(QString::fromStdString(createEvent->m_webkit->m_url)));
+        boardView->load(QUrl(QString::fromStdString(webkit->get_url())));
 
-            createEvent->m_webkit->m_view = boardView;
+        webkit->set_view(boardView);
 
-            QWebFrame *frame = boardView->page()->mainFrame();
-            frame->addToJavaScriptWindowObject("bridge", new WebkitBridge(createEvent->m_webkit));
+        QWebFrame *frame = boardView->page()->mainFrame();
+        frame->addToJavaScriptWindowObject("bridge", new WebkitBridge(webkit));
+        return true;
+    }
 
-            return true;
+    bool webkit_exec(QEvent *event)
+    {
+        WebkitExecEvent *exec_ev;
+        exec_ev = reinterpret_cast<WebkitExecEvent *>(event);
+        QtUiViewWebkit *webkit = exec_ev->get_webkit();
+        QWebFrame * frame = webkit->get_view()->page()->mainFrame();
+
+        frame->evaluateJavaScript(exec_ev->get_js());
+        return true;
+    }
+
+    bool eventFilter(QObject *object, QEvent *event)
+    {
+        const QEvent::Type ev = event->type();
+
+        if(ev == WEBKIT_CREATE_EVENT) {
+            return webkit_create(event);
+        } else if (ev == WEBKIT_EXEC_EVENT) {
+            return webkit_exec(event);
+        } else {
+            return QObject::eventFilter(object, event);
         }
-        else if(event->type() == WEBKIT_EXEC_EVENT) {
-            WebkitExecEvent *execEvent = (WebkitExecEvent *)event;
-
-            execEvent->m_webkit->m_view->page()->mainFrame()->evaluateJavaScript(execEvent->m_js);
-
-            return true;
-        }
-        return QObject::eventFilter(object, event);
     }
 };
 
-#if 0
-static void messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
+void QtUi::qt_msg_handler_entry(QtMsgType type,
+                                const QMessageLogContext &context,
+                                const QString &msg)
+{
+    assert(m_inst);
+    m_inst->qt_msg_handler(type, context, msg);
+}
+
+void QtUi::qt_msg_handler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
     QByteArray localMsg = msg.toLocal8Bit();
     switch (type) {
     case QtDebugMsg:
-        fprintf(stderr, "Debug: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+        MLOG(APP, DBG) << localMsg.constData() << "\n";
         break;
+#if QT_VERSION >= 0x050500
     case QtInfoMsg:
-        fprintf(stderr, "Info: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+        MLOG(APP, INF) << localMsg.constData() << "\n";
         break;
+#endif
     case QtWarningMsg:
-        fprintf(stderr, "Warning: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+        MLOG(APP, WRN) << localMsg.constData() << "\n";
         break;
     case QtCriticalMsg:
-        fprintf(stderr, "Critical: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
+        MLOG(APP, ERR) << localMsg.constData() << "\n";
         break;
     case QtFatalMsg:
-        fprintf(stderr, "Fatal: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function);
-        abort();
+        MLOG(APP, ERR) << "Qt fatal error: " << localMsg.constData() << "\n";
+        MLOG(APP, ERR) << "Try to run with the `-nographic' command line argument\n";
     }
 }
-#endif
 
-qt_ui::qt_ui()
+void QtUi::set_app_name()
 {
-    /* Disable GLIB in QT because it is conflicting with QEMU */
-    qputenv("QT_NO_GLIB", "1");
+    Parameters &g = m_config.get_global_params();
 
-    m_app = new QApplication(_argc, _argv);
+    QString rabbits = RABBITS_APP_NAME;
+    QString platform = g["selected-platform"].as<std::string>().c_str();
 
-    QApplication::setApplicationDisplayName("Rabbits"); // TODO: add platform name
+    rabbits[0] = rabbits[0].toUpper();
+    platform[0] = platform[0].toUpper();
 
+    m_app->setApplicationDisplayName(rabbits + " - " + platform);
+}
+
+void QtUi::setup_window()
+{
     QMainWindow *window = new QMainWindow();
 
-    QTabWidget *tabs = new QTabWidget(window);
-
-    tabs->setMinimumSize(QSize(640, 480));
-
-    m_app->installEventFilter(new MainEventFilter(tabs));
-
+    /* Menu */
     QMenu *fileMenu = window->menuBar()->addMenu("&File");
-
     QAction *quitAction = new QAction("&Quit", window);
     fileMenu->addAction(quitAction);
     m_app->connect(quitAction, SIGNAL(triggered()), m_app, SLOT(quit()));
 
+    /* Tabs */
+    QTabWidget *tabs = new QTabWidget(window);
+    tabs->setMinimumSize(QSize(640, 480));
+    m_app->installEventFilter(new MainEventFilter(tabs));
     window->setCentralWidget(tabs);
 
     window->show();
 }
 
-qt_ui::~qt_ui()
+QtUi::QtUi(ConfigManager &config)
+    : Ui(config)
+    , m_loggers("qt ui", config, Parameters::EMPTY, config)
 {
+    MLOG(APP, DBG) << "Creating Qt UI\n";
+
+    QtTester tester;
+
+    if (m_inst != nullptr) {
+        LOG(APP, ERR) << "Trying to create multiple Qt UI\n";
+        throw UiCreationFailureException("Qt UI already exists");
+    }
+    m_inst = this;
+
+    if (!tester.test()) {
+        /* QApplication would fail */
+        throw UiCreationFailureException("Qt UI creation failure");
+    }
+
+    /* Disable GLIB in QT because it is conflicting with QEMU */
+    qputenv("QT_NO_GLIB", "1");
+
+    qInstallMessageHandler(qt_msg_handler_entry);
+
+    m_app = new QApplication(m_qt_argc, m_qt_argv);
+    set_app_name();
+    setup_window();
+}
+
+QtUi::~QtUi()
+{
+    MLOG(APP, DBG) << "Destroying Qt UI\n";
     delete m_app;
 }
 
-ui_fb* qt_ui::new_fb(std::string name, const ui_fb_info &info)
+UiViewFramebufferIface* QtUi::create_framebuffer(const std::string &name,
+                                                 const UiFramebufferInfo &info)
 {
-    qt_ui_fb *fb = new qt_ui_fb(info);
-
-    m_fbs.push_back(fb);
-
-    return fb;
+    return nullptr;
 }
 
-ui_webkit* qt_ui::new_webkit(std::string url)
+UiViewWebkitIface* QtUi::create_webkit(const std::string &name,
+                                       const std::string &url)
 {
-    qt_ui_webkit *webkit = new qt_ui_webkit(url);
+    QtUiViewWebkit *webkit = new QtUiViewWebkit(name, m_app, url);
 
-    QApplication::postEvent(QApplication::instance(), new WebkitCreateEvent(webkit));
+    m_app->postEvent(m_app, new WebkitCreateEvent(webkit));
 
     return webkit;
 }
 
-void qt_ui::event_loop()
+Ui::eExitStatus QtUi::run()
 {
-    QApplication::instance()->exec();
+    m_app->exec();
+    return Ui::WANT_QUIT;
 }
 
-void qt_ui::update()
+void QtUi::stop()
 {
-    // QT event loop is running in a separate pthread
-}
-
-void qt_ui::stop()
-{
-    QApplication::quit();
+    m_app->quit();
 }

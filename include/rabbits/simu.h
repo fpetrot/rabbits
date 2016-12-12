@@ -20,14 +20,18 @@
 #ifndef _UTILS_SIMU_MANAGER_H
 #define _UTILS_SIMU_MANAGER_H
 
-class simu_manager
+#include "rabbits/config/manager.h"
+
+class SimuManager
 {
 private:
+    ConfigManager &m_config;
 
 public:
-    virtual ~simu_manager()
-    {
-    }
+    SimuManager(ConfigManager &config)
+        : m_config(config) {}
+
+    virtual ~SimuManager() {}
 
     void start();
 };

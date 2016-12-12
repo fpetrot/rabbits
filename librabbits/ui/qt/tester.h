@@ -16,18 +16,13 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#ifndef _LIBRABBITS_UI_QT_TESTER_H
+#define _LIBRABBITS_UI_QT_TESTER_H
 
-#ifndef _UI_DUMMY_FB_H
-#define _UI_DUMMY_FB_H
-
-#include "rabbits/ui/ui_fb.h"
-
-class dummy_ui_fb: public ui_fb
-{
+class QtTester {
 public:
-    dummy_ui_fb(const ui_fb_info & info);
-
-    void set_info(const ui_fb_info & info);
+    QtTester() {}
+    bool test();
 };
 
 #endif

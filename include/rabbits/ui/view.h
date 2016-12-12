@@ -16,19 +16,21 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#ifndef _RABBITS_UI_VIEW_H
+#define _RABBITS_UI_VIEW_H
 
-#include "ui_fb.h"
+#include <string>
 
-#include "rabbits-common.h"
-#include "rabbits/logger.h"
+class UiView {
+protected:
+    std::string m_name;
 
-dummy_ui_fb::dummy_ui_fb(const ui_fb_info & info) :
-        ui_fb(info)
-{
-    set_info(info);
-}
+public:
+    UiView(const std::string &name) : m_name(name) {}
+    virtual ~UiView() {}
 
-void dummy_ui_fb::set_info(const ui_fb_info & info)
-{
-}
+    const std::string & get_name() const { return m_name; }
+};
 
+
+#endif

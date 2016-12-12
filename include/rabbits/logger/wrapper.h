@@ -44,6 +44,7 @@ protected:
 
     std::string m_name;
     Parameters &m_params;
+    HasLoggerIface *m_parent = nullptr;
 
     Logger * m_loggers[LogContext::LASTLOGCONTEXT] { &m_logger_app, &m_logger_sim };
 
@@ -53,17 +54,20 @@ protected:
     LogLevel::value get_log_level(const std::string level_s);
     std::fstream* open_file(const std::string &fn);
     void setup_logger_banner(Logger &l);
-    void setup_logger(Logger &l, LogTarget target, LogLevel::value lvl,
-                      const std::string log_file);
+    void setup_logger(Logger &l, LogTarget target, const std::string log_file);
+    bool param_is_custom(const std::string &name) const;
+    bool lvl_is_custom();
     bool logger_is_custom();
-    void setup_loggers(HasLoggerIface &parent);
-
+    void set_defaults(Logger &l);
+    void setup_loggers();
 
 public:
     LoggerWrapper(const std::string & name, HasLoggerIface &parent, Parameters &params, ConfigManager &config);
     LoggerWrapper(Parameters &params, ConfigManager &config);
 
     virtual ~LoggerWrapper() {}
+
+    void reconfigure() { setup_loggers(); }
 
     /* HasLoggerIface */
     Logger & get_logger(LogContext::value context) const { return *m_loggers[context]; }

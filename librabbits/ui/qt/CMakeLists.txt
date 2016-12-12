@@ -1,5 +1,6 @@
 rabbits_add_sources(
 	ui.cc
-	ui_fb.cc
-	ui_webkit.cc
+    tester.cc
 )
+
+add_subdirectory(view)

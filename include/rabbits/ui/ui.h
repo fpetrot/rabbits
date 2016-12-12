@@ -17,53 +17,44 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _UI_H
-#define _UI_H
+#ifndef _RABBITS_UI_UI_H
+#define _RABBITS_UI_UI_H
 
 #include <string>
 
-#include "ui_fb.h"
-#include "ui_webkit.h"
+#include "view/framebuffer.h"
+#include "view/webkit.h"
+#include "rabbits/rabbits_exception.h"
 
-class ui
-{
-private:
-    static ui *singleton;
+class UiCreationFailureException : public RabbitsException {
+public:
+    UiCreationFailureException(const std::string &what)
+        : RabbitsException(what) {}
+    virtual ~UiCreationFailureException() throw() {}
+};
 
+class ConfigManager;
+
+class Ui {
 protected:
-    ui_fb *m_active_fb;
+    ConfigManager & m_config;
 
 public:
-    virtual ~ui()
-    {
-    }
+    enum eExitStatus {
+        CONTINUE, WANT_QUIT
+    };
 
-    /* must be called on the main thread before calling get_ui() */
-    static void create_ui();
+    Ui(ConfigManager &config) : m_config(config) {}
+    virtual ~Ui() {}
 
-    static void dispose_ui();
+    virtual UiViewFramebufferIface* create_framebuffer(const std::string &name,
+                                                       const UiFramebufferInfo &info) = 0;
 
-    static ui* get_ui();
+    virtual UiViewWebkitIface* create_webkit(const std::string &name,
+                                             const std::string &url) = 0;
 
+    virtual eExitStatus run() = 0;
     virtual void stop() = 0;
-
-    virtual ui_fb* new_fb(std::string name, const ui_fb_info &info) = 0;
-    virtual void show_fb(ui_fb *fb)
-    {
-        m_active_fb = fb;
-    }
-
-    virtual ui_webkit* new_webkit(std::string url)
-    {
-        // no default implementation
-        return NULL;
-    }
-
-    /* called once from the main thread */
-    virtual void event_loop() = 0;
-
-    /* called periodically from the simulation thread */
-    virtual void update() = 0;
 };
 
 #endif

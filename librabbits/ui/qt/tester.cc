@@ -1,6 +1,6 @@
 /*
  *  This file is part of Rabbits
- *  Copyright (C) 2016  Clement Deschamps and Luc Michel
+ *  Copyright (C) 2015  Clement Deschamps and Luc Michel
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -17,29 +17,45 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _UI_QT_WEBKIT_H
-#define _UI_QT_WEBKIT_H
+#include "rabbits/config.h"
+#include "tester.h"
 
-#include "rabbits/ui/ui_webkit.h"
+#ifdef RABBITS_CONFIG_POSIX
 
-#include <QWebView>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <QApplication>
 
-class qt_ui_webkit : public ui_webkit
+bool QtTester::test()
 {
-public:
-    QWebView *m_view;
+    int pid = fork();
 
-	std::string m_url;
+    if (pid == -1) {
+        return false;
+    }
 
-    std::vector<std::string> m_updates;
+    if (!pid) {
+        int argc = 1;
+        char arg0[] = "qt-tester";
+        char * argv[] = { arg0 };
 
-public:
-    qt_ui_webkit(std::string url);
+        QApplication(argc, argv);
 
-    void exec_js(std::string js);
+        exit(0);
+    } else {
+        int wstatus;
+        wait(&wstatus);
 
-    void poll_updates(std::vector<std::string> &updates);
-};
+        return WIFEXITED(wstatus) && (WEXITSTATUS(wstatus) == 0);
+    }
+}
+
+#else
+
+bool QtTester::test()
+{
+    return true;
+}
 
 #endif
-

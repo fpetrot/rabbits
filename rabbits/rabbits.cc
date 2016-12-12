@@ -33,20 +33,11 @@
 #include <rabbits/config/manager.h>
 #include <rabbits/config/static_loader.h>
 
-#include <cstdlib>
-#include <iostream>
-#include <fstream>
-#include <map>
-#include <memory>
-
 #include "usage.h"
 #include "cmdline.h"
 
 using std::string;
 using std::vector;
-using std::map;
-using std::fstream;
-using std::unique_ptr;
 
 static void declare_global_params(ConfigManager &config)
 {
@@ -84,38 +75,12 @@ static void declare_global_params(ConfigManager &config)
                                             false,
                                             true));
 
-    config.add_global_param("debug",
-                            Parameter<bool>("Set log level to `debug' "
-                                            "(equivalent to `-log-level debug')",
-                                            false));
-
     config.add_global_param("show-version",
                             Parameter<bool>("Display version information and exit",
                                             false));
 
-    /* Logger stuff */
-    config.add_global_param("log-target",
-                            Parameter<string>("Specify the log target (valid options "
-                                              "are `stdout', `stderr' and `file')",
-                                              "stderr"));
-    config.add_global_param("log-file",
-                            Parameter<string>("Specify the log file",
-                                              "rabbits.log"));
-    config.add_global_param("log-level",
-                            Parameter<string>("Specify the log level (valid options "
-                                              "are `trace', `debug', `info', `warning', `error')",
-                                              "info"));
-    config.add_global_param("log-sim-target",
-                            Parameter<string>("Specify simulation related log target "
-                                              "(valid options are `stdout', `stderr' and `file')",
-                                              "stderr"));
-    config.add_global_param("log-sim-file",
-                            Parameter<string>("Specify simulation related log file",
-                                              "rabbits.log"));
-    config.add_global_param("log-sim-level",
-                            Parameter<string>("Specify simulation related log level "
-                                              "(valid options are `trace', `debug', `info', `warning', `error')",
-                                              "info"));
+    config.add_global_param("disable-gui",
+                            Parameter<bool>("Completly disable the GUI", false));
 }
 
 static void declare_aliases(ConfigManager &config)
@@ -132,131 +97,7 @@ static void declare_aliases(ConfigManager &config)
     config.add_param_alias("debug",             p["debug"]);
     config.add_param_alias("version",           p["show-version"]);
     config.add_param_alias("platform",          p["selected-platform"]);
-}
-
-enum LogTarget {
-    LT_STDOUT, LT_STDERR, LT_FILE
-};
-
-typedef unique_ptr<fstream> LogFile;
-typedef map<string, LogFile> LogFiles;
-
-static LogTarget get_log_target(const string target_s)
-{
-    if (target_s == "stdout") {
-        return LT_STDOUT;
-    } else if (target_s == "stderr") {
-        return LT_STDERR;
-    } else if (target_s == "file") {
-        return LT_FILE;
-    }
-
-    LOG(APP, ERR) << "Ignoring invalid log target " << target_s << "\n";
-    return LT_STDERR;
-}
-
-static LogLevel::value get_log_level(const string level_s)
-{
-    if (level_s == "debug") {
-        return LogLevel::DEBUG;
-    } else if (level_s == "info") {
-        return LogLevel::INFO;
-    } else if (level_s == "warning") {
-        return LogLevel::WARNING;
-    } else if (level_s == "error") {
-        return LogLevel::ERROR;
-    } else if (level_s == "trace") {
-        return LogLevel::TRACE;
-    }
-
-    LOG(APP, ERR) << "Ignoring invalid log level " << level_s << "\n";
-    return LogLevel::INFO;
-}
-
-static fstream* open_file(const string &fn, LogFiles &files)
-{
-    fstream* ret = nullptr;
-
-    if (files.find(fn) != files.end()) {
-        if (!files[fn]) {
-            return nullptr;
-        }
-        return files[fn].get();
-    }
-
-    ret = new fstream(fn, fstream::out | fstream::trunc);
-
-    files[fn].reset(ret);
-
-    return ret;
-}
-
-static void setup_logger(Logger &l, LogTarget target, LogLevel::value lvl,
-                         const string log_file, LogFiles &files)
-{
-    switch (target) {
-    case LT_STDOUT:
-        l.set_streams(&std::cout);
-        break;
-
-    case LT_FILE:
-        {
-            fstream* file = open_file(log_file, files);
-
-            if (!*file) {
-                LOG(APP, ERR) << "Unable to open log file " << log_file << ". Falling back to stderr\n";
-            } else {
-                l.set_streams(file);
-            }
-        }
-        break;
-
-    case LT_STDERR:
-        /* Default */
-        break;
-    }
-
-    l.set_log_level(lvl);
-}
-
-static inline bool sim_logger_is_custom(Parameters &g)
-{
-    return (!g["log-sim-target"].is_default())
-        || (!g["log-sim-level"].is_default())
-        || (!g["log-sim-file"].is_default());
-}
-
-static void setup_loggers(ConfigManager &config, LogFiles &files)
-{
-    Parameters &p = config.get_global_params();
-    Logger &app = get_app_logger();
-    Logger &sim = get_sim_logger();
-
-    const LogTarget log_target = get_log_target(p["log-target"].as<string>());
-    const LogLevel::value log_level = get_log_level(p["log-level"].as<string>());
-    const string log_file = p["log-file"].as<string>();
-
-    const LogTarget log_sim_target = get_log_target(p["log-sim-target"].as<string>());
-    const LogLevel::value log_sim_level = get_log_level(p["log-sim-level"].as<string>());
-    const string log_sim_file = p["log-sim-file"].as<string>();
-
-    setup_logger(app, log_target, log_level, log_file, files);
-
-    if (sim_logger_is_custom(p)) {
-        setup_logger(sim, log_sim_target, log_sim_level, log_sim_file, files);
-    } else {
-        setup_logger(sim, log_target, log_level, log_file, files);
-    }
-
-    sim.set_custom_banner([] (Logger &l, const std::string &banner)
-    {
-            l << format::purple << "[sim]";
-        if (sc_core::sc_get_status() == sc_core::SC_ELABORATION) {
-            l << format::green << "[elaboration]" << format::reset;
-        } else {
-            l << format::green << "[" << sc_core::sc_time_stamp() << "]" << format::reset;
-        }
-    });
+    config.add_param_alias("nographic",         p["disable-gui"]);
 }
 
 class WarnUnusedParams : public PlatformDescription::NodeVisitor {
@@ -297,7 +138,8 @@ protected:
 
 public:
     void operator() (PlatformDescription &n,
-                     const std::vector<std::string> &names) {
+                     const std::vector<std::string> &names)
+    {
         string s;
 
         if (names_to_str(n, names, s)) {
@@ -315,16 +157,108 @@ void check_unused_params(PlatformDescription &d)
     dc.visit_non_converted(warn_unused);
 }
 
-extern "C" {
+enum eRunMode {
+    RUN_NORMAL,
+    RUN_HELP,
+    RUN_VERSION,
+    RUN_LIST_PLATFORMS,
+    RUN_LIST_COMPONENTS,
+    RUN_LIST_BACKENDS,
+    RUN_LIST_PLUGINS,
+    RUN_SYSC_HIERARCHY
+};
+
+static eRunMode get_run_mode(Parameters &globals)
+{
+    if (globals["show-version"].as<bool>()) {
+        return RUN_VERSION;
+    }
+
+    if (globals["list-components"].as<bool>()) {
+        return RUN_LIST_COMPONENTS;
+    }
+
+    if (globals["list-backends"].as<bool>()) {
+        return RUN_LIST_BACKENDS;
+    }
+
+    if (globals["list-plugins"].as<bool>()) {
+        return RUN_LIST_PLUGINS;
+    }
+
+    if (globals["list-platforms"].as<bool>()) {
+        return RUN_LIST_PLATFORMS;
+    }
+
+    if (globals["show-help"].as<bool>()) {
+        return RUN_HELP;
+    }
+
+    if (globals["show-advanced-params"].as<bool>()) {
+        return RUN_HELP;
+    }
+
+    if (globals["show-systemc-hierarchy"].as<bool>()) {
+        return RUN_SYSC_HIERARCHY;
+    }
+
+    return RUN_NORMAL;
+}
+
+static UiChooser::Hint get_ui_hint(eRunMode run_mode, Parameters &globals)
+{
+    if (run_mode != RUN_NORMAL) {
+        /* Non-normal modes require headless */
+        return UiChooser::HEADLESS;
+    }
+
+    if (globals["disable-gui"].as<bool>()) {
+        /* User asked for headless */
+        return UiChooser::HEADLESS;
+    }
+
+    return UiChooser::AUTO;
+}
+
+static void load_modules(ConfigManager &config)
+{
+    StaticLoader::load(config);
+
+    DynamicLoader &dyn_loader = config.get_dynloader();
+    char * env_dynlib_paths = std::getenv("RABBITS_DYNLIB_PATH");
+    if (env_dynlib_paths != NULL) {
+        dyn_loader.add_colon_sep_search_paths(env_dynlib_paths);
+    }
+
+    dyn_loader.search_and_load_rabbits_dynlibs();
+}
+
+static bool list_modules(ConfigManager &config, eRunMode mode)
+{
+    switch (mode) {
+    case RUN_LIST_COMPONENTS:
+        enum_modules(config, Namespace::get(Namespace::COMPONENT), LogLevel::INFO);
+        break;
+    case RUN_LIST_BACKENDS:
+        enum_modules(config, Namespace::get(Namespace::BACKEND), LogLevel::INFO);
+        break;
+    case RUN_LIST_PLUGINS:
+        enum_modules(config, Namespace::get(Namespace::PLUGIN), LogLevel::INFO);
+        break;
+    case RUN_LIST_PLATFORMS:
+        enum_platforms(config, LogLevel::INFO);
+        break;
+    default:
+        return false;
+    }
+
+    return true;
+}
+
 int sc_main(int argc, char *argv[])
 {
-    ui::create_ui();
-
     ConfigManager config;
     ConfigManager::set_config_manager(config);
-
-    get_app_logger().set_log_level(LogLevel::INFO);
-    get_sim_logger().set_log_level(LogLevel::INFO);
 
     declare_global_params(config);
     declare_aliases(config);
@@ -338,63 +272,36 @@ int sc_main(int argc, char *argv[])
 
     Parameters &globals = config.get_global_params();
 
-    LogFiles log_files;
+    const eRunMode run_mode = get_run_mode(globals);
+    const UiChooser::Hint ui_hint = get_ui_hint(run_mode, globals);
 
-    if (globals["debug"].as<bool>()) {
-        globals["log-level"] = string("debug");
-        globals["log-sim-level"] = string("debug");
-    }
-
-    setup_loggers(config, log_files);
+    config.create_ui(ui_hint);
 
     if (globals["debug"].as<bool>()) {
         print_version(LogLevel::DEBUG);
     }
 
-    if (globals["show-version"].as<bool>()) {
+    if (run_mode == RUN_VERSION) {
         print_version(LogLevel::INFO);
         return 0;
     }
 
-    StaticLoader::load(config);
+    load_modules(config);
 
-    DynamicLoader &dyn_loader = config.get_dynloader();
-    char * env_dynlib_paths = std::getenv("RABBITS_DYNLIB_PATH");
-    if (env_dynlib_paths != NULL) {
-        dyn_loader.add_colon_sep_search_paths(env_dynlib_paths);
-    }
-
-    dyn_loader.search_and_load_rabbits_dynlibs();
-
-    if (globals["list-components"].as<bool>()) {
-        enum_modules(config, Namespace::get(Namespace::COMPONENT), LogLevel::INFO);
-        return 0;
-    }
-
-    if (globals["list-backends"].as<bool>()) {
-        enum_modules(config, Namespace::get(Namespace::BACKEND), LogLevel::INFO);
-        return 0;
-    }
-
-    if (globals["list-plugins"].as<bool>()) {
-        enum_modules(config, Namespace::get(Namespace::PLUGIN), LogLevel::INFO);
-        return 0;
-    }
-
-    if (globals["list-platforms"].as<bool>()) {
-        enum_platforms(config, LogLevel::INFO);
+    if (list_modules(config, run_mode)) {
         return 0;
     }
 
     std::string pname = globals["selected-platform"].as<string>();
 
     if (pname.empty()) {
-        if (globals["show-help"].as<bool>() || globals["show-advanced-params"].as<bool>()) {
+        if (run_mode == RUN_HELP) {
             PlatformBuilder empty("", config);
             print_usage(argv[0], config, empty);
             return 0;
         }
-        LOG(APP, ERR) << "No selected platform. Please select a platform with -platform. Try -help.\n";
+        LOG(APP, ERR) << "No selected platform. "
+            "Please select a platform with -platform. Try -help.\n";
         return 1;
     }
 
@@ -410,19 +317,19 @@ int sc_main(int argc, char *argv[])
     try {
         PlatformBuilder builder(pname.c_str(), platform, config);
 
-        if (globals["show-help"].as<bool>() || globals["show-advanced-params"].as<bool>()) {
+        if (run_mode == RUN_HELP) {
             print_usage(argv[0], config, builder);
             return 0;
         }
 
         check_unused_params(platform);
 
-        if (globals["show-systemc-hierarchy"].as<bool>()) {
+        if (run_mode == RUN_SYSC_HIERARCHY) {
             dump_systemc_hierarchy(builder, LogLevel::INFO);
             return 0;
         }
 
-        simu_manager().start();
+        SimuManager(config).start();
 
     } catch (PlatformParseException e) {
         get_app_logger().enable_banner(false);
@@ -436,8 +343,5 @@ int sc_main(int argc, char *argv[])
         return 1;
     }
 
-    ui::dispose_ui();
-
     return 0;
-}
 }

@@ -20,28 +20,36 @@
 #include <cassert>
 
 #include "ui.h"
-
-
-#include "rabbits-common.h"
 #include "rabbits/logger.h"
 
-dummy_ui::dummy_ui()
+DummyUi::DummyUi(ConfigManager &config)
+    : Ui(config)
 {
+    LOG(APP, DBG) << "Dummy ui created\n";
 }
 
-dummy_ui::~dummy_ui()
+DummyUi::~DummyUi()
 {
+    LOG(APP, DBG) << "Destroying dummy ui\n";
 }
 
-ui_fb* dummy_ui::new_fb(std::string name, const ui_fb_info &info)
+UiViewFramebufferIface* DummyUi::create_framebuffer(const std::string &name,
+                                                    const UiFramebufferInfo &info)
 {
-    dummy_ui_fb *fb = new dummy_ui_fb(info);
-
-    m_fbs.push_back(fb);
-
-    return fb;
+    return nullptr;
 }
 
-void dummy_ui::update()
+UiViewWebkitIface* DummyUi::create_webkit(const std::string &name,
+                                          const std::string &url)
+{
+    return nullptr;
+}
+
+Ui::eExitStatus DummyUi::run()
+{
+    return Ui::CONTINUE;
+}
+
+void DummyUi::stop()
 {
 }
