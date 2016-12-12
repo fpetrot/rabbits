@@ -41,7 +41,16 @@ private:
     /* Custom argc/argv construction for Qt */
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
     static const int QT_ARGC = 1;
+#ifdef RABBITS_WORKAROUND_CXX11_GCC_BUGS
+    /* This bugs (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=43453) triggers
+     * an compilation error when the array is initialized with a string literal
+     * while it is allowed by the standard. It happens on GCC 4.9 and seems to
+     * be fixed afterward.
+     */
+    char m_arg0[ARRAY_SIZE(RABBITS_APP_NAME)] = { 'r', 'a', 'b', 'b', 'i', 't', 's', '\0' };
+#else
     char m_arg0[ARRAY_SIZE(RABBITS_APP_NAME)] = RABBITS_APP_NAME;
+#endif
     char * m_qt_argv[QT_ARGC] { m_arg0 };
     int m_qt_argc = QT_ARGC;
 #undef ARRAY_SIZE
