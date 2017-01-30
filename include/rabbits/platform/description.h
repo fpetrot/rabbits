@@ -33,6 +33,7 @@
 #include <limits>
 #include <set>
 #include <algorithm>
+#include <memory>
 
 #include <systemc>
 
@@ -43,9 +44,36 @@ namespace YAML {
     class Node;
 }
 
+class PlatformDescription;
+
 /* Data types conversion classes */
 namespace platformdescription {
 template <typename T> struct converter;
+
+typedef std::map<std::string, PlatformDescription> MapStorage;
+typedef std::vector<PlatformDescription> VecStorage;
+typedef std::pair<const std::string, PlatformDescription> IteratorValue;
+
+template <class T> struct IteratorState;
+
+template <>
+struct IteratorState<IteratorValue> {
+    MapStorage::iterator map;
+    VecStorage::iterator vec;
+
+    IteratorState() {}
+    IteratorState(MapStorage::iterator it) : map(it) {}
+    IteratorState(VecStorage::iterator it) : vec(it) {}
+};
+
+template <>
+struct IteratorState<const IteratorValue> {
+    MapStorage::const_iterator map;
+    VecStorage::const_iterator vec;
+
+    IteratorState() {}
+    IteratorState(MapStorage::const_iterator it) : map(it) {}
+    IteratorState(VecStorage::const_iterator it) : vec(it) {}
 };
 
 /**
@@ -72,8 +100,6 @@ template <typename T> struct converter;
  */
 class PlatformDescription {
 public:
-    typedef std::map<std::string, PlatformDescription>::iterator iterator;
-    typedef std::map<std::string, PlatformDescription>::const_iterator const_iterator;
     typedef std::map<std::string, PlatformDescription>::size_type size_type;
 
     /**
@@ -86,6 +112,37 @@ public:
         NIL,    /**< A empty node. */
         INVALID /**< An invalid node resulting from an erroneous description manipulation. */
     };
+
+    class Node;
+
+    template <class T>
+    class IteratorBase : public std::iterator<std::input_iterator_tag, platformdescription::IteratorValue> {
+    private:
+        const Node *m_node;
+        platformdescription::IteratorState<T> m_it;
+        platformdescription::MapStorage::iterator m_map_it;
+        platformdescription::VecStorage::iterator m_vec_it;
+        std::unique_ptr<platformdescription::IteratorValue> m_pair { new platformdescription::IteratorValue };
+
+    public:
+        IteratorBase();
+        IteratorBase(const IteratorBase<T> &it);
+        IteratorBase(const Node &node, platformdescription::IteratorState<T> it);
+
+        IteratorBase& operator=(const IteratorBase<T>&);
+
+        IteratorBase& operator++();
+        IteratorBase operator++(int) {IteratorBase<T> tmp(*this); operator++(); return tmp; }
+
+        bool operator==(const IteratorBase<T>& it);
+        bool operator!=(const IteratorBase<T>& it);
+
+        T& operator*() const;
+        T* operator->() const;
+    };
+
+    typedef IteratorBase<platformdescription::IteratorValue> iterator;
+    typedef IteratorBase<const platformdescription::IteratorValue> const_iterator;
 
     /**
      * @brief Raised when converting a node to a given type is impossible.
@@ -264,12 +321,13 @@ public:
 
     class NodeMap : public Node {
     protected:
-        std::map<std::string, PlatformDescription> m_child;
+        platformdescription::MapStorage m_child;
     public:
         NodeMap() : Node() {}
         explicit NodeMap(const Origin &o) : Node(o) {}
 
         virtual NodeType type() const { return PlatformDescription::MAP; };
+
         virtual PlatformDescription& operator[] (const std::string & k) {
             return m_child[k];
         }
@@ -281,31 +339,33 @@ public:
         virtual void remove(const std::string &key) { m_child.erase(key); }
 
         virtual iterator begin() {
-            return m_child.begin();
+            return iterator(*this, m_child.begin());
         }
 
         virtual iterator end() {
-            return m_child.end();
+            return iterator(*this, m_child.end());
         }
 
         virtual const_iterator begin() const {
-            return m_child.begin();
+            return const_iterator(*this, m_child.begin());
         }
 
         virtual const_iterator end() const {
-            return m_child.end();
+            return const_iterator(*this, m_child.end());
         }
     };
 
     class NodeVector : public Node {
     protected:
-        std::vector<PlatformDescription> m_child;
+        platformdescription::VecStorage m_child;
+
     public:
         NodeVector() : Node() {}
         explicit NodeVector(const Origin &o) : Node(o) {}
 
         virtual NodeType type() const { return PlatformDescription::VECTOR; };
-        void push_back(const PlatformDescription &p) {m_child.push_back(p);}
+
+        void push_back(const PlatformDescription &p) { m_child.push_back(p); }
 
         virtual PlatformDescription& operator[] (const std::string & k) {
             std::vector<PlatformDescription>::size_type n;
@@ -316,19 +376,19 @@ public:
         virtual size_type size() const { return m_child.size(); }
 
         virtual iterator begin() {
-            throw InvalidConversionException("Cannot iterate over vector (n/i)");
+            return iterator(*this, m_child.begin());
         }
 
         virtual iterator end() {
-            throw InvalidConversionException("Cannot iterate over vector (n/i)");
+            return iterator(*this, m_child.end());
         }
 
         virtual const_iterator begin() const {
-            throw InvalidConversionException("Cannot iterate over vector (n/i)");
+            return const_iterator(*this, m_child.begin());
         }
 
         virtual const_iterator end() const {
-            throw InvalidConversionException("Cannot iterate over vector (n/i)");
+            return const_iterator(*this, m_child.end());
         }
     };
 
@@ -550,14 +610,14 @@ public:
      *
      * @return a constant iterator to the first child node of a map node.
      */
-    const_iterator begin() const { return m_node->begin(); }
+    const_iterator begin() const { return static_cast<const Node*>(m_node)->begin() ; }
 
     /**
      * @brief Return a constant iterator to the <i>past-the-end</i> child node of a map node.
      *
      * @return a constant iterator to the <i>past-the-end</i> child node of a map node.
      */
-    const_iterator end() const { return m_node->end(); }
+    const_iterator end() const { return static_cast<const Node*>(m_node)->end(); }
 
     /**
      * @brief Convert a node to the given type.
@@ -625,6 +685,115 @@ public:
      */
     static PlatformDescription INVALID_DESCRIPTION;
 };
+
+template <class T>
+inline PlatformDescription::IteratorBase<T>::IteratorBase()
+    : m_node(&INVALID_NODE) {}
+
+template <class T>
+inline PlatformDescription::IteratorBase<T>::IteratorBase(const Node &node, platformdescription::IteratorState<T> it)
+    : m_node(&node), m_it(it) {}
+
+template <class T>
+inline PlatformDescription::IteratorBase<T>::IteratorBase(const IteratorBase<T> &it)
+    : m_node(it.m_node), m_it(it.m_it) {}
+
+template <class T>
+inline PlatformDescription::IteratorBase<T>& PlatformDescription::IteratorBase<T>::operator++()
+{
+    switch (m_node->type()) {
+    case MAP:
+        ++m_it.map;
+        break;
+    case VECTOR:
+        ++m_it.vec;
+        break;
+    case INVALID:
+        break;
+    default:
+        assert(false);
+    }
+
+    return *this;
+}
+
+template <class T>
+inline PlatformDescription::IteratorBase<T>& PlatformDescription::IteratorBase<T>::operator=(const IteratorBase& it)
+{
+    m_it.map = it.m_it.map;
+    m_it.vec = it.m_it.vec;
+    m_node = it.m_node;
+
+    return *this;
+}
+
+template <class T>
+inline bool PlatformDescription::IteratorBase<T>::operator==(const IteratorBase<T>& it)
+{
+    switch (m_node->type()) {
+    case MAP:
+        return m_it.map == it.m_it.map;
+    case VECTOR:
+        return m_it.vec == it.m_it.vec;
+    case INVALID:
+        return it.m_node->type() == INVALID;
+    default:
+        assert(false);
+        return false;
+    }
+}
+
+template <class T>
+inline bool PlatformDescription::IteratorBase<T>::operator!=(const IteratorBase<T>& it)
+{
+    switch (m_node->type()) {
+    case MAP:
+        return m_it.map != it.m_it.map;
+    case VECTOR:
+        return m_it.vec != it.m_it.vec;
+    case INVALID:
+        return it.m_node->type() != INVALID;
+    default:
+        assert(false);
+        return false;
+    }
+}
+
+template <class T>
+inline T& PlatformDescription::IteratorBase<T>::operator*() const
+{
+    platformdescription::IteratorValue val;
+    switch (m_node->type()) {
+    case MAP:
+        return *m_it.map;
+    case VECTOR:
+        m_pair->second = *m_it.vec;
+        return *m_pair;
+    case INVALID:
+        throw InvalidConversionException("Cannot dereference invalid iterator");
+    default:
+        assert(false);
+        return *m_pair;
+    }
+}
+
+template <class T>
+inline T* PlatformDescription::IteratorBase<T>::operator->() const
+{
+    platformdescription::IteratorValue val;
+    switch (m_node->type()) {
+    case MAP:
+        return & *m_it.map;
+    case VECTOR:
+        m_pair->second = *m_it.vec;
+        return m_pair.get();
+    case INVALID:
+        throw InvalidConversionException("Cannot dereference invalid iterator");
+    default:
+        assert(false);
+        return m_pair.get();
+    }
+}
 
 namespace platformdescription {
 
