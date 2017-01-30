@@ -67,7 +67,7 @@ static int do_test(TestFactory *tf, ConfigManager &config)
     try {
         t->run();
     } catch (TestFailureException e) {
-        LOG(APP, ERR) << tf->get_name() << ": Failed during test: " << e.what() << "\n";
+        LOG(APP, ERR) << e.what() << "\n";
         return 1;
     } catch (RabbitsException e) {
         LOG(APP, ERR) << tf->get_name() << ": Rabbits exception during test.\n" << e.what() << "\n";
@@ -112,6 +112,31 @@ static int report_result(const string &name, int status)
     return ret;
 }
 
+static int run_test(ConfigManager &config, TestFactory *tf, bool do_fork)
+{
+    int pid = 1;
+    int status;
+
+    if (do_fork) {
+        pid = fork();
+    }
+
+    if (pid == -1) {
+        perror("fork");
+        return 2;
+    }
+
+    if (pid == 0) {
+        std::exit(do_test(tf, config));
+    } else if (!do_fork) {
+        status = do_test(tf, config) << 8;
+    } else {
+        wait(&status);
+    }
+
+    return report_result(tf->get_name(), status);
+}
+
 std::string TestBase::get_test_dir(const std::string &fn) const
 {
     return path(fn).parent_path().string();
@@ -127,6 +152,15 @@ static void load_test_module(DynamicLoader &dyn_loader)
     }
 }
 
+static void setup_globals(ConfigManager &cm)
+{
+    cm.add_global_param("only", Parameter<string>("Only run this test", "", false));
+
+    Parameters &p = cm.get_global_params();
+    cm.add_param_alias("only",  p["only"]);
+    cm.add_param_alias("debug", p["debug"]);
+}
+
 int sc_main(int argc, char *argv[])
 {
     char *env_dynlib_paths;
@@ -134,21 +168,17 @@ int sc_main(int argc, char *argv[])
     ConfigManager config;
     ConfigManager::set_config_manager(config);
 
+    setup_globals(config);
+
+    config.add_cmdline(argc, argv);
+
     DynamicLoader &dyn_loader = config.get_dynloader();
 
     TestFactory::const_iterator it;
     int result = 0;
 
-    if ((argc == 2) && (string(argv[1]) == "-d")) {
-        get_app_logger().set_log_level(LogLevel::DEBUG);
-        get_sim_logger().set_log_level(LogLevel::DEBUG);
-    } else {
-        get_app_logger().set_log_level(LogLevel::INFO);
-        get_sim_logger().set_log_level(LogLevel::INFO);
-    }
-
     env_dynlib_paths = std::getenv("RABBITS_DYNLIB_PATH");
-    if (env_dynlib_paths != NULL) {
+    if (env_dynlib_paths != nullptr) {
         dyn_loader.add_colon_sep_search_paths(env_dynlib_paths);
     }
 
@@ -156,22 +186,15 @@ int sc_main(int argc, char *argv[])
 
     load_test_module(dyn_loader);
 
+    ParameterBase &only = config.get_global_params()["only"];
+
     for (it = TestFactory::begin(); it != TestFactory::end(); it++) {
-        int pid = fork();
-        int status;
-
-        if (pid == -1) {
-            perror("fork");
-            return 2;
+        if (only.is_default()) {
+            result |= run_test(config, *it, true);
+        } else if (only.as<string>() == (*it)->get_name()) {
+            result |= run_test(config, *it, false);
+            break;
         }
-
-        if (pid == 0) {
-            return do_test(*it, config);
-        }
-
-        wait(&status);
-
-        result |= report_result((*it)->get_name(), status);
     }
 
     return result;
