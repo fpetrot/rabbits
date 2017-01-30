@@ -33,6 +33,7 @@
 
 #include "rabbits/rabbits_exception.h"
 #include "rabbits/platform/description.h"
+#include "rabbits/datatypes/stringifier.h"
 
 class ModuleIface;
 class Namespace;
