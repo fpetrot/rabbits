@@ -31,8 +31,6 @@ struct SpiFrame {
 
     unsigned int send_idx = 0;
 
-    bool cs_falling_edge = true;
-
     uint8_t send_pop()
     {
         if (send_data.size() <= send_idx) {
@@ -78,6 +76,8 @@ struct SpiFrame {
 class SpiSystemCInterface : public virtual sc_core::sc_interface {
 public:
     virtual void spi_slave_xmit(SpiFrame &) = 0;
+    virtual void spi_select() = 0;
+    virtual void spi_deselect() = 0;
 };
 
 #endif

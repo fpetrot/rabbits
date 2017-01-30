@@ -28,6 +28,7 @@ class SpiMasterPort : public Port, public SpiBindingListener {
 protected:
     int m_indexes = 0;
     std::unordered_map<int, int> m_slave_indexes;
+    int m_selected = -1;
 
     SpiCS m_cs;
 
@@ -38,6 +39,11 @@ protected:
         }
 
         return m_slave_indexes.at(cs);
+    }
+
+    bool cs_is_low() const
+    {
+        return m_selected != -1;
     }
 
 public:
@@ -58,19 +64,37 @@ public:
         m_slave_indexes[cs] = m_indexes++;
     }
 
-    void send(SpiFrame &frame, int cs)
+    void select(int cs)
     {
-        int slave_idx;
+        m_selected = get_slave_idx(cs);
 
-        slave_idx = get_slave_idx(cs);
-
-        if (slave_idx == -1) {
-            MLOG_F(SIM, DBG, "Try to send frame to unknown spi device "
+        if (!cs_is_low()) {
+            MLOG_F(SIM, DBG, "Try to select unknown spi device "
                    "at cs %d\n", cs);
             return;
         }
 
-        sc_p[slave_idx]->spi_slave_xmit(frame);
+        sc_p[m_selected]->spi_select();
+    }
+
+    void deselect()
+    {
+        if (cs_is_low()) {
+            sc_p[m_selected]->spi_deselect();
+        }
+
+        m_selected = -1;
+    }
+
+    void send(SpiFrame &frame)
+    {
+        if (!cs_is_low()) {
+            MLOG(SIM, DBG) << "SPI master tried to send a frame "
+                "without selecting a slave\n";
+            return;
+        }
+
+        sc_p[m_selected]->spi_slave_xmit(frame);
 
         if (frame.send_data.size() > frame.recv_data.size()) {
             MLOG(SIM, DBG) << "SPI slave did not respond with enough data. Padding.\n";
