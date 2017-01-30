@@ -237,6 +237,7 @@ public:
         virtual NodeType type() const = 0;
 
         virtual PlatformDescription& operator[] (const std::string & k) = 0;
+        virtual PlatformDescription& operator[] (size_type i) = 0;
         virtual size_type size() const = 0;
         virtual iterator begin() = 0;
         virtual iterator end() = 0;
@@ -298,6 +299,14 @@ public:
             return PlatformDescription::INVALID_DESCRIPTION;
         }
 
+        virtual PlatformDescription& operator[] (size_type i) {
+            return PlatformDescription::INVALID_DESCRIPTION;
+        }
+
+        virtual PlatformDescription& operator[] (size_type i) {
+            return PlatformDescription::INVALID_DESCRIPTION;
+        }
+
         virtual size_type size() const { return 0; }
 
         virtual iterator begin() {
@@ -330,6 +339,10 @@ public:
 
         virtual PlatformDescription& operator[] (const std::string & k) {
             return m_child[k];
+        }
+
+        virtual PlatformDescription& operator[] (size_type i) {
+            return PlatformDescription::INVALID_DESCRIPTION;
         }
 
         virtual size_type size() const { return m_child.size(); }
@@ -368,9 +381,15 @@ public:
         void push_back(const PlatformDescription &p) { m_child.push_back(p); }
 
         virtual PlatformDescription& operator[] (const std::string & k) {
-            std::vector<PlatformDescription>::size_type n;
-            std::stringstream(k) >> n;
-            return m_child[n];
+            return PlatformDescription::INVALID_DESCRIPTION;
+        }
+
+        virtual PlatformDescription& operator[] (size_type i) {
+            if (m_child.size() <= i) {
+                return PlatformDescription::INVALID_DESCRIPTION;
+            }
+
+            return m_child[i];
         }
 
         virtual size_type size() const { return m_child.size(); }
@@ -404,6 +423,10 @@ public:
         virtual NodeType type() const { return PlatformDescription::SCALAR; };
 
         virtual PlatformDescription& operator[] (const std::string & k) {
+            return PlatformDescription::INVALID_DESCRIPTION;
+        }
+
+        virtual PlatformDescription& operator[] (size_type i) {
             return PlatformDescription::INVALID_DESCRIPTION;
         }
 
@@ -490,6 +513,18 @@ public:
     NodeType type() const { return m_node->type(); }
 
     /**
+     * @brief Return the size of the root node
+     *
+     * For map and vector node, the size is the number
+     * of elements it contains.
+     * For scalar node, the size is always 1.
+     * For invalid and nil nodes, the size is always 0.
+     *
+     * @return the size of the root node.
+     */
+    size_type size() const { return m_node->size(); }
+
+    /**
      * @brief Return true if the root node is a map node.
      *
      * @return true if the root node is a map node, false otherwise.
@@ -537,6 +572,20 @@ public:
      * @return the child node.
      */
     PlatformDescription & operator[] (const std::string& k) { return (*m_node)[k]; }
+
+    /**
+     * @brief Return the child node at index i.
+     *
+     * If the node type is a vector, this method returns the child node at index i.
+     * If the index does not exist, the INVALID_DESCRIPTION is returned.
+     *
+     * If the node type is not a vector, this method returns the INVALID_DESCRIPTION.
+     *
+     * @param[in] i the child index.
+     *
+     * @return the child node.
+     */
+    PlatformDescription & operator[] (size_type i) { return (*m_node)[i]; }
 
     /**
      * @brief Return true if the child node exists.
