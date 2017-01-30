@@ -364,6 +364,19 @@ public:
         m_last_timestamp = sc_core::sc_time_stamp();                                    \
     } while(0)
 
+#define RABBITS_TEST_ASSERT_EXCEPTION(statement, exception)               \
+    do {                                                                  \
+        bool encountered = false;                                         \
+        try {                                                             \
+            statement;                                                    \
+        } catch (exception e) {                                           \
+            encountered = true;                                           \
+        }                                                                 \
+        set_current_file(__FILE__);                                       \
+        set_current_line(__LINE__);                                       \
+        test_assert(encountered, "Exception " #exception " must occure"); \
+    } while (0)
+
 #define RABBITS_TEST_END() \
     sc_core::sc_stop()
 
