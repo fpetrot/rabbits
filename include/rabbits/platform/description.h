@@ -44,6 +44,8 @@ namespace YAML {
     class Node;
 }
 
+class JSON;
+
 class PlatformDescription;
 
 /* Data types conversion classes */
@@ -75,6 +77,18 @@ struct IteratorState<const IteratorValue> {
     IteratorState(MapStorage::const_iterator it) : map(it) {}
     IteratorState(VecStorage::const_iterator it) : vec(it) {}
 };
+
+static inline void tokenize(const std::string arg, const char sep, std::list<std::string>& toks)
+{
+    std::istringstream ss(arg);
+    std::string tok;
+
+    while(std::getline(ss, tok, sep)) {
+        toks.push_back(tok);
+    }
+}
+
+}
 
 /**
  * @brief A description representing a platform.
@@ -173,6 +187,15 @@ public:
         virtual ~YamlParsingException() throw() {}
     };
 
+    /**
+     * @brief Raised when a JSON parsing error occured
+     */
+    class JsonParsingException : public RabbitsException {
+    public:
+        explicit JsonParsingException(const std::string & what) : RabbitsException(what) {}
+        virtual ~JsonParsingException() throw() {}
+    };
+
     class NodeVisitor {
     public:
         virtual void operator() (PlatformDescription &node,
@@ -269,6 +292,10 @@ public:
             return PlatformDescription::INVALID_DESCRIPTION;
         }
 
+        virtual PlatformDescription& operator[] (size_type i) {
+            return PlatformDescription::INVALID_DESCRIPTION;
+        }
+
         virtual size_type size() const { return 0; }
 
         virtual iterator begin() {
@@ -296,10 +323,6 @@ public:
         virtual NodeType type() const { return PlatformDescription::INVALID; };
 
         virtual PlatformDescription& operator[] (const std::string & k) {
-            return PlatformDescription::INVALID_DESCRIPTION;
-        }
-
-        virtual PlatformDescription& operator[] (size_type i) {
             return PlatformDescription::INVALID_DESCRIPTION;
         }
 
@@ -456,8 +479,9 @@ protected:
     Node *m_node;
 
     Node * load_yaml_req(YAML::Node root, Node::Origin &origin);
+    Node * load_json_req(JSON root, Node::Origin &origin);
+    JSON dump_json_req() const;
 
-    void tokenize_arg(const std::string arg, std::list<std::string>& toks);
     NodeScalar* parse_arg_req(std::list<std::string>& toks, Node::Origin &origin);
 
     explicit PlatformDescription(Node *);
@@ -484,6 +508,27 @@ public:
      * @param[in] file The path to the file containing the description.
      */
     void load_file_yaml(const std::string & file);
+
+    /**
+     * @brief Load a JSON description into this description.
+     *
+     * @param[in] json the JSON description.
+     */
+    void load_json(const std::string & json);
+
+    /**
+     * @brief Dump the PlatformDescription as JSON
+     *
+     * @return the JSON string representing the PlatformDescription
+     */
+    std::string dump_json() const;
+
+    /**
+     * @brief Load a JSON description from the given file.
+     *
+     * @param[in] file The path to the file containing the description.
+     */
+    void load_file_json(const std::string & file);
 
     /**
      * @brief Parse the command line and add the information to the description.

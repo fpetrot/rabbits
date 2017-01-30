@@ -19,6 +19,7 @@
 
 #include "rabbits/logger.h"
 #include "rabbits/platform/description.h"
+#include "json.hpp"
 
 #include <yaml-cpp/yaml.h>
 #include <sstream>
@@ -29,6 +30,15 @@ using std::list;
 using std::map;
 using std::vector;
 using std::set;
+
+using NlohmannJSON = nlohmann::json;
+
+/* This class hides implementation details */
+class JSON {
+public:
+    NlohmannJSON json;
+    JSON(NlohmannJSON json) : json(json) {}
+};
 
 /*
  * ====================
@@ -138,14 +148,113 @@ void PlatformDescription::load_yaml(const string &yaml)
     }
 }
 
-void PlatformDescription::tokenize_arg(const string arg, list<string>& toks)
+PlatformDescription::Node* PlatformDescription::load_json_req(JSON root_w, Node::Origin &origin)
 {
-    std::istringstream ss(arg);
-    string tok;
+    NlohmannJSON &root = root_w.json;
 
-    while(std::getline(ss, tok, '.')) {
-        toks.push_back(tok);
+    NodeMap *nm = NULL;
+    NodeVector *nv = NULL;
+    std::stringstream ss;
+
+    switch (root.type()) {
+    case NlohmannJSON::value_t::object:
+        nm = new NodeMap(origin);
+        for (NlohmannJSON::iterator it = root.begin(); it != root.end(); ++it) {
+            (*nm)[it.key()] = PlatformDescription(load_json_req(it.value(), origin));
+        }
+        return nm;
+
+    case NlohmannJSON::value_t::array:
+        nv = new NodeVector(origin);
+        for (auto &e : root) {
+            nv->push_back(PlatformDescription(load_json_req(e, origin)));
+        }
+        return nv;
+
+    case NlohmannJSON::value_t::string:
+        {
+            string str = root;
+            ss << str;
+        }
+        goto scalar;
+
+    case NlohmannJSON::value_t::number_integer:
+        ss << int(root);
+        goto scalar;
+
+    case NlohmannJSON::value_t::number_unsigned:
+        ss << unsigned(root);
+        goto scalar;
+
+    case NlohmannJSON::value_t::number_float:
+        ss << double(root);
+        goto scalar;
+
+    case NlohmannJSON::value_t::boolean:
+        ss << bool(root);
+
+    scalar:
+        return new NodeScalar(ss.str(), origin);
+
+    case NlohmannJSON::value_t::null:
+        return new NodeNil(origin);
+
+    case NlohmannJSON::value_t::discarded:
+        assert(false);
+        break;
     }
+
+    return nullptr;
+}
+
+void PlatformDescription::load_json(const string &json)
+{
+    try {
+        NlohmannJSON j_root = NlohmannJSON::parse(json);
+
+        Node::Origin origin;
+        *this = PlatformDescription(load_json_req(JSON(j_root), origin));
+    } catch (std::logic_error e) {
+        throw JsonParsingException(e.what());
+    } catch (std::exception e) {
+        throw JsonParsingException(e.what());
+    }
+}
+
+JSON PlatformDescription::dump_json_req() const
+{
+    NlohmannJSON json;
+
+    switch (type()) {
+    case MAP:
+        for (auto p: *this) {
+            json[p.first] = p.second.dump_json_req().json;
+        }
+        break;
+
+    case VECTOR:
+        for (auto p: *this) {
+            json.push_back(p.second.dump_json_req().json);
+        }
+        break;
+
+    case SCALAR:
+        json = as<string>();
+        break;
+
+    case NIL:
+    case INVALID:
+        json = nullptr;
+        break;
+    }
+
+    return JSON(json);
+}
+
+std::string PlatformDescription::dump_json() const
+{
+    NlohmannJSON j_root = dump_json_req().json;
+    return j_root.dump();
 }
 
 PlatformDescription::NodeScalar*
@@ -207,7 +316,7 @@ void PlatformDescription::parse_cmdline(int argc, const char * const argv[],
 
                 const string sarg = arg.substr(1);
 
-                tokenize_arg(sarg, toks);
+                platformdescription::tokenize(sarg, '.', toks);
 
                 try {
                     n = parse_arg_req(toks, origin);
