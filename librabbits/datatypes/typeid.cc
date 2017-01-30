@@ -18,9 +18,10 @@
  */
 
 #include "rabbits/datatypes/typeid.h"
+#include <systemc>
 
 
-std::unordered_map<std::type_index, const char * const> TypeId::m_ids {
+std::unordered_map<std::type_index, const char * const> typeidentifier::StaticIds::STATIC_IDS {
     { typeid(int), "int" },
 
     { typeid(bool), "bool" },
@@ -38,4 +39,6 @@ std::unordered_map<std::type_index, const char * const> TypeId::m_ids {
 
     { typeid(double), "float" },
     { typeid(float), "float" },
+
+    { typeid(sc_core::sc_time), "time" },
 };

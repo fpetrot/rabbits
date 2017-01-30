@@ -23,29 +23,54 @@
 #include <string>
 #include <typeindex>
 #include <unordered_map>
+#include <vector>
 
-class TypeId {
-public:
+namespace typeidentifier {
+
+struct StaticIds {
+    static std::unordered_map<std::type_index, const char * const> STATIC_IDS;
+};
+
+template <class T>
+struct TypeIdentifier {
     static constexpr const char * const UNKNOWN_TYPE = "?";
 
-private:
-    static std::unordered_map<std::type_index, const char * const> m_ids;
 
-public:
-    static const char * get_typeid(std::type_index index)
-    {
-        if (m_ids.find(index) == m_ids.end()) {
+    static const char * get_typeid() {
+        if (StaticIds::STATIC_IDS.find(typeid(T)) == StaticIds::STATIC_IDS.end()) {
             return UNKNOWN_TYPE;
         }
 
-        return m_ids[index];
+        return StaticIds::STATIC_IDS[typeid(T)];
     }
+};
 
+template <class T>
+struct TypeIdentifier<std::vector<T> > {
+private:
+    static std::string m_id;
+public:
+    static const char * get_typeid() {
+        if (m_id.empty()) {
+            m_id = "vector(" + std::string(TypeIdentifier<T>::get_typeid()) + ")";
+        }
+
+        return m_id.c_str();
+    }
+};
+
+}
+
+class TypeId {
+public:
     template <class T>
     static const char * get_typeid()
     {
-        return get_typeid(typeid(T));
+        return typeidentifier::TypeIdentifier<T>::get_typeid();
     }
 };
+
+template <class T>
+std::string typeidentifier::TypeIdentifier< std::vector<T> >::m_id;
 
 #endif
