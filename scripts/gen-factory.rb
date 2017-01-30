@@ -176,7 +176,7 @@ class DescrTypeInt < DescrType
   end
 
   def convert(str)
-    return str if str.is_a?(Fixnum)
+    return str if str.is_a?(Integer)
 
     unit = str[-1]
     factor = unit2factor(unit)
@@ -572,7 +572,7 @@ def load_yml(f)
   yml = Psych.load_file(f)
 
   case yml['include']
-  when String, Fixnum
+  when String, Integer
     inc = [ yml['include'] ]
   when Array
     inc = yml['include']
