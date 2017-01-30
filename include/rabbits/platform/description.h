@@ -34,6 +34,8 @@
 #include <set>
 #include <algorithm>
 
+#include <systemc>
+
 #include "rabbits/rabbits_exception.h"
 #include "rabbits/datatypes/address_range.h"
 
@@ -785,6 +787,65 @@ struct converter<AddressRange> {
             res = AddressRange(begin, size);
         }
 
+        return true;
+    }
+};
+
+static inline bool str2time_unit(std::string &str, sc_core::sc_time_unit &unit)
+{
+    std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+
+    if (str == "fs") {
+        unit = sc_core::SC_FS;
+        return true;
+    } else if (str == "ps") {
+        unit = sc_core::SC_PS;
+        return true;
+    } else if (str == "ns") {
+        unit = sc_core::SC_NS;
+        return true;
+    } else if (str == "ms") {
+        unit = sc_core::SC_MS;
+        return true;
+    } else if (str == "s") {
+        unit = sc_core::SC_SEC;
+        return true;
+    }
+
+    return false;
+}
+
+template <>
+struct converter<sc_core::sc_time> {
+    static bool decode(const PlatformDescription::Node &n, sc_core::sc_time &res) {
+        if (n.type() != PlatformDescription::SCALAR) {
+            return false;
+        }
+
+        double t;
+        sc_core::sc_time_unit unit = sc_core::SC_PS;
+
+        const std::string & input = n.raw_data();
+        std::stringstream ss(input);
+
+        ss.unsetf(std::ios::dec);
+
+        if (!(ss >> t)) {
+            return false;
+        }
+
+        if (!ss.eof()) {
+            /* Unit parsing */
+            std::string unit_str;
+            if((!(ss >> unit_str)) || (!(ss >> std::ws).eof())) {
+                return false;
+            }
+
+            if (!str2time_unit(unit_str, unit)) {
+                return false;
+            }
+        }
+        res = sc_core::sc_time(t, unit);
         return true;
     }
 };
