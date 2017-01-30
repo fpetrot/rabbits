@@ -136,6 +136,14 @@ class DescrType
   end
 
   def DescrType.get(type_name)
+    if type_name.start_with?('vector(') then
+      sub_type = type_name[/vector\((.*)\)/,1]
+      sub_converter = get(sub_type)
+
+      return nil unless sub_converter
+      return DescrTypeVector.new('vector', sub_converter)
+    end
+
     return @@descr_types[type_name]
   end
 end
@@ -224,11 +232,46 @@ end
 class DescrTypeTime < DescrType
   def initialize(type_name)
     super(type_name)
-    @cc_type = 'sc_time'
+    @cc_type = 'sc_core::sc_time'
   end
 
   def convert(str)
-    "todo"
+    unit_idx = str.index(/[fpnum]s$/)
+
+    unit = str[unit_idx..-1].upcase if unit_idx
+    unit = 'PS' unless unit_idx
+
+    unit_idx = -1 unless unit
+    value = str[0..unit_idx].to_f
+
+    return "sc_core::sc_time(#{value}, sc_core::SC_#{unit})"
+  end
+end
+
+class DescrTypeVector < DescrType
+  def initialize(type_name, sub_converter)
+    super(type_name)
+    @sub_converter = sub_converter
+    @cc_type = 'std::vector< ' + sub_converter.cc_type + ' > '
+  end
+
+  def convert(vec)
+    raise StandardError.new("#{vec} is not a vector") unless vec.is_a?(Array)
+
+    ret = ""
+    sep = "{ "
+
+    vec.each do |e|
+      ret += sep + @sub_converter.convert(e).to_s
+      sep = ", "
+    end
+
+    if sep == "{ " then
+      ret += sep
+    end
+
+    ret += " }"
+    return ret
   end
 end
 
