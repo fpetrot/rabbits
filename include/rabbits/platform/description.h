@@ -1116,5 +1116,52 @@ struct converter<sc_core::sc_time> {
     }
 };
 
+template <class T>
+struct converter< std::vector<T> > {
+private:
+    static bool decode_from_vector(const PlatformDescription::Node &n, std::vector<T> &vec)
+    {
+        for (auto &p : n) {
+            try {
+                vec.push_back(p.second.as<T>());
+            } catch (PlatformDescription::InvalidConversionException e) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    static bool decode_from_scalar(const PlatformDescription::Node &n, std::vector<T> &vec) {
+        std::list<std::string> toks;
+        tokenize(n.raw_data(), ',', toks);
+
+        for (auto &e: toks) {
+            T out;
+            PlatformDescription::NodeScalar tmp_node(e);
+
+            if (!platformdescription::converter<T>::decode(tmp_node, out)) {
+                return false;
+            }
+
+            vec.push_back(out);
+        }
+
+        return true;
+    }
+
+public:
+    static bool decode(const PlatformDescription::Node &n, std::vector<T> &vec) {
+        switch (n.type()) {
+        case PlatformDescription::VECTOR:
+            return decode_from_vector(n, vec);
+        case PlatformDescription::SCALAR:
+            return decode_from_scalar(n, vec);
+        default:
+            return false;
+        }
+    }
+};
+
 };
 #endif
