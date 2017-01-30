@@ -628,6 +628,18 @@ public:
 
 namespace platformdescription {
 
+template <>
+struct converter<std::string> {
+    static bool decode(const PlatformDescription::Node &n, std::string &res) {
+        if (n.type() != PlatformDescription::SCALAR) {
+            return false;
+        }
+
+        res = n.raw_data();
+        return true;
+    }
+};
+
 static inline int64_t unit2factor(char unit) {
     switch(unit) {
     case 'K':
@@ -641,124 +653,115 @@ static inline int64_t unit2factor(char unit) {
     }
 }
 
-template <>
-struct converter<std::string> {
-    static bool decode(const PlatformDescription::Node &n, std::string &res) {
-        if (n.type() != PlatformDescription::SCALAR) {
+static inline bool parse_unit(std::stringstream &ss, int64_t &factor)
+{
+    factor = 1;
+
+    if (!ss.eof()) {
+        /* Unit parsing */
+        char unit;
+        if((!(ss >> unit)) || (!(ss >> std::ws).eof())) {
             return false;
         }
 
-        res = n.raw_data();
-        return true;
+        factor = unit2factor(unit);
+
+        if (!factor) {
+            /* Invalid unit */
+            return false;
+        }
     }
-};
 
-#define NUMERICAL_CONVERTER(_type, _sign)                                \
-template <>                                                              \
-struct converter<_type> {                                                \
-    static bool decode(const PlatformDescription::Node &n, _type &res) { \
-        if (n.type() != PlatformDescription::SCALAR) {                   \
-            return false;                                                \
-        }                                                                \
-        const std::string & input = n.raw_data();                        \
-        std::stringstream ss(input);                                     \
-        _sign ## int64_t t, factor = 1;                                  \
-        ss.unsetf(std::ios::dec);                                        \
-        if (!(ss >> t)) {                                                \
-            return false;                                                \
-        }                                                                \
-        if (!ss.eof()) {                                                 \
-            /* Unit parsing */                                           \
-            char unit;                                                   \
-            if((!(ss >> unit)) || (!(ss >> std::ws).eof())) {            \
-                return false;                                            \
-            }                                                            \
-            factor = unit2factor(unit);                                  \
-            if (!factor) {                                               \
-                /* Invalid unit */                                       \
-                return false;                                            \
-            }                                                            \
-        }                                                                \
-        t *= factor;                                                     \
-        if ((t < std::numeric_limits<_type>::min())                      \
-            || (t > std::numeric_limits<_type>::max())) {                \
-            /* input is out of bounds for requested conversion */        \
-            return false;                                                \
-        }                                                                \
-        res = t;                                                         \
-        return true;                                                     \
-    }                                                                    \
-};
+    return true;
+}
 
-NUMERICAL_CONVERTER(uint8_t, u)
-NUMERICAL_CONVERTER(int8_t, )
-NUMERICAL_CONVERTER(uint16_t, u)
-NUMERICAL_CONVERTER(int16_t, )
-NUMERICAL_CONVERTER(uint32_t, u)
-NUMERICAL_CONVERTER(int32_t, )
-NUMERICAL_CONVERTER(uint64_t, u)
-NUMERICAL_CONVERTER(int64_t, )
-#undef NUMERICAL_CONVERTER
+template <class T>
+inline bool parse_digits(const std::string input, T &t)
+{
+    std::stringstream ss(input);
+    int64_t factor;
 
-template <>
-struct converter<double> {
-    static bool decode(const PlatformDescription::Node &n, double &res) {
-        if (n.type() != PlatformDescription::SCALAR) {
-            return false;
-        }
-        const std::string & input = n.raw_data();
-        std::stringstream ss(input);
-        double factor = 1;
-        ss.unsetf(std::ios::dec);
-        if (!(ss >> res)) {
-            return false;
-        }
-        if (!ss.eof()) {
-            /* Unit parsing */
-            char unit;
-            if((!(ss >> unit)) || (!(ss >> std::ws).eof())) {
-                return false;
-            }
-            factor = unit2factor(unit);
-            if (!factor) {
-                /* Invalid unit */
-                return false;
-            }
-        }
-        res *= factor;
-        return true;
+    ss.unsetf(std::ios::dec);
+    if (!(ss >> t)) {
+        return false;
     }
-};
 
+    if (!parse_unit(ss, factor)) {
+        return false;
+    }
+
+    t *= factor;
+    return true;
+}
+
+/* Specialized bool version. We try to read digits first, and if it fails, we
+ * try with boolalpha flag set (false/true instead of 0/1). Boolean do not have units. */
 template <>
-struct converter<bool> {
-    static bool decode(const PlatformDescription::Node &n, bool &res) {
+inline bool parse_digits(const std::string input, bool &t)
+{
+    std::string lo(input);
+    std::transform(lo.begin(), lo.end(), lo.begin(), ::tolower);
+
+    std::stringstream ss(lo);
+
+    if (!(ss >> t)) {
+        ss.clear();
+        ss.setf(std::ios::boolalpha);
+        if (!(ss >> t)) {
+            return false;
+        }
+    }
+
+    if (!(ss >> std::ws).eof()) {
+        return false;
+    }
+
+    return true;
+}
+
+/* Converter for arithmetic types including u?int{8,16,32}_t, float, double and
+ * bool. */
+template <class T>
+struct converter {
+    static
+    typename std::enable_if<std::is_arithmetic<T>::value, bool>::type
+    decode(const PlatformDescription::Node &n, T &res) {
         if (n.type() != PlatformDescription::SCALAR) {
             return false;
         }
 
-        std::string lo = n.raw_data();
-        std::transform(lo.begin(), lo.end(), lo.begin(), ::tolower);
+        const bool is_neg = n.raw_data().front() == '-';
 
-        if (lo == "true") {
-            res = true;
-            return true;
-        }
-
-        if (lo == "false") {
-            res = false;
-            return true;
-        }
-
-        std::stringstream ss(n.raw_data());
-        if (!(ss >> res)) {
+        if (is_neg && std::is_unsigned<T>::value) {
             return false;
         }
 
-        if (!ss.eof()) {
+        /*
+         * If the target type is floating point, then we use double as the
+         * conversion type. If it is an integer, we use int64_t or uint64_t
+         * whether it is signed or not.
+         */
+        typedef typename std::conditional<
+            std::is_floating_point<T>::value, double,
+            typename std::conditional<
+                std::is_signed<T>::value, int64_t, uint64_t>::type >::type _StorageT;
+
+        /* However, if the target type is bool, we use bool */
+        typedef typename std::conditional<
+            std::is_same<bool, T>::value, bool, _StorageT>::type StorageT;
+
+        StorageT t;
+
+        if (!parse_digits(n.raw_data(), t)) {
             return false;
         }
 
+        if ((t < std::numeric_limits<T>::min())
+            || (t > std::numeric_limits<T>::max())) {
+            /* input is out of bounds for requested conversion */
+            return false;
+        }
+        res = t;
         return true;
     }
 };
