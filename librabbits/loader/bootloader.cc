@@ -22,6 +22,7 @@
 
 #include "rabbits/logger.h"
 
+#include <boost/endian/conversion.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -91,22 +92,22 @@ void ArmBootloader::PatchBlob::patch(const uint32_t ctx[NUM_FIXUP])
     std::vector<Entry>::iterator it;
 
     for (it = m_blob.begin(); it != m_blob.end(); it++) {
-         switch (it->fixup) {
-         case FIXUP_NONE:
-         case NUM_FIXUP:
-             break;
+        switch (it->fixup) {
+        case FIXUP_NONE:
+        case NUM_FIXUP:
+            break;
 
-         default:
-             it->insn = ctx[it->fixup];
-             break;
-         }
+        default:
+            it->insn = ctx[it->fixup];
+            break;
+        }
     }
 }
 
 int ArmBootloader::PatchBlob::load(uint32_t addr, DebugInitiator *bus)
 {
     std::vector<Entry>::iterator it;
-    
+
     for (it = m_blob.begin(); it != m_blob.end(); it++) {
         if(bus->debug_write(addr, &(it->insn), 4) < 4) {
             LOG_F(APP, ERR, "Unable to write entry blob. Trying to write outside ram?\n");
@@ -122,6 +123,7 @@ ArmBootloader::ArmBootloader(DebugInitiator *bus)
 {
     m_bus = bus;
     m_ram_start = 0;
+    m_ram_size = 0;
     m_kernel_load_addr = m_initramfs_load_addr = m_dtb_load_addr = -1;
 }
 
@@ -149,7 +151,7 @@ int ArmBootloader::boot()
             dtb_load_addr = DTB_DEFAULT_LOAD_ADDR + m_ram_start;
         }
 
-        if(!m_bootargs.empty()) {
+        if(!m_bootargs.empty() || m_ram_size > 0) {
             int dt_size = get_file_size(m_dtb_path.c_str());
             if(dt_size < 0) {
                 LOG_F(APP, ERR, "Unable to get size of device tree file.\n");
@@ -182,10 +184,64 @@ int ArmBootloader::boot()
                 return 1;
             }
 
-            r = fdt_setprop_string(fdt, findnode_nofail(fdt, "/chosen"), "bootargs", m_bootargs.c_str());
-            if(r < 0) {
-                LOG_F(APP, ERR, "Couldn't set bootargs in device tree.\n");
-                return 1;
+            if(m_ram_size > 0) {
+                r = fdt_path_offset(fdt, "/memory");
+                if (r < 0) {
+                    int parent;
+                    parent = findnode_nofail(fdt, "/");
+                    r = fdt_add_subnode(fdt, parent, "memory");
+                    if(r < 0) {
+                        LOG_F(APP, ERR, "Couldn't create memory node in device tree.\n");
+                        return 1;
+                    }
+                }
+
+                if(!fdt_getprop(fdt, findnode_nofail(fdt, "/memory"), "device_type", NULL)) {
+                    r = fdt_setprop_string(fdt, findnode_nofail(fdt, "/memory"), "device_type", "memory");
+                    if(r < 0) {
+                        LOG_F(APP, ERR, "Couldn't set device_type property.\n");
+                        return 1;
+                    }
+                }
+
+                int len = 0;
+
+                uint32_t *acells_p = (uint32_t *)fdt_getprop(fdt, findnode_nofail(fdt, "/"), "#address-cells", &len);
+                if(!acells_p || (len != 4) || (*acells_p == 0)) {
+                    LOG_F(APP, ERR, "dtb file contains an invalid #address-cells\n");
+                    return 1;
+                }
+
+                uint32_t *scells_p = (uint32_t *)fdt_getprop(fdt, findnode_nofail(fdt, "/"), "#size-cells", &len);
+                if(!scells_p || (len != 4) || (*scells_p == 0)) {
+                    LOG_F(APP, ERR, "dtb file contains an invalid #size-cells\n");
+                    return 1;
+                }
+
+                uint32_t acells = boost::endian::native_to_big(*acells_p);
+                uint32_t scells = boost::endian::native_to_big(*scells_p);
+                if (acells != 1 || scells != 1) {
+                    LOG_F(APP, ERR, "dtb file not compatible with rabbits (#size-cells and #address-cells must be set to 1)\n");
+                    return 1;
+                }
+
+                uint32_t ram_start_be = boost::endian::native_to_big(m_ram_start);
+                uint32_t ram_size_be = boost::endian::native_to_big(m_ram_size);
+                uint32_t propcells[] = {ram_start_be, ram_size_be};
+                uint32_t cellnum = 2;
+                r = fdt_setprop(fdt, findnode_nofail(fdt, "/memory"), "reg", propcells, cellnum * sizeof(uint32_t));
+                if(r < 0) {
+                    LOG_F(APP, ERR, "Couldn't set reg property in /memory.\n");
+                    return 1;
+                }
+            }
+
+            if(!m_bootargs.empty()) {
+                r = fdt_setprop_string(fdt, findnode_nofail(fdt, "/chosen"), "bootargs", m_bootargs.c_str());
+                if(r < 0) {
+                    LOG_F(APP, ERR, "Couldn't set bootargs in device tree.\n");
+                    return 1;
+                }
             }
 
             if (Loader::load((uint8_t *)fdt, m_bus, dtb_load_addr, dt_size)) {
