@@ -107,6 +107,7 @@ protected:
 
     uint32_t m_machine_id;
     uint32_t m_ram_start;
+    uint32_t m_ram_size;
 
     std::string m_kernel_path, m_initramfs_path, m_dtb_path, m_bootargs;
     uint32_t m_kernel_load_addr, m_initramfs_load_addr, m_dtb_load_addr;
@@ -208,6 +209,13 @@ public:
      * @param[in] ram_start The start address of the RAM.
      */
     void set_ram_start(uint32_t ram_start) { m_ram_start = ram_start; }
+
+    /**
+     * @brief Set the RAM size of the platform.
+     *
+     * @param[in] ram_size The size of the RAM.
+     */
+    void set_ram_size(uint32_t ram_size) { m_ram_size = ram_size; }
 
     /**
      * @brief Perform the bootloading steps.
