@@ -246,7 +246,6 @@ public:
         int m_ref_count;
         bool m_is_static;
     protected:
-        NodeType m_type;
         Origin m_origin;
         bool m_converted = false;
 
