@@ -106,13 +106,11 @@ function(rabbits_generate_tests n)
 
         set(_test_payload ${CMAKE_CURRENT_BINARY_DIR}/${n}_test_payload.cc)
 
-        if("${CMAKE_VERSION}" VERSION_GREATER 3.0.2)
-            file(GENERATE
-                OUTPUT ${_test_payload}
-                CONTENT "namespace test { const char * test_payload = \"$<TARGET_FILE:${_test_mod}>\"; };")
-        else()
-            file(WRITE ${_test_payload} "namespace test { const char * test_payload = \"$<TARGET_FILE:${_test_mod}>\"; };")
-        endif()
+        add_custom_command(
+            OUTPUT "${_test_payload}"
+            COMMAND ${CMAKE_COMMAND} -E echo
+                'namespace test { const char * test_payload = \"$<TARGET_FILE:${_test_mod}>\"\; }\;'
+                >"${_test_payload}")
 
         add_executable(${_test_name} ${_test_payload})
         target_link_libraries(${_test_name} ${SYSTEMC_LIBRARIES} ${RABBITS_TEST_LIBRARY})
