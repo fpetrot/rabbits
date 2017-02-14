@@ -22,7 +22,7 @@
 
 #include "rabbits/logger.h"
 
-#include <boost/endian/conversion.hpp>
+#include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -218,15 +218,15 @@ int ArmBootloader::boot()
                     return 1;
                 }
 
-                uint32_t acells = boost::endian::native_to_big(*acells_p);
-                uint32_t scells = boost::endian::native_to_big(*scells_p);
+                uint32_t acells = htonl(*acells_p);
+                uint32_t scells = htonl(*scells_p);
                 if (acells != 1 || scells != 1) {
                     LOG_F(APP, ERR, "dtb file not compatible with rabbits (#size-cells and #address-cells must be set to 1)\n");
                     return 1;
                 }
 
-                uint32_t ram_start_be = boost::endian::native_to_big(m_ram_start);
-                uint32_t ram_size_be = boost::endian::native_to_big(m_ram_size);
+                uint32_t ram_start_be = htonl(m_ram_start);
+                uint32_t ram_size_be = htonl(m_ram_size);
                 uint32_t propcells[] = {ram_start_be, ram_size_be};
                 uint32_t cellnum = 2;
                 r = fdt_setprop(fdt, findnode_nofail(fdt, "/memory"), "reg", propcells, cellnum * sizeof(uint32_t));
