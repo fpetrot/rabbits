@@ -3,7 +3,7 @@
 function(rabbits_add_files_to_collection collection brief_doc full_doc)
     get_property(is_defined GLOBAL PROPERTY ${collection} DEFINED)
     if(NOT is_defined)
-        define_property(GLOBAL PROPERTY RABBITS_SRCS_LIST
+        define_property(GLOBAL PROPERTY ${collection}
             BRIEF_DOCS "${brief_doc}"
             FULL_DOCS "${full_doc}")
     endif()
