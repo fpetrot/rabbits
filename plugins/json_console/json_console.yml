@@ -1,0 +1,16 @@
+plugin:
+  type: json-console
+  description: |
+    This plugin creates a server listening on a given port.
+    It waits for a connection and accepts various commands that alter Rabbits behavior.
+  class: JsonConsolePlugin
+  include: json_console.h
+  parameters:
+    port:
+      type: integer
+      description: TCP port to listen on
+      default: 10137
+    wait-before-elaboration:
+      type: boolean
+      description: Wait for a client to connect and send the \"start_elaboration\" command.
+      default: false

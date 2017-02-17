@@ -1,0 +1,11 @@
+include: stub.inc.yml
+
+backend:
+  type: stub-double
+  description: Stub a double signal
+  class: StubBackend<double>
+  include: stub.h
+  parameters:
+    sequence:
+      type: vector(double)
+

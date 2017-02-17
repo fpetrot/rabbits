@@ -32,6 +32,7 @@ public:
 template <class UI>
 class UiFactory : public UiFactoryBase {
 public:
+    UiFactory() {}
     Ui* create(ConfigManager &config) const { return new UI(config); }
 };
 
