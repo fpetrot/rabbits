@@ -17,12 +17,27 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/bind.hpp>
-
 #include <rabbits/logger.h>
 
 #include "client.h"
 #include "json_console.h"
+
+/* Fix compilation with Clang and Boost versions ~<=1.55 */
+#ifdef BOOST_NO_CXX11_SMART_PTR
+namespace boost {
+template<class T> const T* get_pointer(std::shared_ptr<T> const& p)
+{
+    return p.get();
+}
+
+template<class T> T* get_pointer(std::shared_ptr<T>& p)
+{
+    return p.get();
+}
+} // namespace boost
+#endif
+
+#include <boost/bind.hpp>
 
 using std::string;
 
