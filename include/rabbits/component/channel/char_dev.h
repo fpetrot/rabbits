@@ -26,6 +26,7 @@ class CharDeviceSystemCInterface : public virtual sc_core::sc_interface {
 public:
     virtual void send(std::vector<uint8_t> &data) = 0;
     virtual void recv(std::vector<uint8_t> &data) = 0;
+    virtual void recv_nonblocking(std::vector<uint8_t> &data) = 0;
     virtual bool empty() const = 0;
 };
 
@@ -37,6 +38,22 @@ private:
     std::vector<uint8_t> m_buffer;
 
     sc_core::sc_event m_recv_ev;
+
+    void recv(std::vector<uint8_t> &data, bool block)
+    {
+        if (m_buffer.empty()) {
+            if (block) {
+                sc_core::wait(m_recv_ev);
+            } else {
+                return;
+            }
+        }
+
+        /* TODO: avoid data copy */
+        data.clear();
+        data.insert(data.end(), m_buffer.begin(), m_buffer.end());
+        m_buffer.clear();
+    }
 
 public:
     void send(std::vector<uint8_t> &data)
@@ -52,18 +69,20 @@ public:
 
     void recv(std::vector<uint8_t> &data)
     {
-        if (m_buffer.empty()) {
-            sc_core::wait(m_recv_ev);
-        }
+        recv(data, true);
+    }
 
-        /* TODO: avoid data copy */
-        data.clear();
-        data.insert(data.end(), m_buffer.begin(), m_buffer.end());
-        m_buffer.clear();
+    void recv_nonblocking(std::vector<uint8_t> &data)
+    {
+        recv(data, false);
     }
 
     bool empty() const {
         return m_buffer.empty();
+    }
+
+    const sc_core::sc_event & default_event() const {
+        return m_recv_ev;
     }
 };
 #endif
