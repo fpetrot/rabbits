@@ -97,6 +97,10 @@ function(rabbits_generate_platform_symlinks n)
 endfunction(rabbits_generate_platform_symlinks)
 
 function(rabbits_generate_tests n)
+    if (NOT RABBITS_ENABLE_TESTING)
+        return()
+    endif()
+
     get_property(_tests GLOBAL PROPERTY RABBITS_TESTS_LIST)
     set(_test_name ${n}_test)
 
