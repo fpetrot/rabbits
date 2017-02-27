@@ -27,6 +27,7 @@ option(USE_SDL "Use SDL1.2 for framebuffer devices" OFF)
 option(USE_QT "Use QT for user interface" ON)
 option(BUILD_DOCUMENTATION "Build the Doxygen HTML documentation (requires Doxygen)" OFF)
 option(RABBITS_ENABLE_TESTING "Enable tests building" OFF)
+option(BUILD_RABBITS_EXECUTABLE "Build the rabbits executable. If off, only the library is built" ON)
 
 set(EXTRA_LIBS ${EXTRA_LIBS} ${CMAKE_THREAD_LIBS_INIT} ${LIBFDT_LIBRARIES})
 
@@ -124,7 +125,10 @@ include_directories("${CMAKE_CURRENT_BINARY_DIR}/include")
 
 
 add_subdirectory(librabbits)
-add_subdirectory(rabbits)
+
+if (BUILD_RABBITS_EXECUTABLE)
+    add_subdirectory(rabbits)
+endif()
 
 if(BUILD_DOCUMENTATION AND NOT DOXYGEN_FOUND)
     message(WARNING "Doxygen was not found, skipping documentation building.")
