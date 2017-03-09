@@ -19,6 +19,7 @@ find_package(SystemC REQUIRED)
 find_package(RubyInterp 2.0 REQUIRED)
 
 set(RABBITS_FACTORY_SCRIPT_PATH "@CMAKE_CURRENT_SOURCE_DIR@/scripts/gen-factory.rb")
+set(RABBITS_LIST_PLATFORMS_SCRIPT_PATH "@CMAKE_CURRENT_SOURCE_DIR@/scripts/list-platforms.rb")
 set(RABBITS_EXECUTABLE "@CMAKE_CURRENT_BINARY_DIR@/rabbits/rabbits")
 
 set(RABBITS_LIBRARIES rabbits)

@@ -1,5 +1,5 @@
 # This file is part of Rabbits
-# Copyright (C) 2015  Clement Deschamps and Luc Michel
+# Copyright (C) 2015-2017  Clement Deschamps and Luc Michel
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
