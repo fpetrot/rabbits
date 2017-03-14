@@ -11,6 +11,7 @@ endif()
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(RABBITS_FACTORY_SCRIPT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen-factory.rb")
+set(RABBITS_LIST_PLATFORMS_SCRIPT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/scripts/list-platforms.rb")
 include(rabbits_add_files)
 include(rabbits_components)
 
@@ -181,6 +182,7 @@ install(EXPORT rabbits-targets DESTINATION ${RABBITS_LIB_DIR}/rabbits/cmake)
 install(DIRECTORY include/ DESTINATION ${RABBITS_INCLUDE_DIR} FILES_MATCHING PATTERN "*.h")
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/rabbits/config.h" DESTINATION ${RABBITS_INCLUDE_DIR}/rabbits)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen-factory.rb" DESTINATION ${RABBITS_LIB_DIR}/rabbits)
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/scripts/list-platforms.rb" DESTINATION ${RABBITS_LIB_DIR}/rabbits)
 install(DIRECTORY DESTINATION ${RABBITS_CONFIG_DIR})
 install(DIRECTORY DESTINATION ${RABBITS_RES_DIR})
 

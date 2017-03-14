@@ -30,6 +30,7 @@ struct I2CFrame {
 
     bool valid = false;
     bool stop = false;
+    bool start = false;
     uint16_t addr;
     eDirection direction;
     std::vector<uint8_t> send_data;
@@ -40,6 +41,7 @@ struct I2CFrame {
         recv_data.clear();
         valid = false;
         stop = false;
+        start = false;
     }
 };
 

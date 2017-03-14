@@ -56,19 +56,6 @@ function(rabbits_add_plugins)
         ${ARGN})
 endfunction(rabbits_add_plugins)
 
-function(rabbits_add_platforms)
-    rabbits_add_files_to_collection(
-        RABBITS_PLATFORMS_LIST
-        "List of platforms"
-        "List of platform configuration files"
-        ${ARGN})
-    rabbits_add_files_to_collection(
-        RABBITS_ALL_PLATFORMS_LIST
-        "List of all platforms"
-        "List of all platform configuration files"
-        ${ARGN})
-endfunction(rabbits_add_platforms)
-
 function(rabbits_add_configs)
     rabbits_add_files_to_collection(
         RABBITS_CONFIGS_LIST
@@ -176,7 +163,6 @@ function(rabbits_clear_files_collections)
         RABBITS_LIBS_LIST
         RABBITS_COMPONENTS_LIST
         RABBITS_PLUGINS_LIST
-        RABBITS_PLATFORMS_LIST
         RABBITS_CONFIGS_LIST
         RABBITS_RES_LIST
         RABBITS_TESTS_LIST)

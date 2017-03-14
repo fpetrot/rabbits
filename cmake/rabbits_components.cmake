@@ -75,7 +75,14 @@ function(rabbits_generate_objects n)
 endfunction(rabbits_generate_objects)
 
 function(rabbits_generate_platform_symlinks n)
-    get_property(__platforms GLOBAL PROPERTY RABBITS_PLATFORMS_LIST)
+    set(_list_script ${RABBITS_LIST_PLATFORMS_SCRIPT_PATH})
+    set(_list_exe ${RUBY_EXECUTABLE} "${_list_script}")
+
+    get_property(__configs GLOBAL PROPERTY RABBITS_CONFIGS_LIST)
+
+    execute_process(
+        COMMAND ${_list_exe} ${__configs}
+        OUTPUT_VARIABLE __platforms)
 
     foreach(p IN LISTS __platforms)
         install(FILES ${p} DESTINATION ${RABBITS_CONFIG_DIR}/${n}/platforms)
