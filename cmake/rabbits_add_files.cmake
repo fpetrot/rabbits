@@ -136,6 +136,14 @@ endfunction(rabbits_add_dynlib)
 
 function(rabbits_add_static_library n)
     set(RABBITS_DYNAMIC_PLUGIN OFF)
+    set(do_export FALSE)
+
+    foreach(opt IN LISTS ARGN)
+        if (${opt} STREQUAL EXPORT)
+            set(do_export TRUE)
+        endif()
+    endforeach()
+
     rabbits_generate_objects(${n})
     get_property(__srcs GLOBAL PROPERTY RABBITS_SRCS_LIST)
     get_property(__libs GLOBAL PROPERTY RABBITS_LIBS_LIST)
@@ -146,7 +154,14 @@ function(rabbits_add_static_library n)
     rabbits_install_configs(${n})
     rabbits_install_res(${n})
     rabbits_clear_files_collections()
-    install(TARGETS ${n} DESTINATION ${RABBITS_LIB_DIR})
+
+    if(do_export)
+        install(TARGETS ${n} EXPORT ${n} DESTINATION ${RABBITS_LIB_DIR})
+        install(EXPORT ${n} DESTINATION ${RABBITS_LIB_DIR}/${n})
+    else()
+        install(TARGETS ${n} DESTINATION ${RABBITS_LIB_DIR})
+    endif()
+
 endfunction(rabbits_add_static_library)
 
 function(rabbits_clear_files_collection)
