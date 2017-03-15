@@ -136,6 +136,12 @@ protected:
             from_cmdline(o, names, s);
             return true;
         case PlatformDescription::Node::Origin::FILE:
+            /* Ignore maps starting with a dot as they are used as template in
+             * YAML descriptions */
+            if (names.front()[0] == '.') {
+                return false;
+            }
+
             from_file(d, names, s);
             return true;
         default:
