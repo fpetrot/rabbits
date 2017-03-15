@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 #include <systemc>
+#include <list>
 
 #include "rabbits/config.h"
 #include "rabbits/config/manager.h"
@@ -31,6 +32,9 @@
 using std::set;
 using std::vector;
 using std::string;
+using std::pair;
+using std::list;
+
 using namespace boost::filesystem;
 
 ConfigManager * ConfigManager::m_config = nullptr;
@@ -114,31 +118,40 @@ void ConfigManager::apply_aliases()
     }
 }
 
-void ConfigManager::compute_platform(const string &name, const PlatformDescription &p)
+bool ConfigManager::compute_platform(const string &name,
+                                     const PlatformDescription &p, PlatformDescription &out)
 {
-    PlatformDescription platform = p;
+    out = p;
 
-    if (platform["inherit"].is_scalar()) {
-        const string parent_name = platform["inherit"].as<string>();
+    if (out["inherit"].is_scalar()) {
+        const string parent_name = out["inherit"].as<string>();
 
         LOG(APP, TRC) << "Platform " << name << " inherits from `" << parent_name << "`\n";
 
         if (platform_exists(parent_name)) {
+            bool is_generic = out.exists("generic") && out["generic"].as<bool>();
             PlatformDescription parent = get_platform(parent_name);
 
-            platform = platform.merge(parent);
-            platform.remove("generic");
+            out = out.merge(parent);
+            if (!is_generic) {
+                out.remove("generic");
+            }
         } else {
-            LOG(APP, TRC) << "Platform " << name << " inherits from unknown platform `" << parent_name << "`\n";
+            LOG(APP, TRC) << "Platform " << name
+                << " inherits from unknown platform `" << parent_name << "`\n";
+            return false;
         }
     }
 
-    m_platforms[name] = platform;
+    return true;
 }
 
 void ConfigManager::recompute_platforms()
 {
     m_platforms.clear();
+    list< pair< string, PlatformDescription> > todo;
+
+    LOG(APP, TRC) << "Recompute Platforms\n";
 
     if (!m_root_descr["platforms"].is_map()) {
         LOG(APP, TRC) << "No platform found.\n";
@@ -147,7 +160,30 @@ void ConfigManager::recompute_platforms()
 
     for (auto &p : m_root_descr["platforms"]) {
         LOG(APP, TRC) << "Found platform " << p.first << "\n";
-        compute_platform(p.first, p.second);
+        todo.push_back(p);
+    }
+
+    bool changes = true;
+
+    while (!todo.empty()) {
+        if (!changes) {
+            LOG(APP, TRC) << "Some platforms are left un-computed\n";
+            break;
+        }
+
+        changes = false;
+
+        for (auto it = todo.begin(); it != todo.end();) {
+            PlatformDescription out;
+            if (compute_platform(it->first, it->second, out)) {
+                /* Computing ok */
+                m_platforms[it->first] = out;
+                it = todo.erase(it);
+                changes = true;
+            } else {
+                it++;
+            }
+        }
     }
 }
 

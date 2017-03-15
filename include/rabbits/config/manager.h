@@ -97,7 +97,8 @@ private:
     void load_config_directory(boost::filesystem::path p);
     void load_config_from_description();
 
-    void compute_platform(const std::string &name, const PlatformDescription &p);
+    bool compute_platform(const std::string &name,
+                          const PlatformDescription &p, PlatformDescription &out);
     void recompute_platforms();
     void apply_aliases();
     void recompute_config();
