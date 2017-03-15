@@ -427,11 +427,15 @@ static void print_tree(std::vector<bool> lvls, TextFormatter &f, bool separator)
 }
 
 
-static void _dump_systemc_hierarchy(const sc_core::sc_object &top_level, TextFormatter &f, vector<bool> &lvls)
+static void _dump_systemc_hierarchy(const sc_core::sc_object &top_level,
+                                    TextFormatter &f, vector<bool> &lvls)
 {
     const vector<sc_core::sc_object*> & children = top_level.get_child_objects();
 
-    f << (lvls.size() ? ((lvls.size() > 1) ? format::white : format::cyan) : format::red) << top_level.basename()
+    f << (lvls.size() ?
+          ((lvls.size() > 1) ?
+            format::white : format::cyan)
+          : format::red) << top_level.basename()
       << format::reset << ":"
       << format::black << top_level.kind()
       << format::reset << "\n";
@@ -563,7 +567,7 @@ static void enum_platform(PlatformParser &parser, TextFormatter &f)
     f << "\n";
 }
 
-void enum_platforms(ConfigManager &config, LogLevel::value lvl)
+void enum_platforms(ConfigManager &config, LogLevel::value lvl, bool show_generics)
 {
     Logger &l = get_app_logger();
 
@@ -575,15 +579,23 @@ void enum_platforms(ConfigManager &config, LogLevel::value lvl)
       << format::reset;
 
     for (auto p : config.get_platforms()) {
-        f.set_start_col(0);
-        f << format::cyan_b << "* "
-          << format::white_b << p.first
-          << format::reset << "\n";
-
         try {
             PlatformParser parser(p.first, p.second, config);
-            enum_platform(parser, f);
+
+            if (show_generics || !parser.get_root().is_generic()) {
+                f.set_start_col(0);
+                f << format::cyan_b << "* "
+                    << format::white_b << p.first
+                    << format::reset << "\n";
+
+                enum_platform(parser, f);
+            }
         } catch (PlatformParseException e) {
+            f.set_start_col(0);
+            f << format::cyan_b << "* "
+                << format::white_b << p.first
+                << format::reset << "\n";
+
             f.set_start_col(2);
             f << format::red_b << "Parsing error: "
               << format::red << e.what()

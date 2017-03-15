@@ -69,6 +69,12 @@ static void declare_global_params(ConfigManager &config)
                                             "with their description",
                                             false));
 
+    config.add_global_param("list-all-platforms",
+                            Parameter<bool>("List all available platforms, "
+                                            "including the generic ones",
+                                            false,
+                                            true));
+
     config.add_global_param("show-systemc-hierarchy",
                             Parameter<bool>("Display the SystemC hierarchy "
                                             "at the end of elaboration and exit",
@@ -87,17 +93,18 @@ static void declare_aliases(ConfigManager &config)
 {
     Parameters &p = config.get_global_params();
 
-    config.add_param_alias("help",              p["show-help"]);
-    config.add_param_alias("help-advanced",     p["show-advanced-params"]);
-    config.add_param_alias("list-components",   p["list-components"]);
-    config.add_param_alias("list-backends",     p["list-backends"]);
-    config.add_param_alias("list-plugins",      p["list-plugins"]);
-    config.add_param_alias("list-platforms",    p["list-platforms"]);
-    config.add_param_alias("systemc-hierarchy", p["show-systemc-hierarchy"]);
-    config.add_param_alias("debug",             p["debug"]);
-    config.add_param_alias("version",           p["show-version"]);
-    config.add_param_alias("platform",          p["selected-platform"]);
-    config.add_param_alias("nographic",         p["disable-gui"]);
+    config.add_param_alias("help",               p["show-help"]);
+    config.add_param_alias("help-advanced",      p["show-advanced-params"]);
+    config.add_param_alias("list-components",    p["list-components"]);
+    config.add_param_alias("list-backends",      p["list-backends"]);
+    config.add_param_alias("list-plugins",       p["list-plugins"]);
+    config.add_param_alias("list-platforms",     p["list-platforms"]);
+    config.add_param_alias("list-all-platforms", p["list-all-platforms"]);
+    config.add_param_alias("systemc-hierarchy",  p["show-systemc-hierarchy"]);
+    config.add_param_alias("debug",              p["debug"]);
+    config.add_param_alias("version",            p["show-version"]);
+    config.add_param_alias("platform",           p["selected-platform"]);
+    config.add_param_alias("nographic",          p["disable-gui"]);
 }
 
 class WarnUnusedParams : public PlatformDescription::NodeVisitor {
@@ -162,6 +169,7 @@ enum eRunMode {
     RUN_HELP,
     RUN_VERSION,
     RUN_LIST_PLATFORMS,
+    RUN_LIST_ALL_PLATFORMS,
     RUN_LIST_COMPONENTS,
     RUN_LIST_BACKENDS,
     RUN_LIST_PLUGINS,
@@ -188,6 +196,10 @@ static eRunMode get_run_mode(Parameters &globals)
 
     if (globals["list-platforms"].as<bool>()) {
         return RUN_LIST_PLATFORMS;
+    }
+
+    if (globals["list-all-platforms"].as<bool>()) {
+        return RUN_LIST_ALL_PLATFORMS;
     }
 
     if (globals["show-help"].as<bool>()) {
@@ -246,7 +258,10 @@ static bool list_modules(ConfigManager &config, eRunMode mode)
         enum_modules(config, Namespace::get(Namespace::PLUGIN), LogLevel::INFO);
         break;
     case RUN_LIST_PLATFORMS:
-        enum_platforms(config, LogLevel::INFO);
+        enum_platforms(config, LogLevel::INFO, false);
+        break;
+    case RUN_LIST_ALL_PLATFORMS:
+        enum_platforms(config, LogLevel::INFO, true);
         break;
     default:
         return false;
