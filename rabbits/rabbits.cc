@@ -110,7 +110,7 @@ static void declare_aliases(ConfigManager &config)
 class WarnUnusedParams : public PlatformDescription::NodeVisitor {
 protected:
     void from_cmdline(const PlatformDescription::Node::Origin &o,
-                        const vector<string> &names, string &s)
+                      const vector<string> &names, string &s)
     {
         string prefix = "Unknown command line parameter `-";
         for (auto &n: names) {
@@ -121,13 +121,13 @@ protected:
     }
 
     void from_file(const PlatformDescription &d,
-                     const vector<string> &names, string &s)
+                   const vector<string> &names, string &s)
     {
         s = "Unknown parameter `" + names.back() + "` at " + d.origin();
     }
 
     bool names_to_str(PlatformDescription &d,
-                        const vector<string> &names, string &s)
+                      const vector<string> &names, string &s)
     {
         const PlatformDescription::Node::Origin &o = d.get_origin();
 
