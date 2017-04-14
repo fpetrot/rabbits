@@ -1,5 +1,4 @@
-cmake_minimum_required (VERSION 2.6)
-project (Rabbits)
+cmake_minimum_required (VERSION 3.0)
 
 if("${CMAKE_VERSION}" VERSION_LESS 3.1)
     # XXX Not portable
@@ -9,11 +8,15 @@ else()
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif()
 
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(RABBITS_FACTORY_SCRIPT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/scripts/gen-factory.rb")
 set(RABBITS_LIST_PLATFORMS_SCRIPT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/scripts/list-platforms.rb")
 include(rabbits_add_files)
 include(rabbits_components)
+
+rabbits_get_version(RABBITS_VERSION)
+
+project (Rabbits VERSION ${RABBITS_VERSION})
 
 find_package(Threads REQUIRED)
 find_package(SystemC REQUIRED)
@@ -96,10 +99,8 @@ set(EXTRA_LIBS ${EXTRA_LIBS}
 set(RABBITS_DYNLIB_SEARCH_PATH "${CMAKE_INSTALL_PREFIX}/lib/rabbits")
 set(RABBITS_APP_NAME rabbits)
 
-rabbits_get_version(RABBITS_VERSION)
-
-# By convention, API Version is Rabbits major version.
-string(REGEX MATCH "^([0-9]+)" RABBITS_API_VERSION "${RABBITS_VERSION}")
+# By convention, API Version is a combination of Rabbits major and minor version.
+math(EXPR RABBITS_API_VERSION "${PROJECT_VERSION_MAJOR} * 100 + ${PROJECT_VERSION_MINOR}")
 
 if(NOT RABBITS_API_VERSION MATCHES "^[0-9]+$")
     # fallback
