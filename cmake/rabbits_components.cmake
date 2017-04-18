@@ -75,6 +75,10 @@ function(rabbits_generate_objects n)
 endfunction(rabbits_generate_objects)
 
 function(rabbits_generate_platform_symlinks n)
+    if(NOT RABBITS_CREATE_PLATFORM_SYMLINK)
+        return()
+    endif()
+
     set(_list_script ${RABBITS_LIST_PLATFORMS_SCRIPT_PATH})
     set(_list_exe ${RUBY_EXECUTABLE} "${_list_script}")
 
@@ -85,21 +89,17 @@ function(rabbits_generate_platform_symlinks n)
         OUTPUT_VARIABLE __platforms)
 
     foreach(p IN LISTS __platforms)
-        install(FILES ${p} DESTINATION ${RABBITS_CONFIG_DIR}/${n}/platforms)
+        get_filename_component(p_name "${p}" NAME_WE)
+        get_filename_component(rabbits_app_name "${RABBITS_EXECUTABLE}" NAME)
 
-        if(RABBITS_CREATE_PLATFORM_SYMLINK)
-            get_filename_component(p_name "${p}" NAME_WE)
-            get_filename_component(rabbits_app_name "${RABBITS_EXECUTABLE}" NAME)
+        set(__sym ${CMAKE_CURRENT_BINARY_DIR}/${RABBITS_PLATFORM_SYMLINK_PREFIX}${p_name})
+        add_custom_target(
+            ${p_name}_symlink
+            ALL
+            COMMAND ln -sf "${rabbits_app_name}" "${__sym}"
+        )
 
-            set(__sym ${CMAKE_CURRENT_BINARY_DIR}/${RABBITS_PLATFORM_SYMLINK_PREFIX}${p_name})
-            add_custom_target(
-                ${p_name}_symlink
-                ALL
-                COMMAND ln -sf "${rabbits_app_name}" "${__sym}"
-            )
-
-            install(FILES ${__sym} DESTINATION ${RABBITS_BIN_DIR})
-        endif()
+        install(FILES ${__sym} DESTINATION ${RABBITS_BIN_DIR})
     endforeach()
 endfunction(rabbits_generate_platform_symlinks)
 
