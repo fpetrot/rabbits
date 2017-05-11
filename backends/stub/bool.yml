@@ -3,8 +3,8 @@ include: stub.inc.yml
 backend:
   type: stub-bool
   description: Stub a boolean signal
-  class: BoolStubBackend
-  include: bool.h
+  class: StubBackend<bool>
+  include: stub.h
   parameters:
     sequence:
       type: vector(boolean)

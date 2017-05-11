@@ -25,94 +25,69 @@
 #include <rabbits/component/component.h>
 #include <rabbits/component/port/inout.h>
 
-template <class T>
-class Generator {
+#include "generator.h"
+
+class StubEventListener {
 public:
-    virtual sc_core::sc_time operator() (InOutPort<T> &p) = 0;
+    virtual void stub_event() = 0;
 };
 
 template <class T>
-class GeneratorFactory {
+class StubBackend;
+
+class StubBackendBase : public Component {
+private:
+    std::vector<StubEventListener*> m_listeners;
+
 protected:
-    template <class PARAM>
-    PARAM get_param(const Parameters &p, const char * name, const PARAM & default_val)
+    void signal_event() const
     {
-        return default_val;
-    }
-
-public:
-    virtual Generator<T> * create(const Parameters &p) = 0;
-};
-
-template <class T>
-class SequenceGenerator : public Generator<T>
-{
-protected:
-    std::vector<T> m_sequence;
-    typename std::vector<T>::iterator m_it;
-
-    bool m_loop = true;
-    sc_core::sc_time m_sampling_time;
-
-public:
-    SequenceGenerator()
-    {
-        m_it = m_sequence.end();
-    }
-
-    void add(const T &v) { m_sequence.push_back(v); m_it = m_sequence.begin(); }
-
-    void add(const std::vector<T> &v) {
-        m_sequence.insert(m_sequence.end(), v.begin(), v.end());
-        m_it = m_sequence.begin();
-    }
-
-    void clear() { m_sequence.clear(); m_it = m_sequence.end(); }
-    void set_loop(bool loop) { m_loop = loop; }
-    void set_sampling_period(sc_core::sc_time period) { m_sampling_time = period; }
-
-    sc_core::sc_time operator() (InOutPort<T> &p)
-    {
-        if (m_sequence.empty()) {
-            return sc_core::SC_ZERO_TIME;
+        for (auto *l : m_listeners) {
+            l->stub_event();
         }
-
-        if (m_it == m_sequence.end()) {
-            if (m_loop) {
-                m_it = m_sequence.begin();
-            } else {
-                return sc_core::SC_ZERO_TIME;
-            }
-        }
-
-        p.sc_p = *(m_it++);
-        return m_sampling_time;
     }
-};
 
-template <class T>
-class SequenceGeneratorFactory : public GeneratorFactory<T>
-{
+    virtual void reconfigure(const Parameters &p) = 0;
+
 public:
-    Generator<T> * create(const Parameters &p)
-    {
-        SequenceGenerator<T> *gen = new SequenceGenerator<T>;
+    StubBackendBase(sc_core::sc_module_name n, const Parameters &p, ConfigManager &c)
+        : Component(n, p, c) {}
 
-        gen->set_loop(p["sequence-repeat"].as<bool>());
-        gen->set_sampling_period(p["sequence-sampling"].as<sc_core::sc_time>());
-        gen->add(p["sequence"].as<std::vector<T> >());
-        return gen;
+    void register_listener(StubEventListener &l)
+    {
+        m_listeners.push_back(&l);
+    }
+
+    void reconfigure(PlatformDescription &d)
+    {
+        Parameters p = m_params;
+        p.fill_from_description(d);
+        reconfigure(p);
+    }
+
+    template <class T>
+    T get_value() const
+    {
+        const StubBackend<T> & child = dynamic_cast<const StubBackend<T>&>(*this);
+        return child.get_value();
     }
 };
 
 template <class T>
-class StubBackend : public Component {
+class StubBackend : public StubBackendBase {
 protected:
     std::map< std::string, GeneratorFactory<T>* > m_gen_factories;
     Generator<T> * m_cur_generator = nullptr;
+    Generator<T> * m_next_generator = nullptr;
+
+    T m_sampled_value;
 
     /* External (outside SystemC scope) event sampling period */
     sc_core::sc_time m_ext_ev_sampling;
+
+    /* Deadlines */
+    sc_core::sc_time m_next_ext_ev_dl;
+    sc_core::sc_time m_next_gen_dl;
 
     void register_generator_fact(const std::string &name, GeneratorFactory<T> *fact)
     {
@@ -120,10 +95,16 @@ protected:
     }
 
     void generator_thread();
+    void event_method();
 
     void set_generator(const Parameters &p)
     {
         const std::string gen = p["generator"].as<std::string>();
+
+        if (m_cur_generator != nullptr) {
+            delete m_cur_generator;
+            m_cur_generator = nullptr;
+        }
 
         if (gen == "none") {
             return;
@@ -134,14 +115,35 @@ protected:
             return;
         }
 
-        m_cur_generator = m_gen_factories[gen]->create(p);
+        m_next_generator = m_gen_factories[gen]->create(p);
+    }
+
+    void destroy_generator()
+    {
+        delete m_cur_generator;
+        m_cur_generator = nullptr;
+    }
+
+    void update_generator()
+    {
+        if (m_next_generator != nullptr) {
+            destroy_generator();
+            m_cur_generator = m_next_generator;
+            m_next_generator = nullptr;
+        }
+    }
+
+    void reconfigure(const Parameters &p)
+    {
+        MLOG(APP, DBG) << "Reconfiguring backend\n";
+        set_generator(p);
     }
 
 public:
     SC_HAS_PROCESS(StubBackend);
 
     StubBackend(sc_core::sc_module_name n, const Parameters &p, ConfigManager &c)
-        : Component(n, p, c), p_port("port")
+        : StubBackendBase(n, p, c), p_port("port")
     {
         register_generator_fact("sequence", new SequenceGeneratorFactory<T>);
 
@@ -150,9 +152,26 @@ public:
         set_generator(p);
 
         SC_THREAD(generator_thread);
+
+        SC_METHOD(event_method);
+        sensitive << p_port.sc_p;
     }
 
     virtual ~StubBackend() {}
+
+    /**
+     * @brief Return the current value of the port connected to the backend
+     *
+     * This method return the current value of the port connected to the backend.
+     * This method is safe to be called outside of the SystemC simulation context.
+     *
+     * @return the current value of the port connected to the backend
+     */
+    T get_value() const
+    {
+        return m_sampled_value;
+    }
+
 
     InOutPort<T> p_port;
 };
@@ -161,20 +180,39 @@ template <class T>
 void StubBackend<T>::generator_thread()
 {
     for(;;) {
-#if 0
-        sc_core::wait(m_ext_ev_sampling);
-#endif
+        sc_core::sc_time next_dl;
 
-        if (m_cur_generator) {
+        update_generator();
+
+        if (m_next_ext_ev_dl == sc_core::SC_ZERO_TIME) {
+            m_next_ext_ev_dl = m_ext_ev_sampling;
+        }
+
+        if ((m_next_gen_dl == sc_core::SC_ZERO_TIME) && m_cur_generator) {
             sc_core::sc_time t = (*m_cur_generator)(p_port);
 
             if (t == sc_core::SC_ZERO_TIME) {
-                return;
+                destroy_generator();
+            } else {
+                m_next_gen_dl = t;
             }
-
-            sc_core::wait(t);
-        } else {
-            return;
         }
+
+        if (m_cur_generator) {
+            next_dl = std::min(m_next_gen_dl, m_next_ext_ev_dl);
+            m_next_gen_dl -= next_dl;
+        } else {
+            next_dl = m_next_ext_ev_dl;
+        }
+
+        m_next_ext_ev_dl -= next_dl;
+        sc_core::wait(next_dl);
     }
+}
+
+template <class T>
+void StubBackend<T>::event_method()
+{
+    m_sampled_value = p_port.sc_p;
+    signal_event();
 }
