@@ -81,6 +81,10 @@ static void declare_global_params(ConfigManager &config)
                                             false,
                                             true));
 
+    config.add_global_param("dump-config",
+                            Parameter<bool>("Dump the Rabbits configuration",
+                                            false,
+                                            true));
     config.add_global_param("show-version",
                             Parameter<bool>("Display version information and exit",
                                             false));
@@ -101,6 +105,7 @@ static void declare_aliases(ConfigManager &config)
     config.add_param_alias("list-platforms",     p["list-platforms"]);
     config.add_param_alias("list-all-platforms", p["list-all-platforms"]);
     config.add_param_alias("systemc-hierarchy",  p["show-systemc-hierarchy"]);
+    config.add_param_alias("dump-config",        p["dump-config"]);
     config.add_param_alias("debug",              p["debug"]);
     config.add_param_alias("version",            p["show-version"]);
     config.add_param_alias("platform",           p["selected-platform"]);
@@ -179,7 +184,8 @@ enum eRunMode {
     RUN_LIST_COMPONENTS,
     RUN_LIST_BACKENDS,
     RUN_LIST_PLUGINS,
-    RUN_SYSC_HIERARCHY
+    RUN_SYSC_HIERARCHY,
+    RUN_DUMP_CONFIG,
 };
 
 static eRunMode get_run_mode(Parameters &globals)
@@ -218,6 +224,10 @@ static eRunMode get_run_mode(Parameters &globals)
 
     if (globals["show-systemc-hierarchy"].as<bool>()) {
         return RUN_SYSC_HIERARCHY;
+    }
+
+    if (globals["dump-config"].as<bool>()) {
+        return RUN_DUMP_CONFIG;
     }
 
     return RUN_NORMAL;
@@ -324,6 +334,12 @@ int sc_main(int argc, char *argv[])
             print_usage(argv[0], config, empty);
             return 0;
         }
+
+        if (run_mode == RUN_DUMP_CONFIG) {
+            LOG(APP, INF) << config.get_root_description().dump_json();
+            return 0;
+        }
+
         LOG(APP, ERR) << "No selected platform. "
             "Please select a platform with -platform. Try -help.\n";
         return 1;
@@ -337,6 +353,11 @@ int sc_main(int argc, char *argv[])
     LOG(APP, DBG) << "Selected platform is " << pname << "\n";
 
     PlatformDescription platform = config.apply_platform(pname);
+
+    if (run_mode == RUN_DUMP_CONFIG) {
+        LOG(APP, INF) << config.get_root_description().dump_json();
+        return 0;
+    }
 
     try {
         PlatformBuilder builder(pname.c_str(), platform, config);
