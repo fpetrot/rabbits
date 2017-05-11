@@ -281,6 +281,9 @@ int sc_main(int argc, char *argv[])
     ConfigManager config;
     ConfigManager::set_config_manager(config);
 
+    SimulationManager simu(config);
+    config.set_simu_manager(simu);
+
     declare_global_params(config);
     declare_aliases(config);
 
@@ -350,7 +353,7 @@ int sc_main(int argc, char *argv[])
             return 0;
         }
 
-        SimuManager(config).start();
+        simu.start();
 
     } catch (PlatformParseException e) {
         get_app_logger().enable_banner(false);
