@@ -29,6 +29,7 @@
 
 using std::string;
 using namespace boost::asio::ip;
+using namespace sc_core;
 
 JsonConsolePlugin::JsonConsolePlugin(const std::string &name,
                                      const Parameters &params,
@@ -38,6 +39,11 @@ JsonConsolePlugin::JsonConsolePlugin(const std::string &name,
 {
     m_server_thread = std::thread(&JsonConsolePlugin::server_entry, this);
     m_wait_before_elaboration = params["wait-before-elaboration"].as<bool>();
+    m_wait_before_simulation = params["wait-before-simulation"].as<bool>();
+
+    if (m_config.is_simu_manager_available()) {
+        m_config.get_simu_manager().register_pause_listener(*this);
+    }
 }
 
 JsonConsolePlugin::~JsonConsolePlugin()
@@ -50,7 +56,14 @@ void JsonConsolePlugin::server_entry()
 {
     try {
         address addr = address::from_string("::");
-        tcp::endpoint endpoint(addr, m_params["port"].as<int>());
+        unsigned short port = 0;
+        bool random_port = m_params["random-port"].as<bool>();
+
+        if (!random_port) {
+            port = m_params["port"].as<int>();
+        }
+
+        tcp::endpoint endpoint(addr, port);
 
         m_server_acceptor.open(endpoint.protocol());
 
@@ -68,6 +81,12 @@ void JsonConsolePlugin::server_entry()
         m_server_acceptor.set_option(option);
         m_server_acceptor.bind(endpoint);
         m_server_acceptor.listen();
+
+        if (random_port) {
+            MLOG(APP, INF) << "listening on TCP port "
+                           << m_server_acceptor.local_endpoint().port()
+                           << "\n";
+        }
 
         client_accept();
         m_asio_service.run();
@@ -96,108 +115,137 @@ void JsonConsolePlugin::new_client_handler(JsonConsoleClient::Ptr client,
     client_accept();
 }
 
+void JsonConsolePlugin::wait_for_client()
+{
+    std::unique_lock<std::mutex> lock(m_mutex_elaboration);
+    m_cv_elaboration.wait(lock);
+}
+
 void JsonConsolePlugin::hook(const PluginHookBeforeBuild &hook)
 {
-    while (m_wait_before_elaboration) {
+    if (m_wait_before_elaboration) {
         MLOG(APP, INF) << "Waiting for client to send the `continue_elaboration` command...\n";
-        std::unique_lock<std::mutex> lock(m_mutex_elaboration);
-        m_cv_elaboration.wait(lock);
+    }
+
+    while (m_wait_before_elaboration) {
+        wait_for_client();
     }
 
     m_elaboration_done = true;
 }
 
-void JsonConsolePlugin::instanciate_backend(const PluginHookAfterBackendInst &hook,
-                                            std::unique_ptr<SignalGenerator> &gen)
-{
-    PlatformBuilder &builder = hook.get_builder();
-    BackendManager &bm = builder.get_config().get_backend_manager();
-    const string backend_type = gen->descr["type"].as<string>();
-    const char * type_name;
-
-    BackendManager::Factory f;
-
-    if (backend_type == "bool") {
-        type_name = "stub-bool";
-    } else if (backend_type == "double") {
-        type_name = "stub-double";
-    } else {
-        MLOG(APP, DBG) << "Invalid type `" << backend_type << "` for `" << gen->name << "`\n";
-        gen->set_failure(SignalGenerator::FAIL_INVALID_TYPE);
-        return;
-    }
-
-    if (!bm.type_exists(type_name)) {
-        MLOG(APP, WRN) << "Backend `" << type_name << "` not found. Broken Rabbits installation?\n";
-        gen->set_failure(SignalGenerator::FAIL_INTERNAL);
-        return;
-    }
-
-    f = bm.find_by_type(type_name);
-
-    std::stringstream ss;
-    ss << get_name() << "-autogen-" << gen->name;
-
-    ComponentBase *c = f->create(ss.str(), gen->descr["params"]);
-
-    if (!c) {
-        MLOG(APP, WRN) << "Cannot create backend `" << ss.str() << "`.\n";
-        gen->set_failure(SignalGenerator::FAIL_INTERNAL);
-        return;
-    }
-
-    builder.add_backend(c);
-
-    const string stubed_component = gen->descr["component"].as<string>();
-    const string stubed_port = gen->descr["port"].as<string>();
-
-    if (!builder.comp_exists(Namespace::get(Namespace::COMPONENT), stubed_component)) {
-        MLOG(APP, DBG) << "Component `" << stubed_component
-                       << "` not found for `" << gen->name << "`\n";
-
-        gen->set_failure(SignalGenerator::FAIL_COMP_NOT_FOUND);
-        return;
-    }
-
-    ComponentBase &stubed = builder.get_comp(Namespace::get(Namespace::COMPONENT),
-                                             stubed_component);
-
-    if (!stubed.port_exists(stubed_port)) {
-        MLOG(APP, DBG) << "Port `" << stubed_port << "` on component `" << stubed_component
-                       << "` not found for `" << gen->name << "`\n";
-
-        gen->set_failure(SignalGenerator::FAIL_PORT_NOT_FOUND);
-        return;
-    }
-
-    MLOG(APP, DBG) << "Binding " << c->get_name() << "." << "port -> "
-                   << stubed.get_name() << "." << stubed_port << "\n";
-
-    if(!stubed.get_port(stubed_port).connect(c->get_port("port"),
-                                             PlatformDescription::INVALID_DESCRIPTION)) {
-        MLOG(APP, DBG) << "Binding failed for `" << gen->name << "`\n";
-        gen->set_failure(SignalGenerator::FAIL_BINDING);
-    }
-}
-
 void JsonConsolePlugin::hook(const PluginHookAfterBackendInst &hook)
 {
-    for (auto &gen: m_generators) {
-        instanciate_backend(hook, gen.second);
+    for (auto & sig: m_backends) {
+        sig.second->elaborate(hook.get_builder());
+    }
+
+    m_simu_control = new SimulationControl((get_name() + "-simu-control").c_str(),
+                                            m_params["max-time-before-pause"].as<sc_time>());
+}
+
+void JsonConsolePlugin::hook(const PluginHookAfterBuild &hook)
+{
+    if (m_wait_before_simulation) {
+        MLOG(APP, INF) << "Elaboration done. "
+            "Waiting for client to send the `start_simulation` command...\n";
+    }
+
+    while (m_wait_before_simulation) {
+        wait_for_client();
     }
 }
 
-SignalGenerator & JsonConsolePlugin::create_generator(PlatformDescription &d)
+const BackendInstance & JsonConsolePlugin::create_backend(PlatformDescription &d)
 {
-    std::stringstream ss;
+    const string name = d["component"].as<string>();
+    const string port = d["port"].as<string>();
+    const string type = d["type"].as<string>();
+    const BackendTarget target(name, port);
 
-    ss << "generator" << m_cur_generator_idx++;
+    if (m_backends.find(target) == m_backends.end()) {
+        BackendInstance *inst = new BackendInstance(name, port, type, m_config);
+        m_backends[target].reset(inst);
+        m_backends_by_name[inst->get_name()] = inst;
+    }
 
-    SignalGenerator * gen = new SignalGenerator(ss.str(), d);
+    return *m_backends[target];
+}
 
-    m_generators[gen->name].reset(gen);
+BackendInstance * JsonConsolePlugin::get_backend(PlatformDescription &d)
+{
+    const string backend_name = d["backend"].as<string>();
 
-    return *gen;
+    assert(backend_exists(backend_name));
+
+    return m_backends_by_name[backend_name];
+}
+
+SignalGenerator::Ptr JsonConsolePlugin::create_generator(PlatformDescription &d)
+{
+    BackendInstance* backend = get_backend(d);
+    SignalGenerator::Ptr gen;
+
+    gen = backend->create_generator(d["params"]);
+
+    m_generators[gen->get_name()] = gen;
+
+    return gen;
+}
+
+SignalEvent::Ptr JsonConsolePlugin::create_event(PlatformDescription &d,
+                                                 JsonConsoleClient::Ptr client)
+{
+    BackendInstance* backend = get_backend(d);
+    SignalEvent::Ptr ev;
+
+    ev = backend->create_event(d["params"], client, *this);
+
+    m_events[ev->get_name()] = ev;
+
+    return ev;
+}
+
+void JsonConsolePlugin::serialize_backend_val(PlatformDescription &d, PlatformDescription &out)
+{
+    BackendInstance* backend = get_backend(d);
+    backend->serialize_val(out);
+}
+
+bool JsonConsolePlugin::backend_exists(const std::string & name) const
+{
+    return m_backends_by_name.find(name) != m_backends_by_name.end();
+}
+
+bool JsonConsolePlugin::generator_exists(const std::string & name) const
+{
+    return m_generators.find(name) != m_generators.end();
+}
+
+bool JsonConsolePlugin::event_exists(const std::string & name) const
+{
+    return m_events.find(name) != m_events.end();
+}
+
+const BackendInstance & JsonConsolePlugin::get_backend(const std::string &name) const
+{
+    assert(backend_exists(name));
+
+    return *m_backends_by_name.at(name);
+}
+
+SignalGenerator::Ptr JsonConsolePlugin::get_generator(const std::string & name)
+{
+    assert(generator_exists(name));
+
+    return m_generators.at(name);
+}
+
+SignalEvent::Ptr JsonConsolePlugin::get_event(const std::string & name)
+{
+    assert(event_exists(name));
+
+    return m_events.at(name);
 }
 
 JsonConsolePlugin::SimulationStatus JsonConsolePlugin::get_simulation_status() const
@@ -228,8 +276,58 @@ JsonConsolePlugin::SimulationStatus JsonConsolePlugin::get_simulation_status() c
     }
 }
 
-void JsonConsolePlugin::continue_elaboration()
+void JsonConsolePlugin::client_notify()
 {
-    m_wait_before_elaboration = false;
     m_cv_elaboration.notify_all();
 }
+
+void JsonConsolePlugin::continue_elaboration()
+{
+    if (m_wait_before_elaboration) {
+        m_wait_before_elaboration = false;
+        client_notify();
+    }
+}
+
+void JsonConsolePlugin::start_simulation()
+{
+    if (m_wait_before_simulation) {
+        m_wait_before_simulation = false;
+        client_notify();
+    }
+}
+
+void JsonConsolePlugin::pause_request()
+{
+    m_pause_request = true;
+}
+
+void JsonConsolePlugin::pause_event()
+{
+    MLOG(APP, INF) << "Simulation paused\n";
+
+    if (m_pause_request_client) {
+        m_pause_request_client->pause_event();
+    }
+
+    while (m_pause_request) {
+        wait_for_client();
+    }
+}
+
+void JsonConsolePlugin::resume_simulation()
+{
+    if (m_pause_request) {
+        m_pause_request = false;
+        client_notify();
+    }
+}
+
+void JsonConsolePlugin::pause_simulation(JsonConsoleClient::Ptr c)
+{
+    assert(m_simu_control);
+    m_pause_request_client = c;
+    m_simu_control->pause_request(); /* The effective sc_pause() call */
+    pause_request(); /* We will handle the pause event */
+}
+
