@@ -248,6 +248,16 @@ SignalEvent::Ptr JsonConsolePlugin::get_event(const std::string & name)
     return m_events.at(name);
 }
 
+void JsonConsolePlugin::delete_event(const std::string & name)
+{
+    assert(event_exists(name));
+
+    SignalEvent::Ptr ev = m_events.at(name);
+    ev->get_parent().delete_event(ev);
+
+    m_events.erase(name);
+}
+
 JsonConsolePlugin::SimulationStatus JsonConsolePlugin::get_simulation_status() const
 {
     if (!m_elaboration_done) {

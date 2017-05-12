@@ -175,6 +175,11 @@ struct CommandBuilder<CMD_MODIFY_EVENT> {
 };
 
 template <>
+struct CommandBuilder<CMD_DELETE_EVENT> {
+    static void build(PlatformDescription &d) {}
+};
+
+template <>
 struct CommandBuilder<CMD_GET_BACKEND_STATUS,
                       SignalElement::Status,
                       SignalElement::FailureReason> {
@@ -190,7 +195,6 @@ struct CommandBuilder<CMD_GET_BACKEND_STATUS,
         [SignalElement::FAIL_COMP_NOT_FOUND] = "component_not_found",
         [SignalElement::FAIL_PORT_NOT_FOUND] = "port_not_found",
         [SignalElement::FAIL_BINDING] = "binding_failure",
-        [SignalElement::FAIL_ALREADY_EXISTS] = "already_exists",
         [SignalElement::FAIL_INTERNAL] = "internal_error",
     };
 
@@ -383,6 +387,7 @@ const JsonConsoleClient::CommandStrContainer JsonConsoleClient::COMMAND_STR {
     { "get_backend_status", protocol::CMD_GET_BACKEND_STATUS },
     { "get_generator_status", protocol::CMD_GET_GENERATOR_STATUS },
     { "get_trigger_status", protocol::CMD_GET_EVENT_STATUS },
+    { "delete_trigger", protocol::CMD_DELETE_EVENT },
     { "read_backend", protocol::CMD_READ_BACKEND },
 };
 
@@ -478,12 +483,6 @@ void JsonConsoleClient::add_backend(PlatformDescription &d)
 bool JsonConsoleClient::check_signal_element(PlatformDescription &d)
 {
     using namespace protocol;
-
-    if (m_parent.get_simulation_status() != JsonConsolePlugin::BEFORE_ELABORATION) {
-        const char * msg = "cannot create signal element after elaboration";
-        send_response<STA_FAILURE, CMD_FAILURE_REASON>(msg);
-        return false;
-    }
 
     if (!d.exists("backend")) {
         const char * msg = "missing target backend";
@@ -665,6 +664,28 @@ void JsonConsoleClient::get_event_status(PlatformDescription &d)
     send_response<STA_OK, CMD_GET_EVENT_STATUS>(e->get_status(), e->get_failure_reason());
 }
 
+void JsonConsoleClient::delete_event(PlatformDescription &d)
+{
+    using namespace protocol;
+
+    if (!d.exists("trigger")) {
+        const char * msg = "missing target trigger";
+        send_response<STA_FAILURE, CMD_FAILURE_REASON>(msg);
+        return;
+    }
+
+    const string name = d["trigger"].as<string>();
+
+    if (!m_parent.event_exists(name)) {
+        const char * msg = "unknown trigger";
+        send_response<STA_FAILURE, CMD_FAILURE_REASON>(msg);
+        return;
+    }
+
+    m_parent.delete_event(name);
+    send_response<STA_OK, CMD_DELETE_EVENT>();
+}
+
 void JsonConsoleClient::continue_elaboration()
 {
     using namespace protocol;
@@ -723,58 +744,67 @@ void JsonConsoleClient::handle_cmd(PlatformDescription &d)
 
     Command cmd = parse_command(d);
 
-    switch (cmd) {
-    case CMD_INVALID:
-    case CMD_FAILURE_REASON:
-        send_response<STA_BAD_CMD, CMD_INVALID>();
-        break;
-    case CMD_PROTOCOL_VERSION:
-        send_response<STA_OK, CMD_PROTOCOL_VERSION>();
-        break;
-    case CMD_SIMU_STATUS:
-        send_response<STA_OK, CMD_SIMU_STATUS>(m_parent.get_simulation_status());
-        break;
-    case CMD_CONTINUE_ELABORATION:
-        continue_elaboration();
-        break;
-    case CMD_START_SIMULATION:
-        start_simulation();
-        break;
-    case CMD_RESUME_SIMULATION:
-        resume_simulation();
-        break;
-    case CMD_PAUSE_SIMULATION:
-        pause_simulation();
-        break;
-    case CMD_ADD_BACKEND:
-        add_backend(d);
-        break;
-    case CMD_ADD_GENERATOR:
-        add_generator(d);
-        break;
-    case CMD_ADD_EVENT:
-        add_event(d);
-        break;
-    case CMD_MODIFY_GENERATOR:
-        modify_generator(d);
-        break;
-    case CMD_MODIFY_EVENT:
-        modify_event(d);
-        break;
-    case CMD_GET_BACKEND_STATUS:
-        get_backend_status(d);
-        break;
-    case CMD_GET_GENERATOR_STATUS:
-        get_generator_status(d);
-        break;
-    case CMD_GET_EVENT_STATUS:
-        get_event_status(d);
-        break;
-    case CMD_READ_BACKEND:
-        read_backend(d);
-        break;
-    default:
-        assert(false);
+    try {
+        switch (cmd) {
+        case CMD_INVALID:
+        case CMD_FAILURE_REASON:
+            send_response<STA_BAD_CMD, CMD_INVALID>();
+            break;
+        case CMD_PROTOCOL_VERSION:
+            send_response<STA_OK, CMD_PROTOCOL_VERSION>();
+            break;
+        case CMD_SIMU_STATUS:
+            send_response<STA_OK, CMD_SIMU_STATUS>(m_parent.get_simulation_status());
+            break;
+        case CMD_CONTINUE_ELABORATION:
+            continue_elaboration();
+            break;
+        case CMD_START_SIMULATION:
+            start_simulation();
+            break;
+        case CMD_RESUME_SIMULATION:
+            resume_simulation();
+            break;
+        case CMD_PAUSE_SIMULATION:
+            pause_simulation();
+            break;
+        case CMD_ADD_BACKEND:
+            add_backend(d);
+            break;
+        case CMD_ADD_GENERATOR:
+            add_generator(d);
+            break;
+        case CMD_ADD_EVENT:
+            add_event(d);
+            break;
+        case CMD_MODIFY_GENERATOR:
+            modify_generator(d);
+            break;
+        case CMD_MODIFY_EVENT:
+            modify_event(d);
+            break;
+        case CMD_GET_BACKEND_STATUS:
+            get_backend_status(d);
+            break;
+        case CMD_GET_GENERATOR_STATUS:
+            get_generator_status(d);
+            break;
+        case CMD_GET_EVENT_STATUS:
+            get_event_status(d);
+            break;
+        case CMD_DELETE_EVENT:
+            delete_event(d);
+            break;
+        case CMD_READ_BACKEND:
+            read_backend(d);
+            break;
+        default:
+            assert(false);
+        }
+    } catch (RabbitsException &e) {
+        string reason("internal error: ");
+        reason += e.what();
+        send_response<STA_FAILURE, CMD_FAILURE_REASON>(reason.c_str());
     }
 }
 

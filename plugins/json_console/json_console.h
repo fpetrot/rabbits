@@ -132,6 +132,7 @@ public:
     SignalGenerator::Ptr create_generator(PlatformDescription &d);
     SignalEvent::Ptr create_event(PlatformDescription &d, JsonConsoleClient::Ptr);
     const BackendInstance& create_backend(PlatformDescription &d);
+
     void serialize_backend_val(PlatformDescription &d, PlatformDescription &out);
 
     bool backend_exists(const std::string & name) const;
@@ -141,6 +142,8 @@ public:
     const BackendInstance & get_backend(const std::string &name) const;
     SignalGenerator::Ptr get_generator(const std::string & name);
     SignalEvent::Ptr get_event(const std::string & name);
+
+    void delete_event(const std::string & name);
 
     SimulationStatus get_simulation_status() const;
     void continue_elaboration();

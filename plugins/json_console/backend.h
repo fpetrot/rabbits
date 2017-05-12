@@ -21,6 +21,7 @@
 
 #include <string>
 #include <sstream>
+#include <set>
 
 #include <rabbits/platform/description.h>
 #include <rabbits/platform/builder.h>
@@ -58,6 +59,7 @@ public:
         STA_NEW,
         STA_CREATED,
         STA_FAILURE,
+        STA_DELETED
     };
 
     enum FailureReason {
@@ -66,7 +68,6 @@ public:
         FAIL_COMP_NOT_FOUND,
         FAIL_PORT_NOT_FOUND,
         FAIL_BINDING,
-        FAIL_ALREADY_EXISTS,
         FAIL_INTERNAL,
     };
 
@@ -89,16 +90,16 @@ public:
         m_failure_reason = r;
     }
 
-    void set_created()
-    {
-        m_status = STA_CREATED;
-    }
+    void set_created() { m_status = STA_CREATED; }
+    void set_deleted() { m_status = STA_DELETED; }
 
     const std::string & get_name() { return m_name; }
     PlatformDescription & get_description() { return m_descr; }
 
     SignalElement::Status get_status() const { return m_status; }
     SignalElement::FailureReason get_failure_reason() const { return m_failure_reason; }
+
+    BackendInstance & get_parent() { return m_parent; }
 
     virtual void reconfigure(PlatformDescription &d) = 0;
 };
@@ -185,14 +186,19 @@ protected:
 
     ConfigManager & m_config;
 
-    std::vector<SignalGenerator::Ptr> m_generators;
-    std::vector<SignalEvent::Ptr> m_events;
+    bool m_elaboration_done = false;
+
+    SignalGenerator::Ptr m_generator;
+    std::set<SignalEvent::Ptr> m_events;
 
     StubBackendBase *m_backend = nullptr;
     PlatformBuilder *m_builder = nullptr;
 
     SignalElement::Status m_status = SignalElement::STA_NEW;
     SignalElement::FailureReason m_failure_reason = SignalElement::FAIL_NO_FAILURE;
+
+    void apply_generator(SignalGenerator::Ptr g);
+    void apply_event(SignalEvent::Ptr e);
 
     bool sanity_checks();
     bool create_backend();
@@ -215,6 +221,8 @@ public:
     SignalGenerator::Ptr create_generator(PlatformDescription &descr);
     SignalEvent::Ptr create_event(PlatformDescription &descr,
                                   JsonConsoleClient::Ptr, PauseRequestListener&);
+
+    void delete_event(SignalEvent::Ptr);
 
     void elaborate(PlatformBuilder &builder);
 

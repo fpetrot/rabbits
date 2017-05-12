@@ -52,6 +52,7 @@ enum Command {
     CMD_GET_BACKEND_STATUS,
     CMD_GET_GENERATOR_STATUS,
     CMD_GET_EVENT_STATUS,
+    CMD_DELETE_EVENT,
     CMD_FAILURE_REASON,
     CMD_READ_BACKEND,
     CMD_TRIGGER,
@@ -131,6 +132,7 @@ private:
     void get_backend_status(PlatformDescription &d);
     void get_generator_status(PlatformDescription &d);
     void get_event_status(PlatformDescription &d);
+    void delete_event(PlatformDescription &d);
     void read_backend(PlatformDescription &d);
 
 public:

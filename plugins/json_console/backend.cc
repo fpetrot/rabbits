@@ -31,6 +31,7 @@ UniqueNameGenerator BackendInstance::m_unique_name("backend");
 
 void SignalGenerator::reconfigure(PlatformDescription &d)
 {
+    m_descr = d;
     m_parent.reconfigure(d);
 }
 
@@ -177,14 +178,18 @@ bool TypedSignalEvent<T>::check_condition()
 
 SignalGenerator::Ptr BackendInstance::create_generator(PlatformDescription &d)
 {
-    const std::string & name = SignalGenerator::get_unique_name();
+    if (!m_generator) {
+        const std::string & name = SignalGenerator::get_unique_name();
+        m_generator = SignalGenerator::Ptr(new SignalGenerator(*this, name, d));
 
-    SignalGenerator::Ptr gen =
-        SignalGenerator::Ptr(new SignalGenerator(*this, name, d));
+        if (m_elaboration_done) {
+            apply_generator(m_generator);
+        }
+    } else {
+        m_generator->reconfigure(d);
+    }
 
-    m_generators.push_back(gen);
-
-    return gen;
+    return m_generator;
 }
 
 SignalEvent::Ptr BackendInstance::create_event(PlatformDescription &d,
@@ -203,9 +208,20 @@ SignalEvent::Ptr BackendInstance::create_event(PlatformDescription &d,
         assert(false);
     }
 
-    m_events.push_back(ev);
+    m_events.insert(ev);
+
+    if (m_elaboration_done) {
+        apply_event(ev);
+    }
 
     return ev;
+}
+
+void BackendInstance::delete_event(SignalEvent::Ptr ev)
+{
+    m_backend->unregister_listener(*ev);
+    ev->set_deleted();
+    m_events.erase(ev);
 }
 
 bool BackendInstance::sanity_checks()
@@ -273,23 +289,24 @@ bool BackendInstance::bind_backend()
     return true;
 }
 
+void BackendInstance::apply_generator(SignalGenerator::Ptr gen)
+{
+    m_backend->reconfigure(gen->get_description());
+    gen->set_created();
+}
+
+void BackendInstance::apply_event(SignalEvent::Ptr event)
+{
+    m_backend->register_listener(*event);
+    event->set_created();
+}
+
 void BackendInstance::apply_elements()
 {
-    bool first = true;
-
-    for (auto &gen: m_generators) {
-        if (first) {
-            m_backend->reconfigure(gen->get_description());
-            gen->set_created();
-        } else {
-            gen->set_failure(SignalElement::FAIL_ALREADY_EXISTS);
-        }
-        first = false;
-    }
+    apply_generator(m_generator);
 
     for (auto &event: m_events) {
-        m_backend->register_listener(*event);
-        event->set_created();
+        apply_event(event);
     }
 }
 
@@ -298,9 +315,8 @@ void BackendInstance::set_failure(SignalElement::FailureReason r)
     m_status = SignalElement::STA_FAILURE;
     m_failure_reason = r;
 
-    for (auto &gen : m_generators) {
-        gen->set_failure(r);
-    }
+    m_generator->set_failure(r);
+
     for (auto &ev : m_events) {
         ev->set_failure(r);
     }
@@ -325,6 +341,8 @@ void BackendInstance::elaborate(PlatformBuilder &builder)
     }
 
     apply_elements();
+
+    m_elaboration_done = true;
 }
 
 void BackendInstance::reconfigure(PlatformDescription &d)
