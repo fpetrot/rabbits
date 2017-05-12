@@ -20,7 +20,7 @@
 #pragma once
 
 #include <map>
-#include <vector>
+#include <set>
 
 #include <rabbits/component/component.h>
 #include <rabbits/component/port/inout.h>
@@ -37,7 +37,7 @@ class StubBackend;
 
 class StubBackendBase : public Component {
 private:
-    std::vector<StubEventListener*> m_listeners;
+    std::set<StubEventListener*> m_listeners;
 
 protected:
     void signal_event() const
@@ -55,7 +55,12 @@ public:
 
     void register_listener(StubEventListener &l)
     {
-        m_listeners.push_back(&l);
+        m_listeners.insert(&l);
+    }
+
+    void unregister_listener(StubEventListener &l)
+    {
+        m_listeners.erase(&l);
     }
 
     void reconfigure(PlatformDescription &d)
