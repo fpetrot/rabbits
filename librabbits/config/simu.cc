@@ -19,68 +19,44 @@
 
 #include <thread>
 
-#include "rabbits/simu.h"
+#include "rabbits/config/manager.h"
+#include "rabbits/config/simu.h"
 
 #include "rabbits-common.h"
 #include "rabbits/ui/ui.h"
 
 using namespace sc_core;
 
-/* 
- * SystemC simulator is not thread safe. We can't call sc_stop() from a thread
- * that didn't call sc_start(). While waiting for better solution, we use this
- * module to stop the simulation.
- */
-class SystemCStopper : public sc_module {
-protected:
-    bool m_run = true;
-
-    void stop_thread() {
-        for (;;) {
-            wait(100, SC_MS);
-            if (!m_run) {
-                sc_stop();
-            }
-        }
-    }
-
-public:
-    SC_HAS_PROCESS(SystemCStopper);
-    SystemCStopper(sc_module_name n)
-        : sc_module(n)
-    {
-        SC_THREAD(stop_thread);
-    }
-
-    void stop() 
-    {
-        m_run = false;
-    }
-
-    bool stopped_by_ui() const
-    {
-        return !m_run;
-    }
-};
-
-static void simu_thread_entry(SystemCStopper *sysc_stopper, ConfigManager *config)
+void SimulationManager::handle_pause()
 {
-    LOG(APP, DBG) << "Starting simulation\n";
-    sc_start();
-    LOG(APP, DBG) << "End of simulation\n";
-
-    if (!sysc_stopper->stopped_by_ui()) {
-        config->get_ui().stop();
+    while (sc_get_status() == SC_PAUSED) {
+        for (auto *l: m_pause_listeners) {
+            l->pause_event();
+        }
+        sc_start();
     }
 }
 
-void SimuManager::start()
+void SimulationManager::simu_entry()
 {
-    SystemCStopper sysc_stopper("rabbits-simulation-helper");
+    LOG(APP, DBG) << "Starting simulation\n";
 
+    sc_start();
+
+    handle_pause();
+
+    LOG(APP, DBG) << "End of simulation\n";
+
+    if (!m_sysc_stopper.stopped_by_ui()) {
+        m_config.get_ui().stop();
+    }
+}
+
+void SimulationManager::start()
+{
     /* SystemC simulation is started on a separate thread as some UI libraries
      * (like Qt) require to run on the main thread */
-    std::thread simu_thread(simu_thread_entry, &sysc_stopper, &m_config);
+    std::thread simu_thread(&SimulationManager::simu_entry, this);
 
     Ui::eExitStatus ui_es;
     ui_es = m_config.get_ui().run();
@@ -93,7 +69,7 @@ void SimuManager::start()
          * (e.g. window closed) */
         if(sc_get_status() != SC_STOPPED) {
             LOG(APP, DBG) << "Stopping simulation\n";
-            sysc_stopper.stop();
+            m_sysc_stopper.stop();
         }
 
         /* Fallthrough */
@@ -103,4 +79,9 @@ void SimuManager::start()
     }
 
     LOG(APP, DBG) << "Exiting simulation manager\n";
+}
+
+void SimulationManager::register_pause_listener(SimuPauseListener &l)
+{
+    m_pause_listeners.push_back(&l);
 }

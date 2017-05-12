@@ -18,7 +18,6 @@
  */
 
 #include <rabbits/logger.h>
-#include <rabbits/simu.h>
 
 #include <rabbits/platform/description.h>
 #include <rabbits/platform/builder.h>

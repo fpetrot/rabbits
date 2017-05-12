@@ -3,7 +3,7 @@ backend:
     external-ev-sampling:
       type: time
       description: Sampling period for external events
-      default: 1ms
+      default: 100ms
     generator:
       type: string
       description: Generator to use for this stub.

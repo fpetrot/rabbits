@@ -22,11 +22,13 @@
 #include <boost/asio.hpp>
 #include <memory>
 #include <map>
+#include <functional>
 
 #include <rabbits/logger/has_logger.h>
 #include <rabbits/platform/description.h>
 
 class JsonConsolePlugin;
+class SignalEvent;
 
 namespace protocol {
 
@@ -39,14 +41,29 @@ enum Command {
     CMD_PROTOCOL_VERSION,
     CMD_SIMU_STATUS,
     CMD_CONTINUE_ELABORATION,
+    CMD_START_SIMULATION,
+    CMD_PAUSE_SIMULATION,
+    CMD_RESUME_SIMULATION,
+    CMD_ADD_BACKEND,
     CMD_ADD_GENERATOR,
+    CMD_ADD_EVENT,
+    CMD_MODIFY_GENERATOR,
+    CMD_MODIFY_EVENT,
+    CMD_GET_BACKEND_STATUS,
+    CMD_GET_GENERATOR_STATUS,
+    CMD_GET_EVENT_STATUS,
+    CMD_DELETE_EVENT,
     CMD_FAILURE_REASON,
+    CMD_READ_BACKEND,
+    CMD_TRIGGER,
+    CMD_SIMULATION_PAUSED,
 };
 
 enum Status {
     STA_BAD_CMD,
     STA_OK,
     STA_FAILURE,
+    STA_EVENT,
 };
 
 template <Status s>
@@ -100,7 +117,23 @@ private:
     template <protocol::Status s, protocol::Command c, class ...Args>
     void send_response(const Args&... args);
 
+    bool check_signal_element(PlatformDescription &d);
+
+    void continue_elaboration();
+    void start_simulation();
+    void resume_simulation();
+    void pause_simulation();
+
+    void add_backend(PlatformDescription &d);
     void add_generator(PlatformDescription &d);
+    void add_event(PlatformDescription &d);
+    void modify_generator(PlatformDescription &d);
+    void modify_event(PlatformDescription &d);
+    void get_backend_status(PlatformDescription &d);
+    void get_generator_status(PlatformDescription &d);
+    void get_event_status(PlatformDescription &d);
+    void delete_event(PlatformDescription &d);
+    void read_backend(PlatformDescription &d);
 
 public:
     JsonConsoleClient(JsonConsolePlugin &parent,
@@ -113,6 +146,9 @@ public:
     void handle_cmd(const boost::system::error_code &, size_t);
 
     std::string get_id() const;
+
+    void signal_event(SignalEvent &ev);
+    void pause_event();
 
     Logger & get_logger(LogContext::value context) const;
 };

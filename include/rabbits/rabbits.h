@@ -25,7 +25,7 @@
 #include "component/master.h"
 #include "component/manager.h"
 #include "loader/bootloader.h"
-#include "simu.h"
+#include "config/simu.h"
 #include "ui/ui.h"
 #include "logger.h"
 #include "plugin/plugin.h"

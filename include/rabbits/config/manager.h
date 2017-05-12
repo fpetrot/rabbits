@@ -34,6 +34,7 @@
 #include "rabbits/logger/has_logger.h"
 #include "rabbits/logger/wrapper.h"
 #include "rabbits/ui/chooser.h"
+#include "rabbits/config/simu.h"
 
 namespace boost {
     namespace filesystem {
@@ -60,6 +61,8 @@ private:
     ComponentManager m_components;
     BackendManager m_backends;
     PluginManager m_plugins;
+
+    SimulationManager * m_simu_manager = nullptr;
 
     /* Workaround GCC ICE for versions < 6 */
 #ifdef RABBITS_WORKAROUND_CXX11_GCC_BUGS
@@ -112,6 +115,7 @@ public:
     ConfigManager();
     virtual ~ConfigManager();
 
+    /* Configuration */
     void add_cmdline(int argc, const char * const argv[]);
     void add_yml_file(const std::string &filename);
     void add_yml(const std::string &yml_descr);
@@ -126,15 +130,25 @@ public:
 
     void get_dynlibs_to_load(std::vector<std::string> &dynlibs) const;
 
+    /* Platforms */
     const Platforms & get_platforms() const;
-    bool platform_exists(const std::string &name) const { return m_platforms.find(name) != m_platforms.end(); }
+
+    bool platform_exists(const std::string &name) const
+    {
+        return m_platforms.find(name) != m_platforms.end();
+    }
+
     PlatformDescription get_platform(const std::string &name) const;
     PlatformDescription apply_platform(const std::string &name);
 
     PlatformDescription get_root_description() const { return m_root_descr; }
 
+
+    /* HasLoggerIface */
     Logger & get_logger(LogContext::value context) const { return m_root_loggers.get_logger(context); }
 
+
+    /* Module managers */
     ComponentManager & get_component_manager() { return m_components; }
     BackendManager & get_backend_manager() { return m_backends; }
     PluginManager & get_plugin_manager() { return m_plugins; }
@@ -147,8 +161,24 @@ public:
         return *m_managers[n.get_id()];
     }
 
+    /* Dynamic loader */
     DynamicLoader & get_dynloader() { return m_dynloader; }
 
+
+    /* Simulation manager */
+    void set_simu_manager(SimulationManager &manager) { m_simu_manager = &manager; }
+
+    bool is_simu_manager_available() { return m_simu_manager != nullptr; }
+
+    SimulationManager & get_simu_manager() {
+        if (!is_simu_manager_available()) {
+            throw RabbitsException("Simulation manager is not available.");
+        }
+
+        return *m_simu_manager;
+    }
+
+    /* User interface */
     void create_ui(UiChooser::Hint hint = UiChooser::AUTO);
     Ui & get_ui();
 };
