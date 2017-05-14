@@ -219,7 +219,10 @@ SignalEvent::Ptr BackendInstance::create_event(PlatformDescription &d,
 
 void BackendInstance::delete_event(SignalEvent::Ptr ev)
 {
-    m_backend->unregister_listener(*ev);
+    if (m_elaboration_done) {
+        m_backend->unregister_listener(*ev);
+    }
+
     ev->set_deleted();
     m_events.erase(ev);
 }
@@ -303,7 +306,9 @@ void BackendInstance::apply_event(SignalEvent::Ptr event)
 
 void BackendInstance::apply_elements()
 {
-    apply_generator(m_generator);
+    if (m_generator) {
+        apply_generator(m_generator);
+    }
 
     for (auto &event: m_events) {
         apply_event(event);
