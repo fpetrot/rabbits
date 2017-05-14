@@ -18,15 +18,15 @@ plugin:
       type: boolean
       description: |
         Wait before elaboration for a client to connect
-        and send the \"start_elaboration\" command.
+        and send the \"continue_elaboration\" command.
       default: false
     wait-before-simulation:
       type: boolean
       description: |
         Wait after elaboration and before start of simulation for a client to connect
-        and send the \"start_elaboration\" command.
+        and send the \"start_simulation\" command.
       default: false
     max-time-before-pause:
       type: time
-      description: Maximum simulation time before a pause request is effectivily asserted.
+      description: Maximum simulation time before a pause request is effectively asserted.
       default: 100ms
