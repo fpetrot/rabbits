@@ -23,6 +23,8 @@
 #include "rabbits/component/port.h"
 #include "rabbits/component/connection_strategy/signal.h"
 
+#include "rabbits/datatypes/typeid.h"
+
 #include <systemc>
 
 template <typename T>
@@ -36,6 +38,8 @@ private:
     bool m_autoconnect = false;
     sc_core::sc_signal<T> *m_auto_sig = nullptr;
     T m_auto_value;
+
+    std::string m_typeid = std::string("in<") + TypeId::get_typeid<T>() + ">";
 
 public:
     InPort(const std::string &name)
@@ -70,6 +74,7 @@ public:
         }
     }
 
+    const char * get_typeid() const { return m_typeid.c_str(); }
 };
 
 #endif

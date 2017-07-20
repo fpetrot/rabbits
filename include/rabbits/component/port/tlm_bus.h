@@ -30,6 +30,8 @@ private:
     TlmTargetBusCS<BUSWIDTH> m_cs_target;
     TlmInitiatorBusCS<BUSWIDTH> m_cs_init;
 
+    mutable std::string m_typeid;
+
 public:
     TlmBusPort(const std::string &name, TlmBusIface<BUSWIDTH> &bus)
         : Port(name), m_cs_target(bus), m_cs_init(bus)
@@ -39,6 +41,17 @@ public:
         declare_parent(bus.get_sc_module());
         add_attr_to_parent("tlm-bus", "true");
         add_attr_to_parent("tlm-bus-port", Port::name());
+    }
+
+    const char * get_typeid() const
+    {
+        if (m_typeid.empty()) {
+            std::stringstream ss;
+            ss << "tlm-bus<" << BUSWIDTH << ">";
+            m_typeid = ss.str();
+        }
+
+        return m_typeid.c_str();
     }
 };
 

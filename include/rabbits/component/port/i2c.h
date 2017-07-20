@@ -122,6 +122,8 @@ public:
             MLOG_F(SIM, DBG, "Unsupported special address " PRIx16 "\n", frame.addr);
         }
     }
+
+    const char * get_typeid() const { return "i2c-master"; }
 };
 
 class I2CSlavePort : public Port {
@@ -141,6 +143,8 @@ public:
         declare_parent(sc_e.get_parent_object());
         add_attr_to_parent("i2c-slave-port", name);
     }
+
+    const char * get_typeid() const { return "i2c-slave"; }
 };
 
 #endif

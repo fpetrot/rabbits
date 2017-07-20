@@ -67,5 +67,7 @@ public:
     void send(std::vector<uint8_t> &data) { tx->send(data); }
 
     bool data_pending() { return !rx->empty(); }
+
+    const char * get_typeid() const { return "uart"; }
 };
 #endif

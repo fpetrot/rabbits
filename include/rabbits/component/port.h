@@ -275,6 +275,8 @@ public:
 
     HasPortIface* get_parent() { return m_parent; }
 
+    virtual const char * get_typeid() const { return "?"; }
+
     /* HasLoggerIface */
     Logger & get_logger(LogContext::value context) const;
 

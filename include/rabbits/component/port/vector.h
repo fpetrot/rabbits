@@ -60,6 +60,9 @@ public:
 
     typedef typename Container::size_type size_type;
 
+private:
+    mutable std::string m_typeid;
+
 protected:
     Container m_ports;
 
@@ -140,6 +143,17 @@ public:
         return m_ports.size();
     }
 
+    const char * get_typeid() const {
+        if (m_ports.empty()) {
+            return "vector<?>";
+        }
+
+        if (m_typeid.empty()) {
+            m_typeid = std::string("vector<") + m_ports.front()->get_typeid() + ">";
+        }
+
+        return m_typeid.c_str();
+    }
 };
 
 template <typename T>

@@ -34,6 +34,8 @@ private:
     TlmInitiatorTargetCS<BUSWIDTH, 1> m_init_target_cs;
     TlmTargetBusCS<BUSWIDTH> m_target_bus_cs;
 
+    mutable std::string m_typeid;
+
     void init() {
         add_connection_strategy(m_init_target_cs);
         add_connection_strategy(m_target_bus_cs);
@@ -76,6 +78,17 @@ public:
 
     void register_mapped_ev_listener(TlmTargetMappedListener *l) {
         m_target_bus_cs.register_mapped_ev_listener(l);
+    }
+
+    const char * get_typeid() const
+    {
+        if (m_typeid.empty()) {
+            std::stringstream ss;
+            ss << "tlm-target<" << BUSWIDTH << ">";
+            m_typeid = ss.str();
+        }
+
+        return m_typeid.c_str();
     }
 };
 

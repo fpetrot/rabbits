@@ -23,6 +23,8 @@
 #include "rabbits/component/port.h"
 #include "rabbits/component/connection_strategy/signal.h"
 
+#include "rabbits/datatypes/typeid.h"
+
 #include <systemc>
 
 template <class T>
@@ -34,6 +36,8 @@ public:
     using Port::operator();
 
     sc_core::sc_inout<T> sc_p;
+
+    std::string m_typeid = std::string("inout<") + TypeId::get_typeid<T>() + ">";
 
 private:
     SignalCS<T> m_cs;
@@ -74,6 +78,8 @@ public:
             *m_auto_sig = m_auto_value;
         }
     }
+
+    const char * get_typeid() const { return m_typeid.c_str(); }
 };
 
 template <class T>
@@ -92,6 +98,8 @@ public:
 private:
     SignalCS<T> m_cs;
 
+    std::string m_typeid = std::string("inout-multi<") + TypeId::get_typeid<T>() + ">";
+
 public:
     InOutMultiPort(const std::string &name)
         : Port(name), sc_p(name.c_str()), m_cs(sc_p)
@@ -101,6 +109,8 @@ public:
     }
 
     virtual ~InOutMultiPort() {}
+
+    const char * get_typeid() const { return m_typeid.c_str(); }
 };
 
 #endif

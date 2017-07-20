@@ -49,6 +49,8 @@ public:
 
     void recv(std::vector<uint8_t> &data) { rx->recv(data); }
     void send(std::vector<uint8_t> &data) { tx->send(data); }
+
+    const char * get_typeid() const { return "char"; }
 };
 #endif
 

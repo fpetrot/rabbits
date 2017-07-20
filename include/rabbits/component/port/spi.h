@@ -103,6 +103,11 @@ public:
             }
         }
     }
+
+    const char * get_typeid() const
+    {
+        return "spi-master";
+    }
 };
 
 class SpiSlavePort : public Port {
@@ -121,6 +126,11 @@ public:
         add_connection_strategy(m_cs);
         declare_parent(sc_e.get_parent_object());
         add_attr_to_parent("spi-slave-port", name);
+    }
+
+    const char * get_typeid() const
+    {
+        return "spi-slave";
     }
 };
 

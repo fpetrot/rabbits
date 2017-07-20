@@ -42,6 +42,8 @@ private:
 
     BusAccessResponseStatus m_last_access = BusAccessResponseStatus::OK;
 
+    mutable std::string m_typeid;
+
     void init() {
         add_connection_strategy(m_init_target_cs);
         add_connection_strategy(m_initiator_bus_cs);
@@ -215,6 +217,16 @@ public:
         return m_last_access;
     }
 
+    const char * get_typeid() const
+    {
+        if (m_typeid.empty()) {
+            std::stringstream ss;
+            ss << "tlm-initiator<" << BUSWIDTH << ">";
+            m_typeid = ss.str();
+        }
+
+        return m_typeid.c_str();
+    }
 };
 
 #endif
