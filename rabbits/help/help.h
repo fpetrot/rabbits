@@ -20,7 +20,6 @@
 #ifndef _RABBITS_RABBITS_USAGE_H
 #define _RABBITS_RABBITS_USAGE_H
 
-#include <ostream>
 #include <rabbits/config/manager.h>
 #include <rabbits/platform/builder.h>
 #include <rabbits/logger.h>
@@ -30,6 +29,7 @@ void print_usage(const char* arg0, ConfigManager &config, PlatformBuilder &p);
 void enum_modules(ConfigManager &config, const Namespace &ns, LogLevel::value);
 void enum_platforms(ConfigManager &config, LogLevel::value, bool show_generics);
 
+void describe_platform(PlatformBuilder &p);
 void dump_systemc_hierarchy(PlatformBuilder &p, LogLevel::value lvl);
 
 #endif

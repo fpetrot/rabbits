@@ -33,7 +33,7 @@
 #include <rabbits/config/manager.h>
 #include <rabbits/config/static_loader.h>
 
-#include "usage.h"
+#include "help/help.h"
 #include "cmdline.h"
 
 using std::string;
@@ -75,6 +75,12 @@ static void declare_global_params(ConfigManager &config)
                                             false,
                                             true));
 
+    config.add_global_param("describe-platform",
+                            Parameter<bool>("Describe the selected platform, "
+                                            "diplays its components and ports",
+                                            false,
+                                            true));
+
     config.add_global_param("show-systemc-hierarchy",
                             Parameter<bool>("Display the SystemC hierarchy "
                                             "at the end of elaboration and exit",
@@ -104,6 +110,7 @@ static void declare_aliases(ConfigManager &config)
     config.add_param_alias("list-plugins",       p["list-plugins"]);
     config.add_param_alias("list-platforms",     p["list-platforms"]);
     config.add_param_alias("list-all-platforms", p["list-all-platforms"]);
+    config.add_param_alias("describe-platform",  p["describe-platform"]);
     config.add_param_alias("systemc-hierarchy",  p["show-systemc-hierarchy"]);
     config.add_param_alias("dump-config",        p["dump-config"]);
     config.add_param_alias("debug",              p["debug"]);
@@ -184,6 +191,7 @@ enum eRunMode {
     RUN_LIST_COMPONENTS,
     RUN_LIST_BACKENDS,
     RUN_LIST_PLUGINS,
+    RUN_DESCRIBE_PLATFORM,
     RUN_SYSC_HIERARCHY,
     RUN_DUMP_CONFIG,
 };
@@ -220,6 +228,10 @@ static eRunMode get_run_mode(Parameters &globals)
 
     if (globals["show-advanced-params"].as<bool>()) {
         return RUN_HELP;
+    }
+
+    if (globals["describe-platform"].as<bool>()) {
+        return RUN_DESCRIBE_PLATFORM;
     }
 
     if (globals["show-systemc-hierarchy"].as<bool>()) {
@@ -368,6 +380,11 @@ int sc_main(int argc, char *argv[])
         }
 
         check_unused_params(platform);
+
+        if (run_mode == RUN_DESCRIBE_PLATFORM) {
+            describe_platform(builder);
+            return 0;
+        }
 
         if (run_mode == RUN_SYSC_HIERARCHY) {
             dump_systemc_hierarchy(builder, LogLevel::INFO);
