@@ -92,6 +92,19 @@ public:
 };
 
 
+struct PortConnectionInfo {
+    typedef ConnectionStrategyBase::ConnectionInfo ExtraInfo;
+
+    Port *peer;
+    ConnectionStrategyBase *cs;
+    bool hierarchical;
+    ExtraInfo extra_info;
+
+    PortConnectionInfo() {}
+    PortConnectionInfo(Port *peer, ConnectionStrategyBase *cs, bool h)
+        : peer(peer), cs(cs), hierarchical(h) {}
+};
+
 class Port : public HasLoggerIface {
 public:
     typedef std::pair<ConnectionStrategyBase*, ConnectionStrategyBase*> CSPair;
@@ -99,8 +112,8 @@ public:
 
 private:
     std::list<ConnectionStrategyBase*> m_cs;
-    bool m_is_connected;
     std::vector<PortBindingListener*> m_listeners;
+    std::vector<PortConnectionInfo> m_connections;
 
 protected:
     std::string m_name;
@@ -138,14 +151,23 @@ protected:
         while (r == ConnectionStrategyBase::BINDING_TRY_NEXT && !pairs.empty()) {
             CSPair pair = pairs.front();
             pairs.pop_front();
+            PortConnectionInfo info;
 
-            r = pair.first->bind(*pair.second, ConnectionStrategyBase::PEER, d);
+            r = pair.first->bind(*pair.second, ConnectionStrategyBase::PEER, info.extra_info, d);
 
             switch (r) {
             case ConnectionStrategyBase::BINDING_OK:
                 selected_strategy(*pair.first);
                 p.selected_strategy(*pair.second);
-                m_is_connected = p.m_is_connected = true;
+
+                info.peer = &p;
+                info.cs = pair.first;
+                info.hierarchical = false;
+                m_connections.push_back(info);
+
+                info.peer = this;
+                info.cs = pair.second;
+                p.m_connections.push_back(info);
                 return;
 
             case ConnectionStrategyBase::BINDING_HIERARCHICAL_TYPE_MISMATCH:
@@ -173,7 +195,7 @@ protected:
     }
 
 public:
-    explicit Port(const std::string &name) : m_is_connected(false), m_name(name) {}
+    explicit Port(const std::string &name) : m_name(name) {}
 
     virtual ~Port() {}
 
@@ -181,7 +203,9 @@ public:
         return m_cs;
     }
 
-    bool is_connected() const { return m_is_connected; }
+    bool is_connected() const { return !m_connections.empty(); }
+
+    const std::vector<PortConnectionInfo> & get_connections_info() const { return m_connections; }
 
     ConnectionStrategyBase * is_compatible_with(const ConnectionStrategyBase &cs)
     {
@@ -239,11 +263,13 @@ public:
             CSPair pair = pairs.front();
             pairs.pop_front();
 
-            r = pair.first->bind(*pair.second, ConnectionStrategyBase::HIERARCHICAL);
+            PortConnectionInfo info(&parent, pair.first, true);
+
+            r = pair.first->bind(*pair.second, ConnectionStrategyBase::HIERARCHICAL, info.extra_info);
 
             switch (r) {
             case ConnectionStrategyBase::BINDING_OK:
-                m_is_connected = true;
+                m_connections.push_back(info);
                 dispatch_binding_ev(parent);
                 parent.dispatch_binding_ev(*this);
                 return;
