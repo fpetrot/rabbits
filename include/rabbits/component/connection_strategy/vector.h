@@ -39,6 +39,8 @@ public:
 
     BindingResult bind_peer(VectorCS<T> &cs, PlatformDescription &d);
     BindingResult bind_hierarchical(VectorCS<T> &parent_cs);
+
+    virtual const char * get_typeid() const { return "vector"; }
 };
 
 #endif

@@ -106,6 +106,8 @@ public:
         /* Let specific CS handle the binding */
         return BindingResult::BINDING_TRY_NEXT;
     }
+
+    virtual const char * get_typeid() const { return "tlm-target-bus"; }
 };
 
 #endif

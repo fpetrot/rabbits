@@ -121,6 +121,8 @@ public:
 
         return bind_hierarchical(cs_bw);
     }
+
+    virtual const char * get_typeid() const { return "tlm-initiator-target"; }
 };
 
 template <unsigned int BUSWIDTH = 32, int N = 1>

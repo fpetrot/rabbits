@@ -42,6 +42,8 @@ public:
 
     virtual BindingResult bind(ConnectionStrategyBase &cs, BindingType t,
                       PlatformDescription &d = PlatformDescription::INVALID_DESCRIPTION) = 0;
+
+    virtual const char * get_typeid() const { return "?"; }
 };
 
 template <typename T>

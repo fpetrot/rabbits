@@ -96,6 +96,8 @@ public:
     }
 
     using ConnectionStrategy< SignalCS<T> >::bind;
+
+    virtual const char * get_typeid() const { return "signal"; }
 };
 
 #endif

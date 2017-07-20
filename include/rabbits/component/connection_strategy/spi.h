@@ -111,6 +111,8 @@ public:
         return BindingResult::BINDING_ERROR;
     }
 
+    virtual const char * get_typeid() const { return "spi"; }
+
     virtual ~SpiCS() {}
 };
 

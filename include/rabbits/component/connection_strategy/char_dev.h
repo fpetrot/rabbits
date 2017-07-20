@@ -60,6 +60,8 @@ public:
 
         return BindingResult::BINDING_OK;
     }
+
+    virtual const char * get_typeid() const { return "char-dev"; }
 };
 
 #endif
