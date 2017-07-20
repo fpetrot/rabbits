@@ -77,6 +77,7 @@ public:
     ComponentBase(sc_core::sc_module_name name) : sc_core::sc_module(name) {}
 };
 
+class ModuleFactoryBase;
 
 /**
  * @brief A rabbits component.
@@ -108,6 +109,8 @@ protected:
     std::vector<ScThreadCallback> m_pushed_threads;
 
     Attributes m_attributes;
+
+    ModuleFactoryBase *m_factory = nullptr;
 
     void pushed_threads_entry()
     {
@@ -205,6 +208,8 @@ public:
     const std::string & get_name() const { return m_name; }
     const Namespace & get_namespace() const { return *(m_params.get_namespace()); }
     const std::string get_full_name() const { return m_params.get_namespace()->get_name() + "." + get_name(); }
+    ModuleFactoryBase * get_factory() const { return m_factory; }
+    void set_factory(ModuleFactoryBase *f) { m_factory = f; }
 
     /* HasPortIface */
     virtual void declare_port(Port &p, const std::string &name) { m_ports[name] = &p; }

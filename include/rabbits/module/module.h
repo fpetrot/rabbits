@@ -1,6 +1,6 @@
 /*
  *  This file is part of Rabbits
- *  Copyright (C) 2015  Clement Deschamps and Luc Michel
+ *  Copyright (C) 2015-2017  Clement Deschamps and Luc Michel
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -25,6 +25,7 @@
 #include "has_params.h"
 #include "namespace.h"
 
+class ModuleFactoryBase;
 
 class ModuleIface
     : public HasParametersIface
@@ -48,6 +49,11 @@ public:
      * name of the module.
      */
     virtual const std::string get_full_name() const = 0;
+
+    /**
+     * @brief Return the factory that were used to build this module
+     */
+    virtual ModuleFactoryBase * get_factory() const = 0;
 };
 
 #endif

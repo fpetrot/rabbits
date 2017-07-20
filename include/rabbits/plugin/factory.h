@@ -53,7 +53,9 @@ class PluginFactory : public PluginFactoryBase {
 protected:
     virtual TPlugin * create(const std::string & name, const Parameters & params)
     {
-        return new TPlugin(name, params, get_config());
+        TPlugin *p = new TPlugin(name, params, get_config());
+        p->set_factory(this);
+        return p;
     }
 
     PluginFactory(ConfigManager &config, const std::string name, const std::string description)

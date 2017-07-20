@@ -71,6 +71,7 @@ protected:
     virtual TBackend * create(const std::string & name, const Parameters & params)
     {
         TBackend *c = new TBackend(name.c_str(), params, get_config());
+        c->set_factory(this);
         return c;
     }
 

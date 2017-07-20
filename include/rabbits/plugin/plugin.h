@@ -83,6 +83,8 @@ public:
     virtual void hook(const PluginHookAfterBuild& h) = 0;
 };
 
+class ModuleFactoryBase;
+
 class Plugin : public PluginBase {
 protected:
     std::string m_name;
@@ -90,6 +92,8 @@ protected:
     ConfigManager &m_config;
 
     LoggerWrapper m_loggers;
+
+    ModuleFactoryBase *m_factory = nullptr;
 
 public:
     Plugin(const std::string & name, const Parameters &params, ConfigManager &config)
@@ -112,6 +116,8 @@ public:
     const std::string & get_name() const { return m_name; }
     const Namespace & get_namespace() const { return *(m_params.get_namespace()); }
     const std::string get_full_name() const { return m_params.get_namespace()->get_name() + "." + get_name(); }
+    ModuleFactoryBase * get_factory() const { return m_factory; }
+    void set_factory(ModuleFactoryBase *f) { m_factory = f; }
 
     /* HasParametersIface */
     const Parameters & get_params() const { return m_params; }
