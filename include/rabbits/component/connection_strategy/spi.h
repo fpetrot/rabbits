@@ -30,6 +30,8 @@ public:
 
 class SpiCS : public ConnectionStrategy<SpiCS> {
 public:
+    using ConnectionStrategyBase::ConnectionInfo;
+
     typedef sc_core::sc_port<SpiSystemCInterface, 0, sc_core::SC_ZERO_OR_MORE_BOUND> SpiMasterScPort;
     typedef sc_core::sc_export<SpiSystemCInterface> SpiSlaveScExport;
 
@@ -52,7 +54,7 @@ public:
         : m_mode(SLAVE), m_slave(&slave)
     {}
 
-    BindingResult bind_peer(SpiCS &cs, PlatformDescription &d)
+    BindingResult bind_peer(SpiCS &cs, ConnectionInfo &info, PlatformDescription &d)
     {
         SpiMasterScPort *master_port = nullptr;
         SpiBindingListener *master = nullptr;
@@ -98,10 +100,11 @@ public:
         (*master_port)(*slave);
         master->spi_binding_event(spi_cs);
 
+        info.add("chip select", spi_cs);
         return BindingResult::BINDING_OK;
     }
 
-    BindingResult bind_hierarchical(SpiCS &parent_cs)
+    BindingResult bind_hierarchical(SpiCS &parent_cs, ConnectionInfo &info)
     {
         if (m_mode != parent_cs.m_mode) {
             return BindingResult::BINDING_HIERARCHICAL_TYPE_MISMATCH;

@@ -29,6 +29,8 @@ template <typename T>
 class SignalCS : public ConnectionStrategy< SignalCS<T> > {
 public:
     using typename ConnectionStrategyBase::BindingResult;
+    using typename ConnectionStrategyBase::ConnectionInfo;
+
     typedef typename sc_core::sc_inout<T>::inout_if_type sc_inout_if_type;
     typedef typename sc_core::sc_in<T>::in_if_type sc_in_if_type;
 
@@ -63,7 +65,7 @@ public:
 
     virtual ~SignalCS() { delete m_sig; }
 
-    BindingResult bind_peer(SignalCS<T> &cs, PlatformDescription &d)
+    BindingResult bind_peer(SignalCS<T> &cs, ConnectionInfo &info, PlatformDescription &d)
     {
         if ((m_dir == INOUT) && (cs.m_dir == INOUT)) {
             m_sig = new sc_core::sc_signal<T, sc_core::SC_MANY_WRITERS>;
@@ -77,7 +79,7 @@ public:
         return BindingResult::BINDING_OK;
     }
 
-    BindingResult bind_hierarchical(SignalCS<T> &parent_cs)
+    BindingResult bind_hierarchical(SignalCS<T> &parent_cs, ConnectionInfo &info)
     {
         if (m_dir != parent_cs.m_dir) {
             return BindingResult::BINDING_HIERARCHICAL_TYPE_MISMATCH;

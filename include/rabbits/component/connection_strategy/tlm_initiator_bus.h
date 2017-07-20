@@ -33,6 +33,7 @@ public:
     typedef sc_core::sc_port<MemoryMappingInspectorScIface, 
             1, sc_core::SC_ZERO_OR_MORE_BOUND> ScPortInspector;
     using typename ConnectionStrategyBase::BindingResult;
+    using typename ConnectionStrategyBase::ConnectionInfo;
 
 private:
     enum kind_e { BUS, INITIATOR };
@@ -56,7 +57,7 @@ public:
     explicit TlmInitiatorBusCS(TlmBusIface<BUSWIDTH> &bus)
         : m_bus(&bus), m_kind(BUS) {}
 
-    BindingResult bind_peer(TlmInitiatorBusCS<BUSWIDTH> &cs, PlatformDescription &d)
+    BindingResult bind_peer(TlmInitiatorBusCS<BUSWIDTH> &cs, ConnectionInfo &info, PlatformDescription &d)
     {
         if (m_kind == cs.m_kind) {
             const std::string &kind_s = (m_kind == BUS) ? "bus" : "tlm initiator";
@@ -79,7 +80,7 @@ public:
         return BindingResult::BINDING_OK;
     }
 
-    BindingResult bind_hierarchical(TlmInitiatorBusCS<BUSWIDTH> &parent_cs)
+    BindingResult bind_hierarchical(TlmInitiatorBusCS<BUSWIDTH> &parent_cs, ConnectionInfo &info)
     {
         if (m_kind != parent_cs.m_kind) {
             return BindingResult::BINDING_HIERARCHICAL_TYPE_MISMATCH;

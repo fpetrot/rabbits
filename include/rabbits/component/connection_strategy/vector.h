@@ -29,6 +29,7 @@ template <typename T>
 class VectorCS : public ConnectionStrategy< VectorCS<T> > {
 public:
     using typename ConnectionStrategyBase::BindingResult;
+    using typename ConnectionStrategyBase::ConnectionInfo;
 
 private:
     VectorPortBase<T> &m_vec;
@@ -37,8 +38,8 @@ public:
     VectorCS(VectorPortBase<T> &v) : m_vec(v) {}
     virtual ~VectorCS() {}
 
-    BindingResult bind_peer(VectorCS<T> &cs, PlatformDescription &d);
-    BindingResult bind_hierarchical(VectorCS<T> &parent_cs);
+    BindingResult bind_peer(VectorCS<T> &cs, ConnectionInfo &info, PlatformDescription &d);
+    BindingResult bind_hierarchical(VectorCS<T> &parent_cs, ConnectionInfo &info);
 
     virtual const char * get_typeid() const { return "vector"; }
 };

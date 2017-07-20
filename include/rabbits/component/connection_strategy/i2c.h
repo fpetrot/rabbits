@@ -31,6 +31,7 @@ public:
 class I2CCS : public ConnectionStrategy<I2CCS> {
 public:
     using typename ConnectionStrategyBase::BindingResult;
+    using ConnectionStrategyBase::ConnectionInfo;
     typedef sc_core::sc_port<I2CSystemCInterface, 0, sc_core::SC_ZERO_OR_MORE_BOUND> I2CMasterScPort;
     typedef sc_core::sc_export<I2CSystemCInterface> I2CSlaveScExport;
 
@@ -54,7 +55,7 @@ public:
         : m_mode(SLAVE), m_slave(&slave), m_slave_addr(addr)
     {}
 
-    BindingResult bind_peer(I2CCS &cs, PlatformDescription &d)
+    BindingResult bind_peer(I2CCS &cs, ConnectionInfo &info, PlatformDescription &d)
     {
         I2CMasterScPort *master_port = nullptr;
         I2CBindingListener *master = nullptr;
@@ -86,10 +87,12 @@ public:
         (*master_port)(*slave);
         master->i2c_binding_event(addr);
 
+        info.add("slave address", addr);
+
         return BindingResult::BINDING_OK;
     }
 
-    BindingResult bind_hierarchical(I2CCS &parent_cs)
+    BindingResult bind_hierarchical(I2CCS &parent_cs, ConnectionInfo &info)
     {
         if (m_mode != parent_cs.m_mode) {
             return BindingResult::BINDING_HIERARCHICAL_TYPE_MISMATCH;

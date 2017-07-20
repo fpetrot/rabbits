@@ -24,7 +24,7 @@
 #include "rabbits/component/port/vector.h"
 
 template <class T>
-typename VectorCS<T>::BindingResult VectorCS<T>::bind_peer(VectorCS<T> &cs, PlatformDescription &d)
+typename VectorCS<T>::BindingResult VectorCS<T>::bind_peer(VectorCS<T> &cs, ConnectionInfo &info, PlatformDescription &d)
 {
     /* Size compatibility */
     if (m_vec.size() != cs.m_vec.size()) {
@@ -48,7 +48,7 @@ typename VectorCS<T>::BindingResult VectorCS<T>::bind_peer(VectorCS<T> &cs, Plat
 }
 
 template <class T>
-typename VectorCS<T>::BindingResult VectorCS<T>::bind_hierarchical(VectorCS<T> &cs)
+typename VectorCS<T>::BindingResult VectorCS<T>::bind_hierarchical(VectorCS<T> &cs, ConnectionInfo &info)
 {
     /* Size compatibility */
     if (m_vec.size() != cs.m_vec.size()) {

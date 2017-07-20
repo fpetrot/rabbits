@@ -36,6 +36,7 @@ template <unsigned int BUSWIDTH = 32>
 class TlmTargetBusCS : public ConnectionStrategy< TlmTargetBusCS<BUSWIDTH> > {
 public:
     using typename ConnectionStrategyBase::BindingResult;
+    using typename ConnectionStrategyBase::ConnectionInfo;
 
 private:
     enum kind_e { BUS, TARGET };
@@ -64,7 +65,7 @@ public:
         m_listeners.push_back(l);
     }
 
-    BindingResult bind_peer(TlmTargetBusCS<BUSWIDTH> &cs, PlatformDescription &d)
+    BindingResult bind_peer(TlmTargetBusCS<BUSWIDTH> &cs, ConnectionInfo &info, PlatformDescription &d)
     {
         AddressRange range;
 
@@ -93,11 +94,13 @@ public:
         bus.connect_target(target, range);
         mapped_ev_dispatch(range);
 
+        info.add("address range", range);
+
         return BindingResult::BINDING_OK;
 
     }
 
-    BindingResult bind_hierarchical(TlmTargetBusCS<BUSWIDTH> &parent_cs)
+    BindingResult bind_hierarchical(TlmTargetBusCS<BUSWIDTH> &parent_cs, ConnectionInfo &info)
     {
         if (m_kind != parent_cs.m_kind) {
             return BindingResult::BINDING_HIERARCHICAL_TYPE_MISMATCH;

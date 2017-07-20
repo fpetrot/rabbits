@@ -28,6 +28,7 @@
 class CharDeviceCS : public ConnectionStrategy<CharDeviceCS> {
 public:
     using typename ConnectionStrategyBase::BindingResult;
+    using ConnectionStrategyBase::ConnectionInfo;
 
 private:
     sc_core::sc_port<CharDeviceSystemCInterface> &m_tx;
@@ -42,7 +43,7 @@ public:
 
     virtual ~CharDeviceCS() {}
 
-    BindingResult bind_peer(CharDeviceCS &cs, PlatformDescription &d)
+    BindingResult bind_peer(CharDeviceCS &cs, ConnectionInfo &info, PlatformDescription &d)
     {
         m_tx(chan);
         cs.m_rx(chan);
@@ -53,7 +54,7 @@ public:
         return BindingResult::BINDING_OK;
     }
 
-    BindingResult bind_hierarchical(CharDeviceCS &parent_cs)
+    BindingResult bind_hierarchical(CharDeviceCS &parent_cs, ConnectionInfo &info)
     {
         m_tx(parent_cs.m_tx);
         m_rx(parent_cs.m_rx);

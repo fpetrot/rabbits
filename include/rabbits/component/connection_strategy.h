@@ -20,12 +20,42 @@
 #ifndef _RABBITS_COMPONENT_CONNECTION_STRATEGY_H
 #define _RABBITS_COMPONENT_CONNECTION_STRATEGY_H
 
-#include <cstdlib>
+#include <vector>
+#include <string>
+
 #include "rabbits/logger.h"
 #include "rabbits/platform/description.h"
 
 class ConnectionStrategyBase {
 public:
+    class ConnectionInfo {
+    public:
+        typedef std::pair<std::string, std::string> ConnectionInfoContainerEntry;
+        typedef std::vector<ConnectionInfoContainerEntry> ConnectionInfoContainer;
+
+        typedef ConnectionInfoContainer::const_iterator const_iterator;
+
+    private:
+        ConnectionInfoContainer m_container;
+
+    public:
+        void add(const std::string &key, const std::string &val)
+        {
+            m_container.push_back(ConnectionInfoContainerEntry(key, val));
+        }
+
+        template <class T>
+        void add(const std::string &key, const T& val)
+        {
+            std::stringstream ss;
+            ss << val;
+            add(key, ss.str());
+        }
+
+        const_iterator begin() const { return m_container.begin(); }
+        const_iterator end() const { return m_container.end(); }
+    };
+
     enum BindingType {
         PEER, HIERARCHICAL
     };
@@ -41,7 +71,8 @@ public:
     virtual bool is_compatible_with(const ConnectionStrategyBase &cs) const = 0;
 
     virtual BindingResult bind(ConnectionStrategyBase &cs, BindingType t,
-                      PlatformDescription &d = PlatformDescription::INVALID_DESCRIPTION) = 0;
+                               ConnectionInfo &info,
+                               PlatformDescription &d = PlatformDescription::INVALID_DESCRIPTION) = 0;
 
     virtual const char * get_typeid() const { return "?"; }
 };
@@ -56,6 +87,7 @@ public:
     }
 
     BindingResult bind(ConnectionStrategyBase &cs, BindingType t,
+                       ConnectionInfo &info,
                        PlatformDescription &d = PlatformDescription::INVALID_DESCRIPTION)
     {
         if (!is_compatible_with(cs)) {
@@ -68,10 +100,10 @@ public:
 
         switch (t) {
         case PEER:
-            return cs0.bind_peer(ccs, d);
+            return cs0.bind_peer(ccs, info, d);
 
         case HIERARCHICAL:
-            return cs0.bind_hierarchical(ccs);
+            return cs0.bind_hierarchical(ccs, info);
         }
 
         /* Quiet, compiler */

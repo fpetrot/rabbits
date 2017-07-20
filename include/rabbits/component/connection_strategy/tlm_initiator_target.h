@@ -27,18 +27,21 @@
 
 class TlmInitiatorTargetBaseCS : public ConnectionStrategy<TlmInitiatorTargetBaseCS> {
 public:
+    using ConnectionStrategyBase::ConnectionInfo;
+
     virtual ~TlmInitiatorTargetBaseCS() {}
 
     virtual unsigned int get_bus_width() const = 0;
 
-    virtual BindingResult bind_peer(TlmInitiatorTargetBaseCS &cs, PlatformDescription &d) = 0;
-    virtual BindingResult bind_hierarchical(TlmInitiatorTargetBaseCS &parent_cs) = 0;
+    virtual BindingResult bind_peer(TlmInitiatorTargetBaseCS &cs, ConnectionInfo &info, PlatformDescription &d) = 0;
+    virtual BindingResult bind_hierarchical(TlmInitiatorTargetBaseCS &parent_cs, ConnectionInfo &info) = 0;
 };
 
 template <unsigned int BUSWIDTH = 32>
 class TlmInitiatorTargetPortAgnosticCS : public TlmInitiatorTargetBaseCS {
 public:
     using typename ConnectionStrategyBase::BindingResult;
+    using typename ConnectionStrategyBase::ConnectionInfo;
 
     typedef tlm::tlm_base_target_socket_b<BUSWIDTH,
                                           tlm::tlm_fw_transport_if<>,
@@ -65,7 +68,7 @@ protected:
         } else if (initiator_socket_base *s = cs.get_initiator_base_socket()) {
             bind(*s);
         }
-        
+
         return BindingResult::BINDING_OK;
     }
 
@@ -94,7 +97,7 @@ public:
 
     unsigned int get_bus_width() const { return BUSWIDTH; }
 
-    BindingResult bind_peer(TlmInitiatorTargetBaseCS &cs, PlatformDescription &d)
+    BindingResult bind_peer(TlmInitiatorTargetBaseCS &cs, ConnectionInfo &info, PlatformDescription &d)
     {
         if (cs.get_bus_width() != BUSWIDTH) {
             /* XXX Print components name */
@@ -102,13 +105,13 @@ public:
             return BindingResult::BINDING_ERROR;
         }
 
-        TlmInitiatorTargetPortAgnosticCS<BUSWIDTH> &cs_bw 
+        TlmInitiatorTargetPortAgnosticCS<BUSWIDTH> &cs_bw
             = static_cast<TlmInitiatorTargetPortAgnosticCS<BUSWIDTH>&>(cs);
 
         return bind_peer(cs_bw);
     }
 
-    BindingResult bind_hierarchical(TlmInitiatorTargetBaseCS &parent_cs)
+    BindingResult bind_hierarchical(TlmInitiatorTargetBaseCS &parent_cs, ConnectionInfo &info)
     {
         if (parent_cs.get_bus_width() != BUSWIDTH) {
             /* XXX Print components name */
@@ -116,7 +119,7 @@ public:
             return BindingResult::BINDING_ERROR;
         }
 
-        TlmInitiatorTargetPortAgnosticCS<BUSWIDTH> &cs_bw 
+        TlmInitiatorTargetPortAgnosticCS<BUSWIDTH> &cs_bw
             = static_cast<TlmInitiatorTargetPortAgnosticCS<BUSWIDTH>&>(parent_cs);
 
         return bind_hierarchical(cs_bw);
