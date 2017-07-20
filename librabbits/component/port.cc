@@ -50,3 +50,22 @@ void Port::add_attr_to_parent(const std::string & key, const std::string & value
         parent->add_attr(key, value);
     }
 }
+
+
+std::string Port::full_name()
+{
+    if (!m_parent) {
+        return name();
+    }
+
+    return std::string(m_parent->get_component().name()) + "." + name();
+}
+
+Logger & Port::get_logger(LogContext::value context) const
+{
+    if (m_parent) {
+        return m_parent->get_component().get_logger(context);
+    } else {
+        return get_logger(context);
+    }
+}

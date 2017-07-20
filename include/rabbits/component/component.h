@@ -75,6 +75,8 @@ class ComponentBase
     , public HasAttributesIface {
 public:
     ComponentBase(sc_core::sc_module_name name) : sc_core::sc_module(name) {}
+
+    ComponentBase & get_component() { return *this; }
 };
 
 class ModuleFactoryBase;
@@ -233,10 +235,6 @@ public:
     virtual port_iterator port_end() { return m_ports.end(); }
     virtual const_port_iterator port_begin() const { return m_ports.begin(); }
     virtual const_port_iterator port_end() const { return m_ports.end(); }
-    virtual std::string hasport_name() const { return name(); }
-    virtual Logger & hasport_getlogger(LogContext::value context) const {
-        return get_logger(context);
-    }
     virtual void push_sc_thread(ScThreadCallback cb) {
         m_pushed_threads.push_back(cb);
     }
@@ -270,6 +268,7 @@ public:
 
     /* HasConfigIface */
     ConfigManager & get_config() const { return m_config; }
+
 };
 
 #endif

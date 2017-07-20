@@ -61,6 +61,7 @@ typedef std::function< void() > ScThreadCallback;
 
 #endif
 
+class ComponentBase;
 
 class HasPortIface {
 public:
@@ -78,8 +79,7 @@ public:
     virtual const_port_iterator port_begin() const = 0;
     virtual const_port_iterator port_end() const = 0;
 
-    virtual std::string hasport_name() const = 0;
-    virtual Logger & hasport_getlogger(LogContext::value) const = 0;
+    virtual ComponentBase & get_component() = 0;
 
     virtual void push_sc_thread(ScThreadCallback thread_callback) = 0;
 };
@@ -270,25 +270,13 @@ public:
     virtual void selected_strategy(ConnectionStrategyBase &cs) {}
 
     const std::string & name() { return m_name; }
-    std::string full_name()
-    {
-        if (!m_parent) {
-            return name();
-        }
 
-        return m_parent->hasport_name() + "." + name();
-    }
+    std::string full_name();
 
     HasPortIface* get_parent() { return m_parent; }
 
     /* HasLoggerIface */
-    Logger & get_logger(LogContext::value context) const {
-        if (m_parent) {
-            return m_parent->hasport_getlogger(context);
-        } else {
-            return get_logger(context);
-        }
-    }
+    Logger & get_logger(LogContext::value context) const;
 
     void register_binding_listener(PortBindingListener &l)
     {
