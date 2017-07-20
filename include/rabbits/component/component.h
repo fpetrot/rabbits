@@ -182,6 +182,12 @@ protected:
     {
         m_name = std::string(basename());
         m_params.set_module(*this);
+
+        if (m_params.get_namespace() == nullptr) {
+            /* Set default namespace to Component. This can mainly happen if
+             * the component is constructed directly, without its factory */
+            m_params.set_namespace(Namespace::get(Namespace::COMPONENT));
+        }
     }
 
 public:
