@@ -27,23 +27,12 @@ find_package(Doxygen)
 find_package(libfdt REQUIRED)
 
 # Options
-option(USE_SDL "Use SDL1.2 for framebuffer devices" OFF)
 option(USE_QT "Use QT for user interface" ON)
 option(BUILD_DOCUMENTATION "Build the Doxygen HTML documentation (requires Doxygen)" OFF)
 option(RABBITS_ENABLE_TESTING "Enable tests building" OFF)
 option(BUILD_RABBITS_EXECUTABLE "Build the rabbits executable. If off, only the library is built" ON)
 
 set(EXTRA_LIBS ${EXTRA_LIBS} ${CMAKE_THREAD_LIBS_INIT} ${LIBFDT_LIBRARIES})
-
-if(USE_SDL)
-    set(SDL_BUILDING_LIBRARY ON)
-    find_package(SDL)
-    if(SDL_FOUND)
-        set(RABBITS_CONFIG_SDL 1)
-        include_directories(${SDL_INCLUDE_DIR})
-        set(EXTRA_LIBS ${EXTRA_LIBS} ${SDL_LIBRARY})
-    endif()
-endif()
 
 if(USE_QT)
     set(CMAKE_INCLUDE_CURRENT_DIR ON)

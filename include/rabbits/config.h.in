@@ -20,7 +20,6 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-#cmakedefine RABBITS_CONFIG_SDL
 #cmakedefine RABBITS_CONFIG_QT
 #cmakedefine RABBITS_CONFIG_POSIX
 #cmakedefine RABBITS_CONFIG_WIN32
