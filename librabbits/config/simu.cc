@@ -63,20 +63,15 @@ void SimulationManager::start()
 
     LOG(APP, DBG) << "End of UI\n";
 
-    switch(ui_es) {
-    case Ui::WANT_QUIT:
+    if (ui_es == Ui::WANT_QUIT && sc_get_status() != SC_STOPPED) {
         /* in case the event loop ended while sysc is running
          * (e.g. window closed) */
-        if(sc_get_status() != SC_STOPPED) {
-            LOG(APP, DBG) << "Stopping simulation\n";
-            m_sysc_stopper.stop();
-        }
-
-        /* Fallthrough */
-    case Ui::CONTINUE:
-        LOG(APP, DBG) << "Waiting for simulation to end\n";
-        simu_thread.join();
+        LOG(APP, DBG) << "Stopping simulation\n";
+        m_sysc_stopper.stop();
     }
+
+    LOG(APP, DBG) << "Waiting for simulation to end\n";
+    simu_thread.join();
 
     LOG(APP, DBG) << "Exiting simulation manager\n";
 }
