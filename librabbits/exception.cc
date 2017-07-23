@@ -93,7 +93,13 @@ void RabbitsException::make_backtrace() {
 
             split_trace(strings[i], obj, symbol, offset, address);
 
-            demangled = abi::__cxa_demangle(symbol.c_str(), demangled, &dem_size, &status);
+            char *ret = abi::__cxa_demangle(symbol.c_str(), demangled, &dem_size, &status);
+
+            if (ret != nullptr && ret != demangled) {
+                /* realloc'ed */
+                demangled = ret;
+            }
+
             if (!status) {
                 symbol = demangled;
             }
