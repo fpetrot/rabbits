@@ -138,9 +138,20 @@ endfunction(rabbits_install_configs)
 
 function(rabbits_install_res n)
     get_property(__res GLOBAL PROPERTY RABBITS_RES_LIST)
-    if(__res)
-        install(FILES ${__res} DESTINATION ${RABBITS_RES_DIR}/${n})
-    endif()
+
+    foreach (r IN LISTS __res)
+        set(inv_prop "RABBITS_RES_MAP_INV_${r}")
+        set(dest_prop "RABBITS_RES_MAP_DEST_${r}")
+
+        get_property(inv GLOBAL PROPERTY "${inv_prop}")
+        get_property(dest GLOBAL PROPERTY "${dest_prop}")
+
+        set(final_dest "${RABBITS_RES_DIR}/${inv}/${dest}")
+        get_filename_component(final_dir ${final_dest} DIRECTORY)
+        get_filename_component(final_name ${final_dest} NAME)
+
+        install(FILES "${r}" DESTINATION "${final_dir}" RENAME "${final_name}")
+    endforeach()
 endfunction(rabbits_install_res)
 
 # vim: ts=4 sts=4 sw=4 expandtab

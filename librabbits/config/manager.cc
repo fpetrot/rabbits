@@ -44,9 +44,26 @@ ConfigManager::ConfigManager()
     , m_root_loggers(m_global_params, *this)
     , m_dynloader(*this)
 {
+    add_global_params();
+    configure_root_loggers();
+    configure_resource_manager();
+}
+
+ConfigManager::~ConfigManager()
+{
+    delete m_ui;
+}
+
+void ConfigManager::add_global_params()
+{
     add_global_param("config-dir",
                      Parameter<string>("Global configuration directory",
                                        RABBITS_CONFIG_PATH));
+
+    add_global_param("resource-dir",
+                     Parameter<string>("Base resources directory",
+                                       RABBITS_RES_PATH,
+                                       true));
 
     add_global_param("selected-platform",
                      Parameter<string>("The selected platform",
@@ -88,6 +105,10 @@ ConfigManager::ConfigManager()
                                      "(equivalent to `-global.log-level trace')",
                                      false));
 
+}
+
+void ConfigManager::configure_root_loggers()
+{
     Logger &sim = m_root_loggers.get_logger(LogContext::SIM);
     sim.set_custom_banner([] (Logger &l, const std::string &banner) {
         l << format::purple << "[sim]";
@@ -101,9 +122,9 @@ ConfigManager::ConfigManager()
     m_root_loggers.reconfigure();
 }
 
-ConfigManager::~ConfigManager()
+void ConfigManager::configure_resource_manager()
 {
-    delete m_ui;
+    m_resource_manager.set_base_dir(m_global_params["resource-dir"].as<string>());
 }
 
 void ConfigManager::apply_aliases()
@@ -236,6 +257,7 @@ void ConfigManager::recompute_config()
     m_is_recomputing_config = false;
 
     m_root_loggers.reconfigure();
+    configure_resource_manager();
 }
 
 void ConfigManager::apply_description(PlatformDescription &d)

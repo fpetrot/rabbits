@@ -69,18 +69,34 @@ function(rabbits_add_configs)
         ${ARGN})
 endfunction(rabbits_add_configs)
 
-function(rabbits_add_res)
+function(rabbits_add_resource source inventory)
     rabbits_add_files_to_collection(
         RABBITS_RES_LIST
         "List of resources files"
         "List of resources files"
-        ${ARGN})
+        ${source})
     rabbits_add_files_to_collection(
         RABBITS_ALL_RES_LIST
         "List of all resources files"
         "List of all resources files"
-        ${ARGN})
-endfunction(rabbits_add_res)
+        ${source})
+
+    if(NOT IS_ABSOLUTE "${source}")
+        get_filename_component(abs_source "${source}" ABSOLUTE)
+    endif()
+
+    set(inv_prop "RABBITS_RES_MAP_INV_${abs_source}")
+    set(dest_prop "RABBITS_RES_MAP_DEST_${abs_source}")
+
+    set_property(GLOBAL PROPERTY "${inv_prop}" "${inventory}")
+
+    if (${ARGC} STREQUAL 3)
+        set_property(GLOBAL PROPERTY "${dest_prop}" "${ARGV2}")
+    else()
+        set_property(GLOBAL PROPERTY "${dest_prop}" "${source}")
+    endif()
+
+endfunction(rabbits_add_resource)
 
 function(rabbits_add_tests)
     rabbits_add_files_to_collection(

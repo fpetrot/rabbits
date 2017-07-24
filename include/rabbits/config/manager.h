@@ -30,6 +30,7 @@
 #include "rabbits/component/manager.h"
 #include "rabbits/backend/manager.h"
 #include "rabbits/plugin/manager.h"
+#include "rabbits/resource/manager.h"
 #include "rabbits/dynloader/dynloader.h"
 #include "rabbits/logger/has_logger.h"
 #include "rabbits/logger/wrapper.h"
@@ -61,6 +62,8 @@ private:
     ComponentManager m_components;
     BackendManager m_backends;
     PluginManager m_plugins;
+
+    ResourceManager m_resource_manager;
 
     SimulationManager * m_simu_manager = nullptr;
 
@@ -108,6 +111,11 @@ private:
 
     void build_cmdline_unaries(std::set<std::string> &unaries) const;
 
+    /* Called by constructor */
+    void add_global_params();
+    void configure_root_loggers();
+    void configure_resource_manager();
+
 public:
     static ConfigManager & get() { return *m_config; }
     static void set_config_manager(ConfigManager &c) { m_config = &c; }
@@ -147,6 +155,7 @@ public:
     /* HasLoggerIface */
     Logger & get_logger(LogContext::value context) const { return m_root_loggers.get_logger(context); }
 
+    ResourceManager & get_resource_manager() { return m_resource_manager; }
 
     /* Module managers */
     ComponentManager & get_component_manager() { return m_components; }
