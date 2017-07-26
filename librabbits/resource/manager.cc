@@ -44,7 +44,7 @@ ResourceInventory & ResourceManager::get_inventory(const std::string &dir)
 {
     if (m_dirs.find(dir) == m_dirs.end()) {
         path p(m_base);
-        p.append(dir);
+        p /= dir;
 
         if (!is_directory(p)) {
             LOG(APP, DBG) << "resource inventory " << p << " is not a directory\n";
@@ -61,8 +61,8 @@ Resource & ResourceManager::RMInventory::get_resource(const std::string &p_s)
 {
     if (m_res.find(p_s) == m_res.end()) {
         path p(m_base);
-        p.append(m_inv);
-        p.append(p_s);
+        p /= m_inv;
+        p /= p_s;
 
         if (!is_regular(p)) {
             LOG(APP, DBG) << "resource " << p << " is not a regular file\n";
