@@ -23,10 +23,11 @@
 #include "rabbits/config/manager.h"
 
 #include "ui.h"
-#include "surface.h"
 #include "tester.h"
 
+#ifdef RABBITS_CONFIG_QT_FRAMEBUFFER
 #include "view/framebuffer.h"
+#endif
 #include "view/webkit.h"
 
 #include <QApplication>
@@ -143,10 +144,14 @@ QtUi::~QtUi()
 UiViewFramebufferIface* QtUi::create_framebuffer(const std::string &name,
                                                  const FramebufferInfo &info)
 {
+#ifdef RABBITS_CONFIG_QT_FRAMEBUFFER
 	QtUiViewFramebuffer *fb = new QtUiViewFramebuffer(m_tabs, name, info);
     m_tabs->addTab(fb, QString::fromStdString(name));
 
     return fb;
+#else
+    return nullptr;
+#endif
 }
 
 UiViewWebkitIface* QtUi::create_webkit(const std::string &name,

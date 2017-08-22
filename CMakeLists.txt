@@ -42,7 +42,14 @@ if(USE_QT)
     find_package(Qt5OpenGL REQUIRED)
     find_package(OpenGL)
     set(RABBITS_CONFIG_QT 1)
+    set(RABBITS_CONFIG_QT_FRAMEBUFFER 1)
     set(EXTRA_LIBS ${EXTRA_LIBS} Qt5::Widgets Qt5::WebKitWidgets Qt5::OpenGL ${OPENGL_LIBRARIES})
+
+    if (${Qt5OpenGL_VERSION} VERSION_LESS "5.4")
+        # Version too old for framebuffer rendering
+        set(RABBITS_CONFIG_QT_FRAMEBUFFER 0)
+        message(WARNING "Qt5OpenGL minimum version 5.4 required. Disabling framebuffer rendering")
+    endif()
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -71,7 +78,7 @@ if(UNIX)
 elseif(WIN32)
     set(RABBITS_CONFIG_WIN32 1)
 else()
-    message(FATAL_ERROR, "Unsupported operating system")
+    message(FATAL_ERROR "Unsupported operating system")
 endif()
 
 include_directories(
