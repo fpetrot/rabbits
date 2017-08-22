@@ -20,7 +20,7 @@
 #include <sstream>
 #include <boost/algorithm/string.hpp>
 
-#include "chardev-connection-helper.h"
+#include "connection-helper.h"
 #include "rabbits/platform/parser.h"
 #include "rabbits/platform/builder.h"
 #include "rabbits/config/manager.h"
@@ -29,7 +29,7 @@ using std::vector;
 using std::string;
 using std::stringstream;
 
-bool CharDevConnectionHelperPlugin::stdio_is_locked(PlatformParser &p)
+bool ConnectionHelperPlugin::stdio_is_locked(PlatformParser &p)
 {
     if (m_stdio_locked) {
         return true;
@@ -46,12 +46,12 @@ bool CharDevConnectionHelperPlugin::stdio_is_locked(PlatformParser &p)
     return m_stdio_locked;
 }
 
-string CharDevConnectionHelperPlugin::get_param(const string comp) const
+string ConnectionHelperPlugin::get_param(const string comp) const
 {
     return "connect-" + comp + "-to";
 }
 
-string CharDevConnectionHelperPlugin::gen_unique_name(const string &type)
+string ConnectionHelperPlugin::gen_unique_name(const string &type)
 {
     stringstream ss;
 
@@ -61,20 +61,21 @@ string CharDevConnectionHelperPlugin::gen_unique_name(const string &type)
     return ss.str();
 }
 
-void CharDevConnectionHelperPlugin::create_params(const PluginHookAfterComponentInst &h)
+void ConnectionHelperPlugin::create_params(const PluginHookAfterComponentInst &h)
 {
     for (auto &node : m_char_nodes) {
         const string param = get_param(node->get_name());
         const string descr = "Connect the character port of component `" + node->get_name()
             + "` to a character backend "
-            "(valid values are `null`, `stdio`, `serial,/path/to/tty`, `socket,tcp|udp|unix,address[,server][,nowait]`)";
+            "(valid values are `null`, `stdio`, `serial,/path/to/tty`, "
+            "`socket,tcp|udp|unix,address[,server][,nowait]`)";
 
         m_params.add(param, Parameter<string>(descr, ""));
         h.get_builder().get_config().add_param_alias(param, m_params[param]);
     }
 }
 
-void CharDevConnectionHelperPlugin::parse_params(const PluginHookAfterComponentInst &h)
+void ConnectionHelperPlugin::parse_params(const PluginHookAfterComponentInst &h)
 {
     for (auto &node : m_char_nodes) {
         const string param = get_param(node->get_name());
@@ -150,7 +151,7 @@ void CharDevConnectionHelperPlugin::parse_params(const PluginHookAfterComponentI
     }
 }
 
-void CharDevConnectionHelperPlugin::hook(const PluginHookAfterComponentInst &h)
+void ConnectionHelperPlugin::hook(const PluginHookAfterComponentInst &h)
 {
     PlatformParser &parser = h.get_parser();
     parser.get_root().find_component_by_attr("char-port", m_char_nodes);
@@ -161,7 +162,7 @@ void CharDevConnectionHelperPlugin::hook(const PluginHookAfterComponentInst &h)
     parse_params(h);
 }
 
-void CharDevConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, Port &p, bool to_stdio)
+void ConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, Port &p, bool to_stdio)
 {
     if (p.is_connected()) {
         MLOG(APP, TRC) << "Port " << p.full_name() << " already connected. Skipping.\n";
@@ -203,7 +204,7 @@ void CharDevConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, P
     p.connect(backend->get_port(char_ports.front()), PlatformDescription::INVALID_DESCRIPTION);
 }
 
-void CharDevConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, ComponentBase &comp, bool to_stdio)
+void ConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, ComponentBase &comp, bool to_stdio)
 {
     const vector<string> char_ports = comp.get_attr("char-port");
 
@@ -215,7 +216,7 @@ void CharDevConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, C
     }
 }
 
-void CharDevConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, ParserNodeComponent &node)
+void ConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, ParserNodeComponent &node)
 {
     ComponentBase *comp = node.get_inst();
     assert(comp != nullptr);
@@ -223,7 +224,7 @@ void CharDevConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, P
     autoconnect(h, *comp, true);
 }
 
-void CharDevConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, ParserNodeBackend &node)
+void ConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, ParserNodeBackend &node)
 {
     ComponentBase *comp = node.get_inst();
     assert(comp != nullptr);
@@ -231,7 +232,7 @@ void CharDevConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, P
     autoconnect(h, *comp, false);
 }
 
-void CharDevConnectionHelperPlugin::hook(const PluginHookAfterBuild &h)
+void ConnectionHelperPlugin::hook(const PluginHookAfterBuild &h)
 {
     for (auto &node : m_char_nodes) {
         autoconnect(h, *node);

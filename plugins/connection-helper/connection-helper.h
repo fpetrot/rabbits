@@ -17,17 +17,15 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _RABBITS_PLUGINS_CHARDEV_CONNECTION_HELPER_CHARDEV_CONNECTION_HELPER_H
-#define _RABBITS_PLUGINS_CHARDEV_CONNECTION_HELPER_CHARDEV_CONNECTION_HELPER_H
+#pragma once
 
 #include <rabbits/plugin/plugin.h>
-
 #include <rabbits/platform/parser.h>
 
 class Port;
 class ComponentBase;
 
-class CharDevConnectionHelperPlugin : public Plugin {
+class ConnectionHelperPlugin : public Plugin {
 private:
     bool m_stdio_locked = false;
     int m_unique_idx = 0;
@@ -36,18 +34,6 @@ private:
 
 protected:
     bool stdio_is_locked(PlatformParser &p);
-
-public:
-    CharDevConnectionHelperPlugin(const std::string &name,
-                                  const Parameters &params,
-                                  ConfigManager &config)
-        : Plugin(name, params, config)
-    {}
-
-    virtual ~CharDevConnectionHelperPlugin() {}
-
-    virtual void hook(const PluginHookAfterComponentInst &);
-    virtual void hook(const PluginHookAfterBuild &);
 
     std::string get_param(const std::string comp) const;
     std::string gen_unique_name(const std::string & type);
@@ -59,6 +45,16 @@ public:
     void autoconnect(const PluginHookAfterBuild &h, ParserNodeComponent &);
     void autoconnect(const PluginHookAfterBuild &h, ComponentBase &, bool to_stdio);
     void autoconnect(const PluginHookAfterBuild &h, Port &, bool to_stdio);
-};
 
-#endif
+public:
+    ConnectionHelperPlugin(const std::string &name,
+                                  const Parameters &params,
+                                  ConfigManager &config)
+        : Plugin(name, params, config)
+    {}
+
+    virtual ~ConnectionHelperPlugin() {}
+
+    void hook(const PluginHookAfterComponentInst &);
+    void hook(const PluginHookAfterBuild &);
+};
