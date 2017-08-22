@@ -23,9 +23,11 @@
 #include "rabbits/config/manager.h"
 
 #include "ui.h"
+#include "surface.h"
+#include "tester.h"
+
 #include "view/framebuffer.h"
 #include "view/webkit.h"
-#include "tester.h"
 
 #include <QApplication>
 #include <QWebView>
@@ -38,63 +40,6 @@
 #include <QTabWidget>
 
 QtUi * QtUi::m_inst = nullptr;
-
-class MainEventFilter: public QObject
-{
-private:
-    QTabWidget *m_tabs;
-
-public:
-    MainEventFilter(QTabWidget *tabs) : QObject()
-    {
-        m_tabs = tabs;
-    };
-    ~MainEventFilter() {};
-
-    bool webkit_create(QEvent *event)
-    {
-        WebkitCreateEvent *create_ev;
-        create_ev = reinterpret_cast<WebkitCreateEvent*>(event);
-        QtUiViewWebkit *webkit = create_ev->get_webkit();
-
-        QWebView *boardView = new QWebView(m_tabs);
-
-        QString tab_name(QString::fromStdString(webkit->get_name()));
-        m_tabs->addTab(boardView, tab_name);
-
-        boardView->load(QUrl(QString::fromStdString(webkit->get_url())));
-
-        webkit->set_view(boardView);
-
-        QWebFrame *frame = boardView->page()->mainFrame();
-        frame->addToJavaScriptWindowObject("bridge", new WebkitBridge(webkit));
-        return true;
-    }
-
-    bool webkit_exec(QEvent *event)
-    {
-        WebkitExecEvent *exec_ev;
-        exec_ev = reinterpret_cast<WebkitExecEvent *>(event);
-        QtUiViewWebkit *webkit = exec_ev->get_webkit();
-        QWebFrame * frame = webkit->get_view()->page()->mainFrame();
-
-        frame->evaluateJavaScript(exec_ev->get_js());
-        return true;
-    }
-
-    bool eventFilter(QObject *object, QEvent *event)
-    {
-        const QEvent::Type ev = event->type();
-
-        if(ev == WEBKIT_CREATE_EVENT) {
-            return webkit_create(event);
-        } else if (ev == WEBKIT_EXEC_EVENT) {
-            return webkit_exec(event);
-        } else {
-            return QObject::eventFilter(object, event);
-        }
-    }
-};
 
 void QtUi::qt_msg_handler_entry(QtMsgType type,
                                 const QMessageLogContext &context,
@@ -154,10 +99,10 @@ void QtUi::setup_window()
     /* Tabs */
     QTabWidget *tabs = new QTabWidget(window);
     tabs->setMinimumSize(QSize(640, 480));
-    m_app->installEventFilter(new MainEventFilter(tabs));
     window->setCentralWidget(tabs);
 
     window->show();
+    m_tabs = tabs;
 }
 
 QtUi::QtUi(ConfigManager &config)
@@ -196,17 +141,19 @@ QtUi::~QtUi()
 }
 
 UiViewFramebufferIface* QtUi::create_framebuffer(const std::string &name,
-                                                 const UiFramebufferInfo &info)
+                                                 const FramebufferInfo &info)
 {
-    return nullptr;
+	QtUiViewFramebuffer *fb = new QtUiViewFramebuffer(m_tabs, name, info);
+    m_tabs->addTab(fb, QString::fromStdString(name));
+
+    return fb;
 }
 
 UiViewWebkitIface* QtUi::create_webkit(const std::string &name,
                                        const std::string &url)
 {
-    QtUiViewWebkit *webkit = new QtUiViewWebkit(name, m_app, url);
-
-    m_app->postEvent(m_app, new WebkitCreateEvent(webkit));
+    QtUiViewWebkit *webkit = new QtUiViewWebkit(m_tabs, name, url);
+    m_tabs->addTab(webkit, QString::fromStdString(name));
 
     return webkit;
 }

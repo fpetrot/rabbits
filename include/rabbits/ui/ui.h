@@ -48,7 +48,7 @@ public:
     virtual ~Ui() {}
 
     virtual UiViewFramebufferIface* create_framebuffer(const std::string &name,
-                                                       const UiFramebufferInfo &info) = 0;
+                                                       const FramebufferInfo &info) = 0;
 
     virtual UiViewWebkitIface* create_webkit(const std::string &name,
                                              const std::string &url) = 0;

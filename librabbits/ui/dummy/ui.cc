@@ -34,7 +34,7 @@ DummyUi::~DummyUi()
 }
 
 UiViewFramebufferIface* DummyUi::create_framebuffer(const std::string &name,
-                                                    const UiFramebufferInfo &info)
+                                                    const FramebufferInfo &info)
 {
     return nullptr;
 }

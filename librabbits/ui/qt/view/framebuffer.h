@@ -23,15 +23,36 @@
 #include "rabbits/ui/view/framebuffer.h"
 
 #include "../view.h"
+#include "../surface.h"
+
+class QLabel;
+class QLayout;
 
 class QtUiViewFramebuffer: public QtUiView, public UiViewFramebufferIface
 {
+    Q_OBJECT
+private:
+    Surface *m_view;
+    QLabel *m_status_lbl;
+    QLayout *m_layout;
+    FramebufferInfo m_info;
+
+    bool m_status_enabled = false;
+    bool m_has_backlight = false;
+    uint8_t m_backlight_lvl = 0;
+
+    void enable_status();
+    void disable_status();
+    void update_status();
+
 public:
-    QtUiViewFramebuffer(const std::string &name, QApplication *app,
-                        const UiFramebufferInfo & info);
+    QtUiViewFramebuffer(QWidget *parent, const std::string &name,
+                        const FramebufferInfo & info);
     virtual ~QtUiViewFramebuffer() {}
 
-    void set_info(const UiFramebufferInfo & info);
+    void set_info(const FramebufferInfo & info);
+    void set_palette(const std::vector<uint32_t> &palette);
+    void set_backlight_level(uint8_t lvl);
 };
 
 #endif

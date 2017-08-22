@@ -32,7 +32,7 @@ public:
     virtual ~DummyUi();
 
     UiViewFramebufferIface* create_framebuffer(const std::string &name,
-                                               const UiFramebufferInfo &info);
+                                               const FramebufferInfo &info);
 
     UiViewWebkitIface* create_webkit(const std::string &name,
                                      const std::string &url);

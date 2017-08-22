@@ -19,17 +19,9 @@
 #ifndef _RABBITS_UI_VIEW_H
 #define _RABBITS_UI_VIEW_H
 
-#include <string>
-
 class UiView {
-protected:
-    std::string m_name;
-
 public:
-    UiView(const std::string &name) : m_name(name) {}
-    virtual ~UiView() {}
-
-    const std::string & get_name() const { return m_name; }
+    virtual const std::string & get_name() const = 0;
 };
 
 

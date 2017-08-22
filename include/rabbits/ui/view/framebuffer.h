@@ -1,6 +1,6 @@
 /*
  *  This file is part of Rabbits
- *  Copyright (C) 2015  Clement Deschamps and Luc Michel
+ *  Copyright (C) 2017  Clement Deschamps and Luc Michel
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -16,28 +16,15 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#ifndef _RABBITS_UI_VIEW_FRAMEBUFFER_H
-#define _RABBITS_UI_VIEW_FRAMEBUFFER_H
 
-enum eUiFramebufferMode
-{
-    FB_MODE_RGB888 = 0,
-    FB_MODE_RGB565,
-};
+#pragma once
 
-struct UiFramebufferInfo
-{
-    int physical_w, physical_h;
-    int virtual_w, virtual_h;
-    int pitch;
-    int x_offset, y_offset;
-    eUiFramebufferMode mode;
-    void * buf;
-};
+#include <vector>
+#include "rabbits/datatypes/framebuffer.h"
 
 class UiViewFramebufferIface {
 public:
-    virtual void set_info(const UiFramebufferInfo &) = 0;
+    virtual void set_info(const FramebufferInfo &) = 0;
+    virtual void set_palette(const std::vector<uint32_t> &palette) = 0;
+    virtual void set_backlight_level(uint8_t lvl) = 0;
 };
-
-#endif

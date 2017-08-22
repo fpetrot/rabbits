@@ -19,18 +19,21 @@
 #ifndef _RABBITS_LIBRABBITS_UI_QT_VIEW_H
 #define _RABBITS_LIBRABBITS_UI_QT_VIEW_H
 
+#include <string>
+#include <QWidget>
+
 #include "rabbits/ui/view.h"
 
-class QApplication;
+class QtUiView : public QWidget, public UiView {
+    Q_OBJECT
 
-class QtUiView : public UiView {
 protected:
-    QApplication *m_app;
+    std::string m_name;
 
 public:
-    QtUiView(const std::string &name, QApplication *app)
-        : UiView(name), m_app(app) {}
+    QtUiView(QWidget *parent, const std::string &name);
     virtual ~QtUiView() {}
 
+    const std::string & get_name() const { return m_name; }
 };
 #endif

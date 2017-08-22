@@ -26,17 +26,17 @@
 #include "rabbits/logger/wrapper.h"
 #include "rabbits/ui/ui.h"
 
-#include "events.h"
-
 #include <QObject>
 
 class QApplication;
+class QTabWidget;
 
 class QtUi: public Ui, public HasLoggerIface
 {
 private:
     LoggerWrapper m_loggers;
     QApplication *m_app = nullptr;
+    QTabWidget *m_tabs = nullptr;
 
     /* Custom argc/argv construction for Qt */
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
@@ -72,7 +72,7 @@ public:
     virtual ~QtUi();
 
     UiViewFramebufferIface* create_framebuffer(const std::string &name,
-                                               const UiFramebufferInfo &info);
+                                               const FramebufferInfo &info);
 
     UiViewWebkitIface* create_webkit(const std::string &name,
                                      const std::string &url);

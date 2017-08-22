@@ -25,47 +25,49 @@
 
 #include "../view.h"
 
-#include <QWebView>
+class QWebView;
 
 class QtUiViewWebkit : public QtUiView, public UiViewWebkitIface
 {
+    Q_OBJECT
 protected:
-    QWebView *m_view;
+    QWebView *m_view = nullptr;
+
     std::string m_url;
-    std::vector<std::string> m_updates;
     std::vector<UiWebkitEventListener*> m_listeners;
 
 public:
-    QtUiViewWebkit(const std::string &name, QApplication *app,
-                   const std::string & url);
+    QtUiViewWebkit(QWidget *parent, const std::string &name,
+                   const std::string &url);
 
     void exec_js(const std::string & js);
     void register_event_listener(UiWebkitEventListener &l);
 
-    void event(const std::string &ev);
-
     const std::string & get_url() const { return m_url; }
 
-    void set_view(QWebView *view) { m_view = view; }
-    QWebView * get_view() { return m_view; }
+signals:
+    void request_exec_js(const QString &);
+
+public slots:
+    void do_exec_js(const QString &);
+    void js_event(const QString &);
 };
 
-class WebkitBridge : public QObject
-{
-protected:
+class JavascripCallback : public QObject {
     Q_OBJECT
+protected:
     QtUiViewWebkit *m_webkit;
 
 public:
-    WebkitBridge(QtUiViewWebkit *webkit) : QObject(webkit->get_view())
-    {
-        m_webkit = webkit;
-    }
+    JavascripCallback(QObject *parent) : QObject(parent) {}
 
     Q_INVOKABLE void callback(QString id) {
         LOG_F(APP, DBG, "webkit-bridge: %s\n", id.toUtf8().data());
-        m_webkit->event(id.toUtf8().constData());
+        emit report_js_event(id);
     }
+
+signals:
+    void report_js_event(const QString &);
 };
 
 #endif

@@ -18,22 +18,38 @@
  */
 
 #include "webkit.h"
-#include "../events.h"
 
-#include <QApplication>
+#include <QWebFrame>
+#include <QVBoxLayout>
+#include <QWebView>
 
-/* AUTOMOC webkit.h */
-#include "moc_webkit.cpp"
-
-QtUiViewWebkit::QtUiViewWebkit(const std::string &name, QApplication *app,
+QtUiViewWebkit::QtUiViewWebkit(QWidget *parent, const std::string &name,
                                const std::string & url)
-    : QtUiView(name, app), m_url(url)
-{}
-
-void QtUiViewWebkit::exec_js(const std::string & js)
+    : QtUiView(parent, name), m_url(url)
 {
-    WebkitExecEvent *ev = new WebkitExecEvent(this, QString::fromStdString(js));
-    m_app->postEvent(m_view, ev);
+    QVBoxLayout *layout = new QVBoxLayout(this);
+    m_view = new QWebView;
+
+    m_view->load(QUrl(QString::fromStdString(url)));
+    layout->addWidget(m_view);
+
+    JavascripCallback *js = new JavascripCallback(this);
+    QWebFrame *frame = m_view->page()->mainFrame();
+    frame->addToJavaScriptWindowObject("bridge", js);
+    connect(js, SIGNAL(report_js_event(QString)), this, SLOT(js_event(QString)));
+
+    connect(this, SIGNAL(request_exec_js(QString)), this, SLOT(do_exec_js(QString)));
+}
+
+void QtUiViewWebkit::exec_js(const std::string &js)
+{
+    emit request_exec_js(QString::fromStdString(js));
+}
+
+void QtUiViewWebkit::do_exec_js(const QString &js)
+{
+    QWebFrame * frame = m_view->page()->mainFrame();
+    frame->evaluateJavaScript(js);
 }
 
 void QtUiViewWebkit::register_event_listener(UiWebkitEventListener &l)
@@ -41,9 +57,9 @@ void QtUiViewWebkit::register_event_listener(UiWebkitEventListener &l)
     m_listeners.push_back(&l);
 }
 
-void QtUiViewWebkit::event(const std::string &ev)
+void QtUiViewWebkit::js_event(const QString &id)
 {
     for (auto *l : m_listeners) {
-        l->webkit_event(ev);
+        l->webkit_event(id.toUtf8().constData());
     }
 }
