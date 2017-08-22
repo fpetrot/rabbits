@@ -25,33 +25,35 @@
 
 template <unsigned int BUSWIDTH = 32>
 class SlaveTester : public Master<> {
+protected:
+    void connect_component(ComponentBase &c, const std::string &attr)
+    {
+        const std::vector<std::string> &pname = c.get_attr(attr);
+
+        if (pname.size() > 1) {
+            throw TestFailureException("Tested component has multiple tlm target or bus ports. "
+                                       "Not supported yet.");
+        }
+
+        p_bus.connect(c.get_port(pname.front()));
+    }
+
 public:
     SlaveTester(sc_core::sc_module_name n, ConfigManager &c) : Master(n, c) {}
 
     virtual ~SlaveTester() {}
 
-    void connect_slave(ComponentBase &c)
+    void connect_component(ComponentBase &c)
     {
-        if (!c.has_attr("tlm-target")) {
-            throw TestFailureException("Missing tlm-target attribute "
+        if (c.has_attr("tlm-target")) {
+            connect_component(c, "tlm-target-port");
+        } else if (c.has_attr("tlm-bus")) {
+            connect_component(c, "tlm-bus-port");
+        } else {
+            throw TestFailureException("Missing tlm-target or tlm-bus attribute "
                                        "on tested component. "
                                        "Can't connect it to the slave tester.");
         }
-
-        if (!c.has_attr("tlm-target-port")) {
-            throw TestFailureException("Missing tlm-target-port attribute "
-                                       "on tested component. "
-                                       "Can't connect it to the slave tester.");
-        }
-
-        const std::vector<std::string> &pname = c.get_attr("tlm-target-port");
-
-        if (pname.size() > 1) {
-            throw TestFailureException("Tested component has multiple tlm target ports. "
-                                       "Not supported yet.");
-        }
-
-        p_bus.connect(c.get_port(pname.front()));
     }
 
     void bus_write_u8(uint64_t addr, uint8_t data) {
