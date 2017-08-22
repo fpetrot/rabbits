@@ -138,7 +138,8 @@ protected:
         throw TestFailureException(m_name, what, get_current_file(), get_current_line());
     }
 
-    ComponentBase * create_component_by_implem(const std::string name, const std::string yml_params);
+    ComponentBase * create_component_by_implem(const std::string &name, const std::string &yml_params);
+    ComponentBase * create_component_by_type(const std::string &type, const std::string &yml_params);
 
     void test_assert(bool assertion, const std::string &lit_assert)
     {
@@ -227,6 +228,7 @@ protected:
         try {
             unit();
         } catch (TestFailureException e) {
+            sc_core::sc_stop();
             set_test_failed();
             LOG(APP, ERR) << e.what() << "\n";
         }

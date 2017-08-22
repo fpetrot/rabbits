@@ -23,8 +23,8 @@ namespace test {
 
 std::set<TestFactory*> * TestFactory::m_insts = NULL;
 
-ComponentBase * TestBase::create_component_by_implem(const string implem,
-                                               const string yml_params)
+ComponentBase * TestBase::create_component_by_implem(const string &implem,
+                                                     const string &yml_params)
 {
     ComponentManager &cm = get_config().get_component_manager();
     ComponentManager::Factory cf = cm.find_by_implem(implem);
@@ -37,6 +37,22 @@ ComponentBase * TestBase::create_component_by_implem(const string implem,
     descr.load_yaml(yml_params);
 
     return cf->create(implem, descr);
+}
+
+ComponentBase * TestBase::create_component_by_type(const string &type,
+                                                   const string &yml_params)
+{
+    ComponentManager &cm = get_config().get_component_manager();
+    ComponentManager::Factory cf = cm.find_by_type(type);
+    PlatformDescription descr;
+
+    if (cf == NULL) {
+        return NULL;
+    }
+
+    descr.load_yaml(yml_params);
+
+    return cf->create(type, descr);
 }
 
 static int do_test(TestFactory *tf, ConfigManager &config)
@@ -155,10 +171,13 @@ static void load_test_module(DynamicLoader &dyn_loader)
 static void setup_globals(ConfigManager &cm)
 {
     cm.add_global_param("only", Parameter<string>("Only run this test", "", false));
+    cm.add_global_param("nofork", Parameter<bool>("Disable forking before a test", false, false));
 
     Parameters &p = cm.get_global_params();
     cm.add_param_alias("only",  p["only"]);
+    cm.add_param_alias("nofork", p["nofork"]);
     cm.add_param_alias("debug", p["debug"]);
+    cm.add_param_alias("trace", p["trace"]);
 }
 
 int sc_main(int argc, char *argv[])
@@ -187,13 +206,13 @@ int sc_main(int argc, char *argv[])
     load_test_module(dyn_loader);
 
     ParameterBase &only = config.get_global_params()["only"];
+    bool dofork = !config.get_global_params()["nofork"].as<bool>();
 
     for (it = TestFactory::begin(); it != TestFactory::end(); it++) {
         if (only.is_default()) {
-            result |= run_test(config, *it, true);
-        } else if (only.as<string>() == (*it)->get_name()) {
-            result |= run_test(config, *it, false);
-            break;
+            result |= run_test(config, *it, dofork);
+        } else if (only.as<string>() == (*it)->get_name().substr(0, only.as<string>().size())) {
+            result |= run_test(config, *it, dofork);
         }
     }
 
