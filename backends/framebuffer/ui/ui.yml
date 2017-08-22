@@ -1,0 +1,11 @@
+backend:
+  type: framebuffer-ui
+  description: Frambuffer backend rendered in the Rabbits user interface
+  class: FramebufferUiBackend
+  include: ui.h
+  parameters:
+    displayed-name:
+      type: string
+      description: Set the name to display in the user interface for this backend (usually the tab name)
+      default: ""
+      advanced: true
