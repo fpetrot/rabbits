@@ -49,11 +49,24 @@ public:
     typedef std::map<std::string, ParameterBase*> ParamAliases;
 
 private:
-    static ConfigManager * m_config;
+    /* Ensure root loggers are set early during the ConfigManager construction */
+    class RootLoggerSetter {
+    public:
+        RootLoggerSetter(LoggerWrapper &loggers)
+        {
+            /* Set global loggers */
+            for (int i = 0; i < LogContext::LASTLOGCONTEXT; i++) {
+                LogContext::value lc = LogContext::value(i);
+                set_logger(lc, loggers.get_logger(lc));
+            }
+        }
+    };
 
+private:
     Parameters m_global_params;
 
     LoggerWrapper m_root_loggers;
+    RootLoggerSetter m_root_logger_setter;
 
     DynamicLoader m_dynloader;
 
@@ -117,9 +130,6 @@ private:
     void configure_resource_manager();
 
 public:
-    static ConfigManager & get() { return *m_config; }
-    static void set_config_manager(ConfigManager &c) { m_config = &c; }
-
     ConfigManager();
     virtual ~ConfigManager();
 

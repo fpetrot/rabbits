@@ -37,11 +37,10 @@ using std::list;
 
 using namespace boost::filesystem;
 
-ConfigManager * ConfigManager::m_config = nullptr;
-
 ConfigManager::ConfigManager()
     : m_global_params(Namespace::get(Namespace::GLOBAL))
     , m_root_loggers(m_global_params, *this)
+    , m_root_logger_setter(m_root_loggers)
     , m_dynloader(*this)
 {
     add_global_params();

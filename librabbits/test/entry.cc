@@ -185,7 +185,6 @@ int sc_main(int argc, char *argv[])
     char *env_dynlib_paths;
 
     ConfigManager config;
-    ConfigManager::set_config_manager(config);
 
     setup_globals(config);
 

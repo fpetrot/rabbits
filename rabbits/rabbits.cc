@@ -301,7 +301,6 @@ static bool list_modules(ConfigManager &config, eRunMode mode)
 int sc_main(int argc, char *argv[])
 {
     ConfigManager config;
-    ConfigManager::set_config_manager(config);
 
     SimulationManager simu(config);
     config.set_simu_manager(simu);

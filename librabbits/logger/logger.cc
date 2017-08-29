@@ -126,18 +126,28 @@ void Logger::restore_flags()
     m_state_stack.pop();
 }
 
+static Logger * main_loggers[LogContext::LASTLOGCONTEXT] { nullptr };
+
+void set_logger(LogContext::value ctx, Logger &logger)
+{
+    main_loggers[ctx] = &logger;
+}
 
 Logger & get_logger(LogContext::value ctx)
 {
-    return ConfigManager::get().get_logger(ctx);
+    if (main_loggers[ctx] == nullptr) {
+        throw RabbitsException("No loggers available");
+    }
+
+    return *main_loggers[ctx];
 }
 
 Logger & get_app_logger()
 {
-    return ConfigManager::get().get_logger(LogContext::APP);
+    return get_logger(LogContext::APP);
 }
 
 Logger & get_sim_logger()
 {
-    return ConfigManager::get().get_logger(LogContext::SIM);
+    return get_logger(LogContext::SIM);
 }

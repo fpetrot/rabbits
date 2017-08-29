@@ -69,6 +69,7 @@
     MLOG(ctx, lvl) << Logger::format(__VA_ARGS__)
 
 
+void set_logger(LogContext::value ctx, Logger &l);
 Logger & get_logger(LogContext::value ctx);
 Logger & get_app_logger();
 Logger & get_sim_logger();
