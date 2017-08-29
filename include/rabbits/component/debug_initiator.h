@@ -63,7 +63,7 @@ public:
      *
      * @return the number of bytes effectively written.
      */
-    uint64_t debug_write(uint64_t addr, void *buf, uint64_t size);
+    uint64_t debug_write(uint64_t addr, const void *buf, uint64_t size);
 };
 
 #endif

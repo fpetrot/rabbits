@@ -40,8 +40,8 @@ uint64_t DebugInitiator::debug_read(uint64_t addr, void *buf, uint64_t size)
         p_bus.debug_read(addr, reinterpret_cast<uint8_t*>(buf), size));
 }
 
-uint64_t DebugInitiator::debug_write(uint64_t addr, void *buf, uint64_t size)
+uint64_t DebugInitiator::debug_write(uint64_t addr, const void *buf, uint64_t size)
 {
     return static_cast<uint64_t>(
-        p_bus.debug_write(addr, reinterpret_cast<uint8_t*>(buf), size));
+        p_bus.debug_write(addr, reinterpret_cast<const uint8_t*>(buf), size));
 }

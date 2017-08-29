@@ -176,9 +176,9 @@ public:
         return debug_access(tlm::TLM_READ_COMMAND, addr, data, len);
     }
 
-    unsigned int debug_write(uint64_t addr, uint8_t *data, unsigned int len)
+    unsigned int debug_write(uint64_t addr, const uint8_t *data, unsigned int len)
     {
-        return debug_access(tlm::TLM_WRITE_COMMAND, addr, data, len);
+        return debug_access(tlm::TLM_WRITE_COMMAND, addr, const_cast<uint8_t*>(data), len);
     }
 
     const std::vector<AddressRange> & get_memory_mapping()
