@@ -36,6 +36,7 @@
 #include "rabbits/logger/wrapper.h"
 #include "rabbits/ui/chooser.h"
 #include "rabbits/config/simu.h"
+#include "rabbits/utils/loader/loader.h"
 
 namespace boost {
     namespace filesystem {
@@ -79,6 +80,8 @@ private:
     ResourceManager m_resource_manager;
 
     SimulationManager * m_simu_manager = nullptr;
+
+    ImageLoader m_image_loader;
 
     /* Workaround GCC ICE for versions < 6 */
 #ifdef RABBITS_WORKAROUND_CXX11_GCC_BUGS
@@ -200,6 +203,9 @@ public:
     /* User interface */
     void create_ui(UiChooser::Hint hint = UiChooser::AUTO);
     Ui & get_ui();
+
+    /* Image loader */
+    ImageLoader & get_image_loader() { return m_image_loader; }
 };
 
 #endif
