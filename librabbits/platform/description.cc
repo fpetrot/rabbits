@@ -155,6 +155,7 @@ PlatformDescription::Node* PlatformDescription::load_json_req(JSON root_w, Node:
     NodeMap *nm = NULL;
     NodeVector *nv = NULL;
     std::stringstream ss;
+    Node::eDataTypeHint hint;
 
     switch (root.type()) {
     case NlohmannJSON::value_t::object:
@@ -176,25 +177,30 @@ PlatformDescription::Node* PlatformDescription::load_json_req(JSON root_w, Node:
             string str = root;
             ss << str;
         }
+        hint = Node::STRING;
         goto scalar;
 
     case NlohmannJSON::value_t::number_integer:
         ss << int(root);
+        hint = Node::INTEGER;
         goto scalar;
 
     case NlohmannJSON::value_t::number_unsigned:
         ss << unsigned(root);
+        hint = Node::INTEGER;
         goto scalar;
 
     case NlohmannJSON::value_t::number_float:
         ss << double(root);
+        hint = Node::FLOAT;
         goto scalar;
 
     case NlohmannJSON::value_t::boolean:
         ss << bool(root);
+        hint = Node::BOOLEAN;
 
     scalar:
-        return new NodeScalar(ss.str(), origin);
+        return new NodeScalar(ss.str(), hint, origin);
 
     case NlohmannJSON::value_t::null:
         return new NodeNil(origin);
@@ -239,7 +245,20 @@ JSON PlatformDescription::dump_json_req() const
         break;
 
     case SCALAR:
-        json = as<string>();
+        switch (m_node->get_type_hint()) {
+        case Node::INTEGER:
+            json = as<int>();
+            break;
+        case Node::FLOAT:
+            json = as<double>();
+            break;
+        case Node::BOOLEAN:
+            json = as<bool>();
+            break;
+        case Node::STRING:
+            json = as<string>();
+            break;
+        }
         break;
 
     case NIL:

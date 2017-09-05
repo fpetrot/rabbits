@@ -207,6 +207,10 @@ public:
      */
     class Node {
     public:
+        /* For scalar nodes, this hint helps serializers to convert them
+         * using appropriate syntax */
+        enum eDataTypeHint { INTEGER, FLOAT, BOOLEAN, STRING };
+
         struct Origin {
             enum eOrigin { FILE, CMDLINE, UNKNOWN };
             eOrigin origin = UNKNOWN;
@@ -248,6 +252,7 @@ public:
     protected:
         Origin m_origin;
         bool m_converted = false;
+        eDataTypeHint m_type_hint;
 
     public:
         Node() : m_ref_count(0), m_is_static(false) {}
@@ -266,8 +271,10 @@ public:
         virtual const_iterator begin() const = 0;
         virtual const_iterator end() const = 0;
         virtual const std::string & raw_data() const { throw InvalidConversionException("Invalid rawdata use"); }
-        virtual bool exists(const std::string &key) const { throw InvalidConversionException("Non-map node as no child"); }
-        virtual void remove(const std::string &key) { throw InvalidConversionException("Non-map node as no child"); }
+        virtual bool exists(const std::string &key) const { throw InvalidConversionException("Non-map node has no child"); }
+        virtual void remove(const std::string &key) { throw InvalidConversionException("Non-map node has no child"); }
+
+        virtual eDataTypeHint get_type_hint() const { throw InvalidConversionException("No type hint for non-scalar node"); }
 
         const Origin& origin() { return m_origin; }
 
@@ -436,11 +443,15 @@ public:
     class NodeScalar : public Node {
     protected:
         std::string m_val;
+        eDataTypeHint m_type_hint = STRING;
+
     public:
         NodeScalar() : Node() {}
         explicit NodeScalar(const Origin &o) : Node(o) {}
         explicit NodeScalar(std::string val) : m_val(val) {}
         NodeScalar(std::string val, const Origin &o) : Node(o), m_val(val) {}
+        NodeScalar(std::string val, eDataTypeHint type_hint, const Origin &o)
+            : Node(o), m_val(val), m_type_hint(type_hint) {}
 
         virtual NodeType type() const { return PlatformDescription::SCALAR; };
 
@@ -472,6 +483,8 @@ public:
 
         virtual const std::string & raw_data() const { return m_val; }
         void set_raw_data(const std::string &data) { m_val = data; }
+
+        eDataTypeHint get_type_hint() const { return m_type_hint; }
     };
 
 protected:
