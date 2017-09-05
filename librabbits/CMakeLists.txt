@@ -14,12 +14,13 @@ add_subdirectory(utils)
 add_subdirectory(../components ../components)
 add_subdirectory(../backends ../backends)
 add_subdirectory(../plugins ../plugins)
+add_subdirectory(../tests ../tests)
 rabbits_add_sources(
 	exception.cc
 )
 
-
 rabbits_generate_objects("librabbits")
+rabbits_generate_tests("librabbits")
 
 get_property(srcs GLOBAL PROPERTY RABBITS_SRCS_LIST)
 get_property(libs GLOBAL PROPERTY RABBITS_LIBS_LIST)
@@ -39,10 +40,5 @@ add_library(${RABBITS_TEST_LIBRARY} ${srcs})
 target_link_libraries(${RABBITS_TEST_LIBRARY} -Wl,--whole-archive ${RABBITS_LIBRARIES} -Wl,--no-whole-archive)
 
 install(TARGETS ${RABBITS_TEST_LIBRARY} DESTINATION lib EXPORT rabbits-targets)
-
-rabbits_clear_files_collections()
-
-add_subdirectory(../tests ../tests)
-rabbits_generate_tests("librabbits")
 
 rabbits_clear_files_collections()
