@@ -74,8 +74,16 @@ struct StatusBuilder<STA_FAILURE> {
 template <>
 struct StatusBuilder<STA_EVENT> {
     static void build(PlatformDescription &d) {
+        std::stringstream ss;
         PlatformDescription dd;
-        dd.load_json("{\"status\": \"event\"}");
+
+        ss <<
+            "{"
+                "\"status\": \"event\", "
+                "\"timestamp\":" << sc_core::sc_time_stamp().to_double() <<
+            "}";
+
+        dd.load_json(ss.str());
         d = d.merge(dd);
     }
 };
