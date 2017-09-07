@@ -29,6 +29,18 @@
 #include "client.h"
 #include "../../backends/stub/stub.h"
 
+class ConfigFailureException : public RabbitsException {
+protected:
+    std::string make_what(const std::string & what) {
+        return what;
+    }
+
+public:
+    ConfigFailureException(const std::string & what)
+        : RabbitsException(make_what(what)) {}
+    virtual ~ConfigFailureException() throw () {}
+};
+
 class BackendInstance;
 
 class PauseRequestListener {

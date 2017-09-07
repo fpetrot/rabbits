@@ -160,6 +160,8 @@ public:
 
         SC_METHOD(event_method);
         sensitive << p_port.sc_p;
+
+        p_port.set_autoconnect_to(0);
     }
 
     virtual ~StubBackend() {}

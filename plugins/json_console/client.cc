@@ -527,8 +527,12 @@ void JsonConsoleClient::add_event(PlatformDescription &d)
         return;
     }
 
-    SignalEvent::Ptr elt = m_parent.create_event(d, shared_from_this());
-    send_response<STA_OK, CMD_ADD_EVENT>(elt->get_name());
+    try {
+        SignalEvent::Ptr elt = m_parent.create_event(d, shared_from_this());
+        send_response<STA_OK, CMD_ADD_EVENT>(elt->get_name());
+    } catch (ConfigFailureException &e) {
+        send_response<STA_FAILURE, CMD_FAILURE_REASON>(e.what());
+    }
 }
 
 void JsonConsoleClient::read_backend(PlatformDescription &d)
@@ -601,9 +605,13 @@ void JsonConsoleClient::modify_event(PlatformDescription &d)
     }
 
     SignalEvent::Ptr gen = m_parent.get_event(name);
-    gen->reconfigure(d["params"]);
 
-    send_response<STA_OK, CMD_MODIFY_EVENT>();
+    try {
+        gen->reconfigure(d["params"]);
+        send_response<STA_OK, CMD_MODIFY_EVENT>();
+    } catch (ConfigFailureException &e) {
+        send_response<STA_FAILURE, CMD_FAILURE_REASON>(e.what());
+    }
 }
 
 void JsonConsoleClient::get_backend_status(PlatformDescription &d)

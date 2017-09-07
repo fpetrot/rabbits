@@ -65,10 +65,9 @@ protected:
 
     bool check_condition();
 
-    bool sanity_checks(PlatformDescription &d) const;
+    void configure_event_action(PlatformDescription &d);
+    void configure_cond(PlatformDescription &d);
 
-    void configure_event_action(const std::string &s);
-    void configure_cond(const std::string &s);
 public:
     TypedSignalEvent(BackendInstance &parent,
                      const std::string &name, PlatformDescription &d,
@@ -83,15 +82,19 @@ public:
 
 
 template <class T>
-bool TypedSignalEvent<T>::sanity_checks(PlatformDescription &d) const
+void TypedSignalEvent<T>::configure_event_action(PlatformDescription &d)
 {
-    /* TODO */
-    return true;
-}
+    if (d.is_invalid()) {
+        m_on_event = EVENT_IDLE;
+        return;
+    }
 
-template <class T>
-void TypedSignalEvent<T>::configure_event_action(const string &s)
-{
+    if (!d.is_scalar()) {
+        throw ConfigFailureException("invalid on-event value");
+    }
+
+    const string s = d.as<string>();
+
     if (s == "continue") {
         m_on_event = EVENT_IDLE;
     } else if (s == "pause") {
@@ -99,14 +102,24 @@ void TypedSignalEvent<T>::configure_event_action(const string &s)
     } else if (s == "stop") {
         m_on_event = EVENT_STOP;
     } else {
-        /* TODO */
-        m_on_event = EVENT_IDLE;
+        throw ConfigFailureException(string("invalid on-event value `") + s + "'");
     }
 }
 
 template <class T>
-void TypedSignalEvent<T>::configure_cond(const string &s)
+void TypedSignalEvent<T>::configure_cond(PlatformDescription &d)
 {
+    if (d.is_invalid()) {
+        m_cond = TRIG_EQ;
+        return;
+    }
+
+    if (!d.is_scalar()) {
+        throw ConfigFailureException("invalid condition value");
+    }
+
+    const string s = d.as<string>();
+
     if (s == "==" || s == "eq") {
         m_cond = TRIG_EQ;
     } else if (s == "!=" || s == "ne") {
@@ -124,29 +137,45 @@ void TypedSignalEvent<T>::configure_cond(const string &s)
     } else if (s == "always") {
         m_cond = TRIG_ALWAYS;
     } else {
-        /* TODO */
-        m_cond = TRIG_EQ;
+        throw ConfigFailureException(string("invalid condition value `") + s + "'");
     }
 }
 
 template <class T>
 void TypedSignalEvent<T>::reconfigure(PlatformDescription &d)
 {
-    if (!sanity_checks(d)) {
-        /* TODO */
-        return;
-    }
-
-    configure_event_action(d["on-event"].as<string>());
-    configure_cond(d["condition"].as<string>());
+    configure_event_action(d["on-event"]);
+    configure_cond(d["condition"]);
 
     if (m_cond == TRIG_RANGE) {
-        m_range = d["range"].as< vector<T> >();
-    } else {
-        m_value = d["value"].as<T>();
-    }
+        if (!d.exists("range")) {
+            throw ConfigFailureException("missing range");
+        }
 
-    /* TODO: catch InvalidConversionException */
+        if (!d["range"].is_vector()) {
+            throw ConfigFailureException("range must be an array");
+        }
+
+        try {
+            m_range = d["range"].as< vector<T> >();
+        } catch (PlatformDescription::InvalidConversionException &e) {
+            throw ConfigFailureException("invalid range value(s)");
+        }
+    } else {
+        if (!d.exists("value")) {
+            throw ConfigFailureException("missing value");
+        }
+
+        if (!d["value"].is_scalar()) {
+            throw ConfigFailureException("invalid value");
+        }
+
+        try {
+            m_value = d["value"].as<T>();
+        } catch (PlatformDescription::InvalidConversionException &e) {
+            throw ConfigFailureException("cannot convert value to the required type");
+        }
+    }
 }
 
 template <class T>
@@ -251,6 +280,12 @@ bool BackendInstance::create_backend()
     string backend_type("stub-");
     backend_type += m_type;
 
+    if (!m_builder->get_config()
+        .get_backend_manager().type_exists(backend_type)) {
+        set_failure(SignalGenerator::FAIL_INVALID_TYPE);
+        return false;
+    }
+
     BackendManager::Factory fact;
     fact = m_builder->get_config()
         .get_backend_manager()
@@ -320,7 +355,9 @@ void BackendInstance::set_failure(SignalElement::FailureReason r)
     m_status = SignalElement::STA_FAILURE;
     m_failure_reason = r;
 
-    m_generator->set_failure(r);
+    if (m_generator) {
+        m_generator->set_failure(r);
+    }
 
     for (auto &ev : m_events) {
         ev->set_failure(r);
