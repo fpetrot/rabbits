@@ -40,15 +40,22 @@
 class SimulationControl : public sc_core::sc_module {
 private:
     sc_core::sc_time m_period;
-    bool m_request;
+    bool m_pause_request = false;
+    bool m_stop_request = false;
 
     void pause_thread()
     {
         for (;;) {
             sc_core::wait(m_period);
-            if (m_request) {
+
+            if (m_pause_request) {
                 sc_core::sc_pause();
-                m_request = false;
+                m_pause_request = false;
+            }
+
+            if (m_stop_request) {
+                sc_core::sc_stop();
+                m_stop_request = false;
             }
         }
     }
@@ -63,7 +70,8 @@ public:
         SC_THREAD(pause_thread);
     }
 
-    void pause_request() { m_request = true; }
+    void pause_request() { m_pause_request = true; }
+    void stop_request() { m_stop_request = true; }
 };
 
 class JsonConsolePlugin : public Plugin
@@ -150,6 +158,7 @@ public:
     void start_simulation();
     void resume_simulation();
     void pause_simulation(JsonConsoleClient::Ptr);
+    void stop_simulation();
 
     /* SimuPauseListener */
     void pause_event();

@@ -341,3 +341,8 @@ void JsonConsolePlugin::pause_simulation(JsonConsoleClient::Ptr c)
     pause_request(); /* We will handle the pause event */
 }
 
+void JsonConsolePlugin::stop_simulation()
+{
+    assert(m_simu_control);
+    m_simu_control->stop_request();
+}

@@ -44,6 +44,7 @@ enum Command {
     CMD_START_SIMULATION,
     CMD_PAUSE_SIMULATION,
     CMD_RESUME_SIMULATION,
+    CMD_STOP_SIMULATION,
     CMD_ADD_BACKEND,
     CMD_ADD_GENERATOR,
     CMD_ADD_EVENT,
@@ -123,6 +124,7 @@ private:
     void start_simulation();
     void resume_simulation();
     void pause_simulation();
+    void stop_simulation();
 
     void add_backend(PlatformDescription &d);
     void add_generator(PlatformDescription &d);

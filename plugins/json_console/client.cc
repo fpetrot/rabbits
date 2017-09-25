@@ -363,6 +363,11 @@ struct CommandBuilder<CMD_PAUSE_SIMULATION> {
     static void build(PlatformDescription &d) {}
 };
 
+template <>
+struct CommandBuilder<CMD_STOP_SIMULATION> {
+    static void build(PlatformDescription &d) {}
+};
+
 
 constexpr const char * const
 CommandBuilder<CMD_GET_BACKEND_STATUS,
@@ -387,6 +392,7 @@ const JsonConsoleClient::CommandStrContainer JsonConsoleClient::COMMAND_STR {
     { "start_simulation", protocol::CMD_START_SIMULATION },
     { "pause_simulation", protocol::CMD_PAUSE_SIMULATION },
     { "resume_simulation", protocol::CMD_RESUME_SIMULATION },
+    { "stop_simulation", protocol::CMD_STOP_SIMULATION },
     { "add_backend", protocol::CMD_ADD_BACKEND },
     { "add_generator", protocol::CMD_ADD_GENERATOR },
     { "add_trigger", protocol::CMD_ADD_EVENT },
@@ -754,6 +760,19 @@ void JsonConsoleClient::pause_simulation()
     }
 }
 
+void JsonConsoleClient::stop_simulation()
+{
+    using namespace protocol;
+
+    if (m_parent.get_simulation_status() == JsonConsolePlugin::SIMULATION_RUNNING) {
+        m_parent.stop_simulation();
+        send_response<STA_OK, CMD_STOP_SIMULATION>();
+    } else {
+        const char * msg = "simulation is not running";
+        send_response<STA_FAILURE, CMD_FAILURE_REASON>(msg);
+    }
+}
+
 void JsonConsoleClient::handle_cmd(PlatformDescription &d)
 {
     using namespace protocol;
@@ -783,6 +802,9 @@ void JsonConsoleClient::handle_cmd(PlatformDescription &d)
             break;
         case CMD_PAUSE_SIMULATION:
             pause_simulation();
+            break;
+        case CMD_STOP_SIMULATION:
+            stop_simulation();
             break;
         case CMD_ADD_BACKEND:
             add_backend(d);
