@@ -28,7 +28,7 @@ QtUiViewWebkit::QtUiViewWebkit(QWidget *parent, const std::string &name,
     : QtUiView(parent, name), m_url(url)
 {
     QVBoxLayout *layout = new QVBoxLayout(this);
-    m_view = new QWebView;
+    m_view = new QWebView(this);
 
     m_view->load(QUrl(QString::fromStdString(url)));
     layout->addWidget(m_view);
@@ -61,5 +61,13 @@ void QtUiViewWebkit::js_event(const QString &id)
 {
     for (auto *l : m_listeners) {
         l->webkit_event(id.toUtf8().constData());
+    }
+}
+
+
+void QtUiViewWebkit::enterEvent(QEvent *event)
+{
+    if (!m_view->hasFocus()) {
+        m_view->setFocus();
     }
 }

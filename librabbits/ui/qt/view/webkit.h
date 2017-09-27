@@ -36,6 +36,8 @@ protected:
     std::string m_url;
     std::vector<UiWebkitEventListener*> m_listeners;
 
+    void enterEvent(QEvent *event);
+
 public:
     QtUiViewWebkit(QWidget *parent, const std::string &name,
                    const std::string &url);
