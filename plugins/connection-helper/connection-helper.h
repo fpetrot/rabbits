@@ -43,8 +43,8 @@ protected:
 
     void autoconnect(const PluginHookAfterBuild &h, ParserNodeBackend &);
     void autoconnect(const PluginHookAfterBuild &h, ParserNodeComponent &);
-    void autoconnect(const PluginHookAfterBuild &h, ComponentBase &, bool to_stdio);
-    void autoconnect(const PluginHookAfterBuild &h, Port &, bool to_stdio);
+    void autoconnect(const PluginHookAfterBuild &h, ComponentBase &, bool is_comp);
+    void autoconnect(const PluginHookAfterBuild &h, Port &, bool is_comp);
 
 public:
     ConnectionHelperPlugin(const std::string &name,

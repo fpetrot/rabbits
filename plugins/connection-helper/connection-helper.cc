@@ -24,6 +24,7 @@
 #include "rabbits/platform/parser.h"
 #include "rabbits/platform/builder.h"
 #include "rabbits/config/manager.h"
+#include "rabbits/ui/ui.h"
 
 using std::vector;
 using std::string;
@@ -162,41 +163,41 @@ void ConnectionHelperPlugin::hook(const PluginHookAfterComponentInst &h)
     parse_params(h);
 }
 
-void ConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, Port &p, bool to_stdio)
+void ConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, Port &p, bool is_comp)
 {
     if (p.is_connected()) {
         MLOG(APP, TRC) << "Port " << p.full_name() << " already connected. Skipping.\n";
         return;
     }
 
+    string backend_n;
     ComponentBase *backend = nullptr;
+    Ui::eStyle ui_style = get_config().get_ui().get_style();
     BackendManager &bm = h.get_builder().get_config().get_backend_manager();
 
-    if (to_stdio && (!stdio_is_locked(h.get_parser()))) {
-        MLOG(APP, DBG) << "Auto-connecting " << p.full_name() << " to a chardev-stdio instance\n";
-        BackendManager::Factory f = bm.find_by_type("chardev-stdio");
-
-        if (f == nullptr) {
-            MLOG(APP, ERR) << "chardev-stdio backend is unavailable. Broken Rabbits installation?\n";
-            return;
-        }
-
-        backend = f->create("conn-helper-auto-chardev-stdio", PlatformDescription::INVALID_DESCRIPTION);
+    if (is_comp && ui_style == Ui::GRAPHICAL) {
+        /* UI is graphical, use the graphical backend */
+        backend_n = "chardev-graphical";
+    } else if (is_comp && ui_style == Ui::HEADLESS && (!stdio_is_locked(h.get_parser()))) {
+        /* No graphic mode, use stdio if not already taken */
+        backend_n = "chardev-stdio";
         m_stdio_locked = true;
-
     } else {
-        MLOG(APP, DBG) << "Auto-connecting " << p.full_name() << " to a chardev-null instance\n";
-
-        BackendManager::Factory f = bm.find_by_type("chardev-null");
-
-        if (f == nullptr) {
-            MLOG(APP, ERR) << "chardev-null backend is unavailable. Broken Rabbits installation?\n";
-            return;
-        }
-
-        backend = f->create(gen_unique_name("chardev-null"),
-                            PlatformDescription::INVALID_DESCRIPTION);
+        /* Last resort, connect to a null backend */
+        backend_n = "chardev-null";
     }
+
+    MLOG(APP, DBG) << "Auto-connecting " << p.full_name()
+                   << " to a " << backend_n << " instance\n";
+
+    BackendManager::Factory f = bm.find_by_type(backend_n);
+
+    if (f == nullptr) {
+        MLOG(APP, ERR) << backend_n << " backend is unavailable. Broken Rabbits installation?\n";
+        return;
+    }
+
+    backend = f->create(gen_unique_name(backend_n), PlatformDescription::INVALID_DESCRIPTION);
 
     h.get_builder().add_backend(backend);
     const vector<string> char_ports = backend->get_attr("char-port");
@@ -204,7 +205,7 @@ void ConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, Port &p,
     p.connect(backend->get_port(char_ports.front()), PlatformDescription::INVALID_DESCRIPTION);
 }
 
-void ConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, ComponentBase &comp, bool to_stdio)
+void ConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, ComponentBase &comp, bool is_comp)
 {
     const vector<string> char_ports = comp.get_attr("char-port");
 
@@ -212,7 +213,7 @@ void ConnectionHelperPlugin::autoconnect(const PluginHookAfterBuild &h, Componen
         << char_ports.size() << " char port(s)\n";
 
     for (auto &port_name : char_ports) {
-        autoconnect(h, comp.get_port(port_name), to_stdio);
+        autoconnect(h, comp.get_port(port_name), is_comp);
     }
 }
 
