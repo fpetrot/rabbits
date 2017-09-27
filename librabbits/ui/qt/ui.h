@@ -30,6 +30,23 @@
 
 class QApplication;
 class QTabWidget;
+class QAction;
+
+class QtUiView;
+
+class TabLabelChanger : public QObject {
+    Q_OBJECT
+
+private:
+    QTabWidget* m_tabs;
+
+public:
+    TabLabelChanger(QTabWidget *tabs);
+    virtual ~TabLabelChanger() {}
+
+public slots:
+    void update_tab_label(const QString &);
+};
 
 class QtUi: public Ui, public HasLoggerIface
 {
@@ -37,6 +54,8 @@ private:
     LoggerWrapper m_loggers;
     QApplication *m_app = nullptr;
     QTabWidget *m_tabs = nullptr;
+    QAction *m_detach_action = nullptr;
+    TabLabelChanger *m_tab_lbl_changer = nullptr;
 
     /* Custom argc/argv construction for Qt */
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
@@ -66,6 +85,12 @@ private:
     void qt_msg_handler(QtMsgType type,
                         const QMessageLogContext &context,
                         const QString &msg);
+
+    void add_tab(QtUiView *view, const std::string &name);
+
+    void update_actions();
+    void detach_current_tab();
+    void reattach_tab(QtUiView *);
 
 public:
     QtUi(ConfigManager &config);

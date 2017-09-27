@@ -30,8 +30,11 @@ class QtUiView : public QWidget {
 protected:
     std::string m_name;
 
+    void closeEvent(QCloseEvent *event);
+
 signals:
     void name_changed(const QString &);
+    void window_closed();
 
 
 public:
