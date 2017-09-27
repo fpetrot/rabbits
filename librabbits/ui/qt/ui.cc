@@ -132,7 +132,6 @@ void QtUi::set_app_name()
 
 void QtUi::reattach_tab(QtUiView *v)
 {
-    LOG(APP, INF) << "attach\n";
     v->hide();
     v->setParent(m_tabs);
     m_tabs->addTab(v, QString::fromStdString(v->qt_ui_get_name()));
