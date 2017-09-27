@@ -1,0 +1,5 @@
+backend:
+  type: chardev-graphical
+  description: "Graphical character device backend"
+  class: GraphicalCharBackend
+  include: graphical.h

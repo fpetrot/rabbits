@@ -1,0 +1,5 @@
+rabbits_add_resource(addons backend-chardev-graphical addons)
+rabbits_add_resource(index.html backend-chardev-graphical index.html)
+rabbits_add_resource(main.js backend-chardev-graphical main.js)
+rabbits_add_resource(xterm.css backend-chardev-graphical xterm.css)
+rabbits_add_resource(xterm.js backend-chardev-graphical xterm.js)
