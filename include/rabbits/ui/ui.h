@@ -44,6 +44,10 @@ public:
         CONTINUE, WANT_QUIT
     };
 
+    enum eStyle {
+        HEADLESS, GRAPHICAL
+    };
+
     Ui(ConfigManager &config) : m_config(config) {}
     virtual ~Ui() {}
 
@@ -55,6 +59,8 @@ public:
 
     virtual eExitStatus run() = 0;
     virtual void stop() = 0;
+
+    virtual eStyle get_style() const = 0;
 };
 
 #endif

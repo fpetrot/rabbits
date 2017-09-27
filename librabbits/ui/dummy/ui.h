@@ -39,6 +39,8 @@ public:
 
     Ui::eExitStatus run();
     void stop();
+
+    Ui::eStyle get_style() const { return Ui::HEADLESS; }
 };
 
 #endif

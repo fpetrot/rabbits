@@ -80,6 +80,8 @@ public:
     Ui::eExitStatus run();
     void stop();
 
+    Ui::eStyle get_style() const { return Ui::GRAPHICAL; }
+
     /* HasLoggerIface */
     Logger & get_logger(LogContext::value context) const { return m_loggers.get_logger(context); }
 };
