@@ -21,8 +21,9 @@
 
 #include <vector>
 #include "rabbits/datatypes/framebuffer.h"
+#include "../view.h"
 
-class UiViewFramebufferIface {
+class UiViewFramebufferIface : public UiView {
 public:
     virtual void set_info(const FramebufferInfo &) = 0;
     virtual void set_palette(const std::vector<uint32_t> &palette) = 0;

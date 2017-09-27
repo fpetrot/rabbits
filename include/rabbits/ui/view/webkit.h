@@ -20,13 +20,14 @@
 #define _RABBITS_UI_VIEW_WEBKIT_H
 
 #include <string>
+#include "../view.h"
 
 class UiWebkitEventListener {
 public:
     virtual void webkit_event(const std::string &ev) = 0;
 };
 
-class UiViewWebkitIface {
+class UiViewWebkitIface : public UiView {
 public:
     virtual void exec_js(const std::string & js) = 0;
     virtual void register_event_listener(UiWebkitEventListener &) = 0;

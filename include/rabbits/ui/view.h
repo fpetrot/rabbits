@@ -19,9 +19,12 @@
 #ifndef _RABBITS_UI_VIEW_H
 #define _RABBITS_UI_VIEW_H
 
+#include <string>
+
 class UiView {
 public:
     virtual const std::string & get_name() const = 0;
+    virtual void set_name(const std::string &name) = 0;
 };
 
 

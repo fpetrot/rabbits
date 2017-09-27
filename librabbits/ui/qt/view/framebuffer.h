@@ -50,9 +50,14 @@ public:
                         const FramebufferInfo & info);
     virtual ~QtUiViewFramebuffer() {}
 
+    /* UiViewFramebufferIface */
     void set_info(const FramebufferInfo & info);
     void set_palette(const std::vector<uint32_t> &palette);
     void set_backlight_level(uint8_t lvl);
+
+    /* UiView */
+    const std::string & get_name() const { return qt_ui_get_name(); }
+    void set_name(const std::string &name) { qt_ui_set_name(name); }
 };
 
 #endif

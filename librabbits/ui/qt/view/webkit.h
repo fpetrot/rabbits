@@ -45,6 +45,10 @@ public:
 
     const std::string & get_url() const { return m_url; }
 
+    /* UiView */
+    const std::string & get_name() const { return qt_ui_get_name(); }
+    void set_name(const std::string &name) { qt_ui_set_name(name); }
+
 signals:
     void request_exec_js(const QString &);
 
