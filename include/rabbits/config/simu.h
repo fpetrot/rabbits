@@ -1,6 +1,6 @@
 /*
  *  This file is part of Rabbits
- *  Copyright (C) 2015  Clement Deschamps and Luc Michel
+ *  Copyright (C) 2015-2017  Clement Deschamps and Luc Michel
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -35,8 +35,14 @@ public:
  * module to stop the simulation.
  */
 class SystemCStopper : public sc_core::sc_module {
+public:
+    enum eStopSource {
+        UI, OTHER
+    };
+
 protected:
     bool m_run = true;
+    eStopSource m_source;
 
     void stop_thread() {
         for (;;) {
@@ -55,14 +61,17 @@ public:
         SC_THREAD(stop_thread);
     }
 
-    void stop()
+    void stop(eStopSource source)
     {
-        m_run = false;
+        if (m_run) {
+            m_run = false;
+            m_source = source;
+        }
     }
 
     bool stopped_by_ui() const
     {
-        return !m_run;
+        return (!m_run) && (m_source == UI);
     }
 };
 
@@ -79,6 +88,9 @@ private:
 
     void handle_pause();
     void simu_entry();
+
+    void install_sig_handlers();
+    void remove_sig_handlers();
 
 public:
     SimulationManager(ConfigManager &config)

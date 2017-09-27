@@ -1,0 +1,5 @@
+if(RABBITS_CONFIG_POSIX)
+    rabbits_add_sources(posix.cc)
+elseif(RABBITS_CONFIG_WIN32)
+    rabbits_add_sources(win32.cc)
+endif()

@@ -41,9 +41,12 @@ void SimulationManager::simu_entry()
 {
     LOG(APP, DBG) << "Starting simulation\n";
 
-    sc_start();
+    install_sig_handlers();
 
+    sc_start();
     handle_pause();
+
+    remove_sig_handlers();
 
     LOG(APP, DBG) << "End of simulation\n";
 
@@ -67,7 +70,7 @@ void SimulationManager::start()
         /* in case the event loop ended while sysc is running
          * (e.g. window closed) */
         LOG(APP, DBG) << "Stopping simulation\n";
-        m_sysc_stopper.stop();
+        m_sysc_stopper.stop(SystemCStopper::UI);
     }
 
     LOG(APP, DBG) << "Waiting for simulation to end\n";
