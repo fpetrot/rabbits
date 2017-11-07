@@ -123,7 +123,7 @@ public:
         socket->b_transport(trans, delay);
 
         if (trans.is_response_error()) {
-            MLOG_F(SIM, ERR, "Bus %s error at address 0x%.8" PRIx64 ", lenght access: %u byte(s)\n",
+            MLOG_F(SIM, ERR, "Bus %s error at address 0x%.8" PRIx64 ", access length: %u byte(s)\n",
                    (cmd == tlm::TLM_READ_COMMAND) ? "read" : "write",
                    addr, len);
         }
