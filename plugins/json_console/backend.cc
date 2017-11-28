@@ -49,7 +49,7 @@ void SignalEvent::stub_event()
             break;
 
         case EVENT_PAUSE:
-            m_pause_req_listener.pause_request();
+            m_pause_req_listener.handle_next_pause_event();
             sc_core::sc_pause();
             break;
         }

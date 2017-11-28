@@ -24,9 +24,16 @@
 
 #include <systemc>
 
-class SimuPauseListener {
+enum SimuEvent {
+    SIM_EV_START,
+    SIM_EV_PAUSE,
+    SIM_EV_RESUME,
+    SIM_EV_STOP,
+};
+
+class SimuEventListener {
 public:
-    virtual void pause_event() = 0;
+    virtual void simu_event(SimuEvent) = 0;
 };
 
 /*
@@ -84,13 +91,15 @@ private:
 
     SystemCStopper m_sysc_stopper;
 
-    std::vector<SimuPauseListener*> m_pause_listeners;
+    std::vector<SimuEventListener*> m_pause_listeners;
 
-    void handle_pause();
+    void simu_loop();
     void simu_entry();
 
     void install_sig_handlers();
     void remove_sig_handlers();
+
+    void send_event(SimuEvent ev);
 
 public:
     SimulationManager(ConfigManager &config)
@@ -102,7 +111,7 @@ public:
 
     void start();
 
-    void register_pause_listener(SimuPauseListener &);
+    void register_event_listener(SimuEventListener &);
 };
 
 #endif

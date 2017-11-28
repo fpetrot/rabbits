@@ -45,7 +45,7 @@ class BackendInstance;
 
 class PauseRequestListener {
 public:
-    virtual void pause_request() = 0;
+    virtual void handle_next_pause_event() = 0;
 };
 
 class UniqueNameGenerator {

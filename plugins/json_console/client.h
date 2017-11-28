@@ -26,6 +26,7 @@
 
 #include <rabbits/logger/has_logger.h>
 #include <rabbits/platform/description.h>
+#include <rabbits/config/simu.h>
 
 class JsonConsolePlugin;
 class SignalEvent;
@@ -57,7 +58,10 @@ enum Command {
     CMD_FAILURE_REASON,
     CMD_READ_BACKEND,
     CMD_TRIGGER,
+    CMD_SIMULATION_STARTED,
     CMD_SIMULATION_PAUSED,
+    CMD_SIMULATION_RESUMED,
+    CMD_SIMULATION_STOPPED,
 };
 
 enum Status {
@@ -110,7 +114,10 @@ public:
 private:
     JsonConsolePlugin &m_parent;
     boost::asio::ip::tcp::socket m_socket;
+    bool m_alive;
     std::vector<char> m_buffer;
+
+    std::string m_client_pretty_addr;
 
     protocol::Command parse_command(PlatformDescription &d) const;
     void handle_cmd(PlatformDescription &d);
@@ -143,14 +150,22 @@ public:
     virtual ~JsonConsoleClient();
 
     boost::asio::ip::tcp::socket& get_socket() { return m_socket; }
+    void set_connected();
+    bool is_alive() const { return m_alive; }
 
     void wait_for_cmd();
     void handle_cmd(const boost::system::error_code &, size_t);
 
-    std::string get_id() const;
-
     void signal_event(SignalEvent &ev);
-    void pause_event();
+    void simu_event(SimuEvent);
+
+    const std::string & get_pretty_addr() const { return m_client_pretty_addr; }
 
     Logger & get_logger(LogContext::value context) const;
 };
+
+static inline std::ostream & operator<< (std::ostream &os, const JsonConsoleClient &c)
+{
+    os << c.get_pretty_addr();
+    return os;
+}

@@ -75,7 +75,7 @@ public:
 };
 
 class JsonConsolePlugin : public Plugin
-                        , public SimuPauseListener
+                        , public SimuEventListener
                         , public PauseRequestListener {
 public:
     enum SimulationStatus {
@@ -103,7 +103,7 @@ private:
     std::map<const std::string, SignalEvent::Ptr> m_events;
 
     SimulationControl *m_simu_control = nullptr;
-    JsonConsoleClient::Ptr m_pause_request_client = nullptr;
+    std::list<JsonConsoleClient::Ptr> m_clients;
 
     int m_cur_generator_idx = 0;
 
@@ -120,6 +120,7 @@ private:
     void client_accept();
     void client_handler_entry();
     void new_client_handler(JsonConsoleClient::Ptr, const boost::system::error_code&);
+    void clean_clients();
 
     void instanciate_backend(const PluginHookAfterBackendInst &hook,
                              std::unique_ptr<SignalGenerator> &gen);
@@ -128,6 +129,7 @@ private:
 
     void wait_for_client();
     void client_notify();
+    void send_event_to_clients(SimuEvent);
 
 public:
     JsonConsolePlugin(const std::string &name, const Parameters &params, ConfigManager &config);
@@ -160,13 +162,12 @@ public:
     void pause_simulation(JsonConsoleClient::Ptr);
     void stop_simulation();
 
-    /* SimuPauseListener */
-    void pause_event();
-
+    /* SimuEventListener */
+    void simu_event(SimuEvent);
 
     /* PauseRequestListener
      * This method is called from the SystemC world to indicate that a pause
      * event is going to happend and that we should handle it. But the
      * sc_pause() call is not to be made by us. */
-    void pause_request();
+    void handle_next_pause_event();
 };
