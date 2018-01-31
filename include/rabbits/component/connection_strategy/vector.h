@@ -21,25 +21,60 @@
 #define _RABBITS_COMPONENT_CONNECTION_STRATEGY_VECTOR_H
 
 #include "rabbits/component/connection_strategy.h"
+#include "rabbits/component/port.h"
 
-template <class T>
-class VectorPortBase;
-
-template <typename T>
-class VectorCS : public ConnectionStrategy< VectorCS<T> > {
+class VectorCS : public ConnectionStrategy< VectorCS > {
 public:
     using typename ConnectionStrategyBase::BindingResult;
     using typename ConnectionStrategyBase::ConnectionInfo;
 
+    typedef std::vector< Port* > PortCollection;
+
 private:
-    VectorPortBase<T> &m_vec;
+    PortCollection &m_vec;
 
 public:
-    VectorCS(VectorPortBase<T> &v) : m_vec(v) {}
+    VectorCS(PortCollection &v) : m_vec(v) {}
     virtual ~VectorCS() {}
 
-    BindingResult bind_peer(VectorCS<T> &cs, ConnectionInfo &info, PlatformDescription &d);
-    BindingResult bind_hierarchical(VectorCS<T> &parent_cs, ConnectionInfo &info);
+    BindingResult bind_peer(VectorCS &cs, ConnectionInfo &info, PlatformDescription &d)
+    {
+        /* Size compatibility */
+        if (m_vec.size() != cs.m_vec.size()) {
+            LOG(APP, ERR) << "Vector port size mismatch\n";
+            return BindingResult::BINDING_ERROR;
+        }
+
+        for (unsigned int i = 0; i < m_vec.size(); i++) {
+            Port* p0 = m_vec[i];
+            Port* p1 = cs.m_vec[i];
+
+            if (!p0->connect(*p1, d)) {
+                LOG(APP, WRN) << "Vector element " << p0->full_name()
+                    << " is not connectable to " << p1->full_name();
+            }
+        }
+
+        return BindingResult::BINDING_OK;
+    }
+
+    BindingResult bind_hierarchical(VectorCS &parent_cs, ConnectionInfo &info)
+    {
+        /* Size compatibility */
+        if (m_vec.size() != parent_cs.m_vec.size()) {
+            LOG(APP, ERR) << "Vector port size mismatch\n";
+            return BindingResult::BINDING_ERROR;
+        }
+
+        for (unsigned int i = 0; i < m_vec.size(); i++) {
+            Port* p0 = m_vec[i];
+            Port* p1 = parent_cs.m_vec[i];
+
+            (*p0)(*p1);
+        }
+
+        return BindingResult::BINDING_OK;
+    }
 
     virtual const char * get_typeid() const { return "vector"; }
 };

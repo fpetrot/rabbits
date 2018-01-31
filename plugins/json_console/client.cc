@@ -309,12 +309,51 @@ struct CommandBuilder<CMD_TRIGGER, string> {
 };
 
 template <>
+struct CommandBuilder<CMD_SIMULATION_STARTED> {
+    static void build(PlatformDescription &d) {
+        PlatformDescription dd;
+        std::string s;
+
+        s = "{\"event\": \"simulation_started\"}";
+
+        dd.load_json(s);
+        d = d.merge(dd);
+    }
+};
+
+template <>
 struct CommandBuilder<CMD_SIMULATION_PAUSED> {
     static void build(PlatformDescription &d) {
         PlatformDescription dd;
         std::string s;
 
         s = "{\"event\": \"simulation_paused\"}";
+
+        dd.load_json(s);
+        d = d.merge(dd);
+    }
+};
+
+template <>
+struct CommandBuilder<CMD_SIMULATION_RESUMED> {
+    static void build(PlatformDescription &d) {
+        PlatformDescription dd;
+        std::string s;
+
+        s = "{\"event\": \"simulation_resumed\"}";
+
+        dd.load_json(s);
+        d = d.merge(dd);
+    }
+};
+
+template <>
+struct CommandBuilder<CMD_SIMULATION_STOPPED> {
+    static void build(PlatformDescription &d) {
+        PlatformDescription dd;
+        std::string s;
+
+        s = "{\"event\": \"simulation_stopped\"}";
 
         dd.load_json(s);
         d = d.merge(dd);
@@ -410,22 +449,45 @@ JsonConsoleClient::JsonConsoleClient(JsonConsolePlugin &parent,
                                      boost::asio::io_service &io_service)
     : m_parent(parent)
     , m_socket(io_service)
+    , m_alive(false)
+    , m_client_pretty_addr("(not connected)")
 {
     m_buffer.resize(1024);
+
 }
 
 JsonConsoleClient::~JsonConsoleClient()
 {
     boost::system::error_code ec;
 
-    MLOG(APP, TRC) << "Destructing client " << get_id() << "\n";
-    m_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+    MLOG(APP, TRC) << "Destructing client " << *this << "\n";
 
-    if (ec) {
-        MLOG(APP, DBG) << "Error while calling shutdown: " << ec << "\n";
+    if (m_alive) {
+        m_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+
+        if (ec) {
+            MLOG(APP, DBG) << "Error while calling shutdown: " << ec << "\n";
+        }
     }
 
     m_socket.close();
+}
+
+void JsonConsoleClient::set_connected()
+{
+    if (!m_socket.is_open()) {
+        MLOG(APP, ERR) << "Internal error. dropping connection\n";
+        return;
+    }
+
+    m_alive = true;
+
+    std::stringstream ss;
+    ss << m_socket.remote_endpoint().address().to_string()
+       << ':'
+       << m_socket.remote_endpoint().port();
+
+    m_client_pretty_addr = ss.str();
 }
 
 void JsonConsoleClient::wait_for_cmd()
@@ -441,8 +503,30 @@ void JsonConsoleClient::send_response(const Args&... args)
 {
     std::string response;
 
+    if (!m_alive) {
+        return;
+    }
+
     response = protocol::ResponseBuilder<s, c, Args...>::build(args...);
-    m_socket.write_some(boost::asio::buffer(response));
+
+    try {
+        m_socket.write_some(boost::asio::buffer(response));
+    } catch(boost::system::system_error &e) {
+        switch (e.code().value()) {
+        case boost::asio::error::eof:
+        case boost::asio::error::broken_pipe:
+            MLOG(APP, DBG) << "Client " << m_client_pretty_addr
+                           << " has closed connection\n";
+            break;
+
+        default:
+            MLOG(APP, WRN) << "Unexpected error while sending frame to client "
+                           << m_client_pretty_addr
+                           << ": " << e.what() << ". Dropping client\n";
+        }
+
+        m_alive = false;
+    }
 }
 
 protocol::Command JsonConsoleClient::parse_command(PlatformDescription &d) const
@@ -863,25 +947,9 @@ void JsonConsoleClient::handle_cmd(const boost::system::error_code &err, size_t 
         }
 
     } else if (err == boost::asio::error::eof) {
-        MLOG(APP, TRC) << "Client " << get_id() << " closed connection\n";
+        MLOG(APP, TRC) << "Client " << *this << " closed connection\n";
     } else {
-        MLOG(APP, DBG) << "Client " << get_id() << ": error while waiting for command\n";
-    }
-}
-
-
-std::string JsonConsoleClient::get_id() const
-{
-    if (m_socket.is_open()) {
-        std::stringstream ss;
-
-        ss << m_socket.remote_endpoint().address().to_string()
-           << ":"
-           << m_socket.remote_endpoint().port();
-
-        return ss.str();
-    } else {
-        return "(not connected)";
+        MLOG(APP, DBG) << "Client " << *this << ": error while waiting for command\n";
     }
 }
 
@@ -891,10 +959,27 @@ void JsonConsoleClient::signal_event(SignalEvent &ev)
     send_response<STA_EVENT, CMD_TRIGGER>(ev.get_name());
 }
 
-void JsonConsoleClient::pause_event()
+void JsonConsoleClient::simu_event(SimuEvent ev)
 {
     using namespace protocol;
-    send_response<STA_EVENT, CMD_SIMULATION_PAUSED>();
+
+    switch (ev) {
+    case SIM_EV_START:
+        send_response<STA_EVENT, CMD_SIMULATION_STARTED>();
+        break;
+
+    case SIM_EV_PAUSE:
+        send_response<STA_EVENT, CMD_SIMULATION_PAUSED>();
+        break;
+
+    case SIM_EV_RESUME:
+        send_response<STA_EVENT, CMD_SIMULATION_RESUMED>();
+        break;
+
+    case SIM_EV_STOP:
+        send_response<STA_EVENT, CMD_SIMULATION_STOPPED>();
+        break;
+    }
 }
 
 Logger & JsonConsoleClient::get_logger(LogContext::value context) const

@@ -27,14 +27,25 @@
 
 using namespace sc_core;
 
-void SimulationManager::handle_pause()
+void SimulationManager::send_event(SimuEvent ev)
 {
+    for (auto *l: m_pause_listeners) {
+        l->simu_event(ev);
+    }
+}
+
+void SimulationManager::simu_loop()
+{
+    send_event(SIM_EV_START);
+    sc_start();
+
     while (sc_get_status() == SC_PAUSED) {
-        for (auto *l: m_pause_listeners) {
-            l->pause_event();
-        }
+        send_event(SIM_EV_PAUSE);
+        send_event(SIM_EV_RESUME);
         sc_start();
     }
+
+    send_event(SIM_EV_STOP);
 }
 
 void SimulationManager::simu_entry()
@@ -43,8 +54,7 @@ void SimulationManager::simu_entry()
 
     install_sig_handlers();
 
-    sc_start();
-    handle_pause();
+    simu_loop();
 
     remove_sig_handlers();
 
@@ -79,7 +89,7 @@ void SimulationManager::start()
     LOG(APP, DBG) << "Exiting simulation manager\n";
 }
 
-void SimulationManager::register_pause_listener(SimuPauseListener &l)
+void SimulationManager::register_event_listener(SimuEventListener &l)
 {
     m_pause_listeners.push_back(&l);
 }

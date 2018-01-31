@@ -30,18 +30,18 @@
 #include "rabbits/component/port/in.h"
 #include "rabbits/component/port/out.h"
 #include "rabbits/component/port/inout.h"
+
 #include "rabbits/component/connection_strategy/vector.h"
 
 template <typename T>
 class VectorPortBase : public Port {
 public:
-    typedef std::vector< std::unique_ptr<T> > Container;
+    typedef std::vector< std::shared_ptr<T> > Container;
 
     class iterator : public std::iterator<std::input_iterator_tag, T> {
     private:
         Container &m_vec;
         typename Container::iterator m_cur;
-
 
     public:
         iterator(VectorPortBase<T> &vec) : m_vec(vec.m_ports), m_cur(m_vec.begin()) {}
@@ -66,7 +66,8 @@ private:
 protected:
     Container m_ports;
 
-    VectorCS<T> m_cs;
+    VectorCS *m_cs;
+    VectorCS::PortCollection m_cs_ports;
 
     void declare_parent() {
         if (!m_ports.size()) {
@@ -79,21 +80,22 @@ protected:
             Port::declare_parent(child_port->get_parent());
         }
 
-        add_connection_strategy(m_cs);
+        m_cs = new VectorCS(m_cs_ports);
+        add_connection_strategy(*m_cs);
     }
 
 public:
     VectorPortBase(const std::string &name, unsigned int size)
         : Port(name)
         , m_ports(size)
-        , m_cs(*this)
+        , m_cs_ports(size)
     {
-        int i = 0;
-        for (std::unique_ptr<T> & p : m_ports) {
+        for (unsigned int i = 0; i < size; i++) {
             std::stringstream ss;
 
-            ss << name << i++;
-            p.reset(new T(ss.str()));
+            ss << name << i;
+            m_ports[i].reset(new T(ss.str()));
+            m_cs_ports[i] = m_ports[i].get();
         }
 
         declare_parent();
@@ -103,14 +105,14 @@ public:
                    std::function<T*(const std::string&)> generator)
         : Port(name)
         , m_ports(size)
-        , m_cs(*this)
+        , m_cs_ports(size)
     {
-        int i = 0;
-        for (std::unique_ptr<T> & p : m_ports) {
+        for (unsigned int i = 0; i < size; i++) {
             std::stringstream ss;
 
-            ss << name << i++;
-            p.reset(generator(ss.str()));
+            ss << name << i;
+            m_ports[i].reset(generator(ss.str()));
+            m_cs_ports[i] = m_ports[i].get();
         }
 
         declare_parent();
@@ -120,17 +122,17 @@ public:
                    std::function<T*(const std::string&, int)> generator)
         : Port(name)
         , m_ports(size)
-        , m_cs(*this)
+        , m_cs_ports(size)
     {
-        int i = 0;
-        for (std::unique_ptr<T> & p : m_ports) {
-            p.reset(generator(name, i++));
+        for (unsigned int i = 0; i < size; i++) {
+            m_ports[i].reset(generator(name, i));
+            m_cs_ports[i] = m_ports[i].get();
         }
 
         declare_parent();
     }
 
-    virtual ~VectorPortBase() {}
+    virtual ~VectorPortBase() { delete m_cs; }
 
     iterator begin() { return iterator(*this); }
     iterator end() { return iterator(*this).end(); }
@@ -178,7 +180,7 @@ public:
     {
         int i = 0;
         for (auto &sub_p : sub_ports) {
-        sub_p(m_ports[i]->sc_p);
+            sub_p(m_ports[i]->sc_p);
             i++;
         }
     }
@@ -227,7 +229,5 @@ public:
         }
     }
 };
-
-#include "rabbits/component/connection_strategy/vector_impl.h"
 
 #endif

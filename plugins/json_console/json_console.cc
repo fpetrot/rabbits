@@ -42,7 +42,7 @@ JsonConsolePlugin::JsonConsolePlugin(const std::string &name,
     m_wait_before_simulation = params["wait-before-simulation"].as<bool>();
 
     if (m_config.is_simu_manager_available()) {
-        m_config.get_simu_manager().register_pause_listener(*this);
+        m_config.get_simu_manager().register_event_listener(*this);
     }
 }
 
@@ -105,14 +105,34 @@ void JsonConsolePlugin::client_accept()
     m_server_acceptor.async_accept(client->get_socket(),
                                    boost::bind(&JsonConsolePlugin::new_client_handler, this,
                                                client, boost::asio::placeholders::error));
+
 }
 
 void JsonConsolePlugin::new_client_handler(JsonConsoleClient::Ptr client,
                                            const boost::system::error_code &err)
 {
-    MLOG(APP, TRC) << "New client " << client->get_id() << "\n";
+    client->set_connected();
+    MLOG(APP, TRC) << "New client " << *client << "\n";
+
+    m_clients.push_back(client);
+
     client->wait_for_cmd();
+
     client_accept();
+}
+
+void JsonConsolePlugin::clean_clients()
+{
+    auto i = std::begin(m_clients);
+
+    while (i != std::end(m_clients)) {
+        if (!(*i)->is_alive()) {
+            MLOG(APP, TRC) << "Removing client " << *i << " from active list\n";
+            i = m_clients.erase(i);
+        } else {
+            i++;
+        }
+    }
 }
 
 void JsonConsolePlugin::wait_for_client()
@@ -307,21 +327,34 @@ void JsonConsolePlugin::start_simulation()
     }
 }
 
-void JsonConsolePlugin::pause_request()
+void JsonConsolePlugin::handle_next_pause_event()
 {
     m_pause_request = true;
 }
 
-void JsonConsolePlugin::pause_event()
+void JsonConsolePlugin::send_event_to_clients(SimuEvent ev)
 {
-    MLOG(APP, INF) << "Simulation paused\n";
+    clean_clients();
 
-    if (m_pause_request_client) {
-        m_pause_request_client->pause_event();
+    for (auto c: m_clients) {
+        MLOG(APP, DBG) << "Notifying client " << *c << "\n";
+        c->simu_event(ev);
     }
+}
 
-    while (m_pause_request) {
-        wait_for_client();
+void JsonConsolePlugin::simu_event(SimuEvent ev)
+{
+    send_event_to_clients(ev);
+
+    switch (ev) {
+    case SIM_EV_PAUSE:
+        while (m_pause_request) {
+            wait_for_client();
+        }
+        break;
+
+    default:
+        break;
     }
 }
 
@@ -336,9 +369,8 @@ void JsonConsolePlugin::resume_simulation()
 void JsonConsolePlugin::pause_simulation(JsonConsoleClient::Ptr c)
 {
     assert(m_simu_control);
-    m_pause_request_client = c;
     m_simu_control->pause_request(); /* The effective sc_pause() call */
-    pause_request(); /* We will handle the pause event */
+    handle_next_pause_event(); /* We will handle the pause event */
 }
 
 void JsonConsolePlugin::stop_simulation()
