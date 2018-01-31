@@ -41,7 +41,10 @@ private:
         IN, INOUT
     };
 
-    sc_core::sc_signal_inout_if<T> *m_sig = nullptr;
+    typedef sc_core::sc_signal_inout_if<T> Signal;
+    typedef std::shared_ptr<Signal> SignalPtr;
+
+    SignalPtr m_sig = nullptr;
 
     direction_e m_dir;
 
@@ -63,18 +66,32 @@ public:
     explicit SignalCS(sc_in_p & port) : m_dir(IN), m_in(&port) {}
     explicit SignalCS(sc_inout_p & port) : m_dir(INOUT), m_inout(&port) {}
 
-    virtual ~SignalCS() { delete m_sig; }
+    virtual ~SignalCS() {}
 
-    BindingResult bind_peer(SignalCS<T> &cs, ConnectionInfo &info, PlatformDescription &d)
+    BindingResult bind_peer(SignalCS<T> &peer, ConnectionInfo &info, PlatformDescription &d)
     {
-        if ((m_dir == INOUT) && (cs.m_dir == INOUT)) {
-            m_sig = new sc_core::sc_signal<T, sc_core::SC_MANY_WRITERS>;
-        } else {
-            m_sig = new sc_core::sc_signal<T>;
+        SignalPtr sig;
+
+        if (m_sig && peer.m_sig) {
+            LOG(APP, ERR) << "Trying to bind two ports that have already been "
+                "connected. This is not supported\n";
+            return BindingResult::BINDING_ERROR;
         }
 
-        bind(*m_sig);
-        cs.bind(*m_sig);
+        if (m_sig) {
+            LOG(APP, TRC) << "Reusing signal " << m_sig << "\n";
+            sig = peer.m_sig = m_sig;
+            peer.bind(*sig);
+        } else if (peer.m_sig) {
+            LOG(APP, TRC) << "Reusing signal " << peer.m_sig << "\n";
+            sig = m_sig = peer.m_sig;
+            bind(*sig);
+        } else {
+            sig = m_sig = peer.m_sig = SignalPtr(new sc_core::sc_signal<T, sc_core::SC_MANY_WRITERS>);
+            LOG(APP, TRC) << "Creating new signal " << peer.m_sig << "\n";
+            peer.bind(*sig);
+            bind(*sig);
+        }
 
         return BindingResult::BINDING_OK;
     }
